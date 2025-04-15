@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { connectDB } from "./config/db";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes";
+import investmentRoutes from "./routes/investmentRoutes";
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/investments", investmentRoutes);
 
 app.get("/", (_req, res) => {
   res.send("Zentroe Backend is running ✅");
