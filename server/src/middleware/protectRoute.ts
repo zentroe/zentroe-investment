@@ -1,31 +1,34 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { User } from "../models/User";
+import { IUser } from "../models/User";
 
 interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    role: string;
-  };
+  user?: IUser;
 }
 
-export const protectRoute = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized - No token provided" });
-  }
-
-  const token = authHeader.split(" ")[1];
-
+export const protectRoute = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string;
-      role: string;
-    };
+    const token = req.cookies["jwt-zentroe"];
 
-    req.user = { userId: decoded.userId, role: decoded.role };
+    if (!token) {
+      res.status(401).json({ message: "Unauthorized - No Token Provided" });
+      return;
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+
+    const user = await User.findById(decoded.userId).select("-password");
+
+    if (!user) {
+      res.status(401).json({ message: "User not found" });
+      return;
+    }
+
+    req.user = user;
     next();
-  } catch (error) {
-    return res.status(401).json({ message: "Unauthorized - Invalid token" });
+  } catch (error: any) {
+    console.error("Error in protectRoute middleware:", error.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
