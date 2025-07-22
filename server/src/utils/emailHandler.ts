@@ -6,7 +6,6 @@ import {
 
 export const sendConfirmationEmail = async (
   email: string,
-  name: string,
   confirmationLink: string
 ): Promise<void> => {
   const recipient = [{ email }];
@@ -16,7 +15,7 @@ export const sendConfirmationEmail = async (
       from: sender,
       to: recipient,
       subject: "Confirm Your Zentroe Email Address",
-      html: createConfirmationEmailTemplate(name, confirmationLink),
+      html: createConfirmationEmailTemplate(confirmationLink),
       category: "email_confirmation",
     });
 

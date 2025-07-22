@@ -5,21 +5,37 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User";
 import { sendConfirmationEmail } from "../utils/emailHandler";
+// import { IUser } from "../models/User";
+import { AuthenticatedRequest } from "../types/CustomRequest";
+
+// interface AuthRequest extends Request {
+//   user?: IUser;
+// }
+
+export const checkEmail = async (req: Request, res: Response): Promise<void> => {
+  const { email } = req.body;
+
+  if (!email || !email.includes("@")) {
+    res.status(400).json({ message: "A valid email is required." });
+    return;
+  }
+
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    res.status(409).json({ message: "Email already exists." });
+  } else {
+    res.status(200).json({ available: true });
+  }
+};
+
 
 export const signup = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, email, password } = req.body;
+    const { email, password } = req.body;
 
     // Validate input
-    if (!name || !email || !password) {
+    if (!email || !password) {
       res.status(400).json({ message: "All fields are required" });
-      return;
-    }
-
-    // Check for existing user
-    const existingEmail = await User.findOne({ email });
-    if (existingEmail) {
-      res.status(400).json({ message: "Email already exists" });
       return;
     }
 
@@ -35,13 +51,21 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
 
     // Create new user
     const user = new User({
-      name,
       email,
       password: hashedPassword,
       isEmailVerified: false,
+      onboardingStatus: "started", // track onboarding progress
     });
 
-    await user.save();
+    try {
+      await user.save();
+    } catch (err: any) {
+      if (err.code === 11000) {
+        res.status(409).json({ message: "Email already registered" });
+        return;
+      }
+      throw err; // rethrow for generic error handler below
+    }
 
     // JWT for auth cookie
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, {
@@ -51,9 +75,9 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     // Set cookie
     res.cookie("jwt-zentroe", token, {
       httpOnly: true,
-      maxAge: 3 * 24 * 60 * 60 * 1000, // 3 days
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
+      maxAge: Date.now() + 1000 * 60 * 60 * 24 * 3, // 3 days
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Use "none" for production, "lax" for local
+      secure: process.env.NODE_ENV === "production" ? true : false, // Secure in production (HTTPS)
     });
 
     // Email confirmation token
@@ -65,8 +89,8 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
 
     const confirmationLink = `${process.env.CLIENT_URL}/confirm-email?token=${emailConfirmationToken}`;
 
-    // Send confirmation email (outside response flow)
-    sendConfirmationEmail(email, name, confirmationLink).catch((emailError) =>
+    // Send confirmation email (fire-and-forget)
+    sendConfirmationEmail(email, confirmationLink).catch((emailError) =>
       console.error("Error sending email confirmation:", emailError)
     );
 
@@ -77,6 +101,9 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
+
 
 
 export const login: (req: Request, res: Response) => Promise<void> = async (req, res) => {
@@ -111,9 +138,9 @@ export const login: (req: Request, res: Response) => Promise<void> = async (req,
 
     res.cookie("jwt-zentroe", token, {
       httpOnly: true,
-      maxAge: 3 * 24 * 60 * 60 * 1000,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
+      maxAge: Date.now() + 1000 * 60 * 60 * 24 * 3, // 3 days
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Use "none" for production, "lax" for local
+      secure: process.env.NODE_ENV === "production" ? true : false, // Secure in production (HTTPS)
     });
 
     res.status(200).json({ message: "Logged in successfully" });
@@ -163,10 +190,87 @@ export const logout = (req: Request, res: Response): void => {
 
 export const getCurrentUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    // @ts-ignore - req.user is set by your protectRoute middleware
-    res.status(200).json(req.user);
+    const user = await User.findById((req as any).user?.userId).select(
+      "-password"
+    );
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Update last login
+    await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
+
+    res.status(200).json(user);
   } catch (error: any) {
     console.error("Error in getCurrentUser controller:", error.message);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const updateOnboarding = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  console.log("🟢 PATCH /auth/onboarding hit with data:", req.body);
+  console.log("🟢 req.user:", req.user);
+
+  try {
+    if (!req.user) {
+      console.log("🟠 req.user is undefined");
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const userId = req.user.userId;
+    console.log("🟢 userId:", userId);
+
+    // Determine onboarding status based on completed fields
+    const updateData = { ...req.body };
+
+    // Auto-update onboarding status based on progress
+    if (updateData.firstName && updateData.lastName) {
+      updateData.onboardingStatus = "basicInfo";
+    }
+    if (updateData.investmentGoal && updateData.riskTolerance) {
+      updateData.onboardingStatus = "investmentProfile";
+    }
+    if (updateData.isAccreditedInvestor !== undefined) {
+      updateData.onboardingStatus = "verification";
+    }
+
+    // Update onboarding step if provided
+    if (updateData.onboardingStep !== undefined) {
+      updateData.onboardingStep = Math.max(0, Math.min(12, updateData.onboardingStep));
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Don't send password back - use select to exclude password
+    const userResponse = await User.findById(userId).select("-password");
+
+    res.status(200).json({
+      message: "Onboarding data saved successfully",
+      user: userResponse
+    });
+  } catch (error: any) {
+    console.error("Error updating onboarding:", error.message);
+    if (error.name === 'ValidationError') {
+      res.status(400).json({
+        message: "Validation error",
+        errors: Object.values(error.errors).map((err: any) => err.message)
+      });
+    } else {
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+};
+
+

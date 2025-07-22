@@ -1,31 +1,37 @@
-import { Request, Response, NextFunction } from "express";
+// src/middleware/protectRoute.ts
+import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User";
-import { IUser } from "../models/User";
+import { AuthenticatedRequest } from "../types/CustomRequest";
 
-interface AuthRequest extends Request {
-  user?: IUser;
-}
-
-export const protectRoute = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+export const protectRoute = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const token = req.cookies["jwt-zentroe"];
 
     if (!token) {
-      res.status(401).json({ message: "Unauthorized - No Token Provided" });
+      res.status(401).json({ message: "Unauthorized - No token provided" });
       return;
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
 
-    const user = await User.findById(decoded.userId).select("-password");
+    // Narrow down to just what we need: _id and role
+    const user = await User.findById(decoded.userId).select("_id role").lean();
 
-    if (!user) {
-      res.status(401).json({ message: "User not found" });
+    if (!user || !user._id || !user.role) {
+      res.status(401).json({ message: "User not found or invalid user data" });
       return;
     }
 
-    req.user = user;
+    req.user = {
+      userId: user._id.toString(),
+      role: user.role,
+    };
+
     next();
   } catch (error: any) {
     console.error("Error in protectRoute middleware:", error.message);

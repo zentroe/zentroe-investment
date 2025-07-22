@@ -5,21 +5,26 @@ import {
   getInvestments,
   getInvestmentById,
   investInInvestment,
+  updateInvestment,
+  deleteInvestment
 } from "../controllers/investmentController";
 import { protectRoute } from "../middleware/protectRoute";
 import { isAdmin } from "../middleware/isAdmin";
 
 const router = Router();
 
+// Public endpoints
 router.get("/", getInvestments);
 router.get("/:id", getInvestmentById);
 
-// Admin-only route to create new investment
-router.post("/", protectRoute, isAdmin, createInvestment);
+// Endpoint for logged-in users to invest in an opportunity
 router.post("/:id/invest", protectRoute, investInInvestment);
 
-// TO DO: Add routes for updating and deleting investments
-// router.put("/:id", protectRoute, isAdmin, updateInvestment);
-// router.delete("/:id", protectRoute, isAdmin, deleteInvestment);
+// Admin-only endpoints to create, update, and delete investments
+router.post("/", protectRoute, isAdmin, createInvestment);
+router.put("/:id", protectRoute, isAdmin, updateInvestment);
+router.delete("/:id", protectRoute, isAdmin, deleteInvestment);
+
+// TODO: Create additional endpoints (e.g., analytics) as needed.
 
 export default router;

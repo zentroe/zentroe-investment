@@ -1,5 +1,4 @@
 export const createConfirmationEmailTemplate = (
-  name: string,
   confirmationLink: string
 ): string => {
   return `
@@ -9,9 +8,8 @@ export const createConfirmationEmailTemplate = (
           <h1 style="margin: 0;">Welcome to Zentroe</h1>
         </div>
         <div style="padding: 30px; color: #251c15;">
-          <p style="font-size: 16px;">Hi <strong>${name}</strong>,</p>
           <p style="font-size: 15px; color: #4b3a32;">
-            Thank you for joining <strong>Zentroe</strong> — a platform designed to help you grow your wealth through secure investments in Real Estate, Agriculture, and Stocks.
+            Thank you for joining <strong>Zentroe</strong> — a platform designed to help you grow your wealth through secure investments in Real Estate, Agriculture, and Venture Capital.
           </p>
           <p style="font-size: 15px; color: #4b3a32;">
             Please confirm your email address to activate your account and start investing in vetted opportunities curated just for you.
