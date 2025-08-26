@@ -70,7 +70,6 @@ const CardTokenSchema = new Schema<ICardToken>({
 
 // Indexes
 CardTokenSchema.index({ userId: 1, isActive: 1 });
-CardTokenSchema.index({ tokenId: 1 });
 CardTokenSchema.index({ last4: 1, expiryMonth: 1, expiryYear: 1 });
 
 export const CardToken = mongoose.model<ICardToken>('CardToken', CardTokenSchema);
@@ -148,7 +147,6 @@ const CardPaymentSchema = new Schema<ICardPayment>({
 // Indexes
 CardPaymentSchema.index({ paymentId: 1 });
 CardPaymentSchema.index({ userId: 1, processingStatus: 1 });
-CardPaymentSchema.index({ transactionId: 1 });
 CardPaymentSchema.index({ processingStatus: 1, createdAt: -1 });
 
 export const CardPayment = mongoose.model<ICardPayment>('CardPayment', CardPaymentSchema);

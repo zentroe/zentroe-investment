@@ -2,53 +2,38 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import OnboardingLayout from "./OnboardingLayout";
+import OnboardingLayout from "@/components/OnboardingLayout";
 import { Helmet } from "react-helmet-async";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { toast } from "sonner";
-import { checkEmail } from "@/services/auth";
+import { z } from "zod";
+
+const emailSchema = z.object({
+  email: z.string().email("Please enter a valid email address")
+});
 
 export default function EmailSetup() {
   const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
-  const { setOnboarding, updateOnboardingStep } = useOnboarding();
+  const { saveStepData, isLoading } = useOnboarding();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast.error("Please enter a valid email address.");
-      return;
-    }
-
-    setIsLoading(true);
-
     try {
-      // Check if email is available
-      await checkEmail(email);
+      // Validate email using Zod schema
+      const validatedData = emailSchema.parse({ email });
 
-      // Update onboarding context
-      setOnboarding({ email });
-      updateOnboardingStep(1);
-
-      // Navigate to password setup
+      // Save progress and move to next step
+      await saveStepData('email', validatedData);
       navigate("/onboarding/password");
       toast.success("Email verified! Please set up your password.");
-
-    } catch (error: any) {
-      console.error("Email check error:", error);
-
-      if (error.message.includes("already exists") || error.message.includes("already registered")) {
-        toast.error("This email is already registered. Please try logging in or use a different email.");
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
       } else {
-        toast.error("Something went wrong. Please try again.");
+        toast.error("Invalid email address");
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -67,32 +52,33 @@ export default function EmailSetup() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="email" className="block text-sm font-medium text-darkPrimary">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label htmlFor="email" className="text-sm font-medium text-darkPrimary">
               Email address
             </label>
             <Input
-              id="email"
               type="email"
-              placeholder="you@example.com"
+              id="email"
+              name="email"
               value={email}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-              disabled={isLoading}
+              placeholder="you@example.com"
+              className="w-full"
               required
-              className="transition-colors focus:ring-2 focus:ring-primary"
+              disabled={isLoading}
             />
           </div>
 
           <Button
             type="submit"
-            className="w-full text-white text-sm bg-primary hover:bg-[#8c391e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading || !email}
+            className="w-full"
+            disabled={isLoading}
           >
             {isLoading ? (
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Validating...</span>
+                <span>Verifying...</span>
               </div>
             ) : (
               "Continue"
@@ -100,11 +86,17 @@ export default function EmailSetup() {
           </Button>
         </form>
 
-        <p className="text-xs text-gray-500 mt-6 text-center">
-          By continuing you indicate you have reviewed and agree to the{" "}
-          <a href="#" className="underline hover:text-primary transition-colors">Terms of Service</a> and{" "}
-          <a href="#" className="underline hover:text-primary transition-colors">Privacy Policy</a>.
-        </p>
+        <div className="text-center text-sm text-muted-foreground">
+          <p className="mt-4">
+            By continuing you agree to our{" "}
+            <a href="/terms" className="text-primary hover:underline">Terms of Service</a> and{" "}
+            <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
+          </p>
+          <p className="mt-4">
+            Already have an account?{" "}
+            <a href="/login" className="text-primary hover:underline">Sign in</a>
+          </p>
+        </div>
       </div>
     </OnboardingLayout>
   );

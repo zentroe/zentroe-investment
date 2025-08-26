@@ -4,17 +4,30 @@ import Lottie from "lottie-react";
 import animationData from "@/assets/Zentroe-success-animation.json";
 import OnboardingLayout from "./OnboardingLayout";
 import { Helmet } from "react-helmet-async";
+import { useOnboarding } from "@/context/OnboardingContext";
 
 export default function Success() {
   const navigate = useNavigate();
+  const { saveStepData } = useOnboarding();
 
   useEffect(() => {
+    // Save Account Setup phase completion
+    const saveAccountSetupCompletion = async () => {
+      try {
+        await saveStepData('account_setup_completion', {});
+      } catch (error) {
+        console.error("Failed to save account setup completion:", error);
+      }
+    };
+
+    saveAccountSetupCompletion();
+
     const timeout = setTimeout(() => {
-      navigate("/onboarding/account-type");
+      navigate("/onboarding/intro");
     }, 3000);
 
     return () => clearTimeout(timeout);
-  }, [navigate]);
+  }, [navigate, saveStepData]);
 
   return (
     <OnboardingLayout>

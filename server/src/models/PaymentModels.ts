@@ -183,8 +183,7 @@ const BankTransferPaymentSchema = new Schema<IBankTransferPayment>({
   referenceCode: {
     type: String,
     required: true,
-    unique: true,
-    index: true
+    unique: true
   },
   userBankName: {
     type: String,
@@ -300,8 +299,7 @@ const CryptoPaymentSchema = new Schema<ICryptoPayment>({
   transactionHash: {
     type: String,
     required: true,
-    unique: true,
-    index: true
+    unique: true
   },
   networkFee: {
     type: Number,
@@ -356,12 +354,10 @@ BasePaymentSchema.index({ paymentMethod: 1, status: 1 });
 BasePaymentSchema.index({ createdAt: -1 });
 
 BankTransferPaymentSchema.index({ userId: 1, status: 1 });
-BankTransferPaymentSchema.index({ referenceCode: 1 });
 BankTransferPaymentSchema.index({ status: 1, createdAt: -1 });
 
 CryptoPaymentSchema.index({ userId: 1, status: 1 });
 CryptoPaymentSchema.index({ cryptocurrency: 1, status: 1 });
-CryptoPaymentSchema.index({ transactionHash: 1 });
 CryptoPaymentSchema.index({ blockchainVerified: 1, status: 1 });
 
 // Pre-save middleware for base payment

@@ -60,7 +60,8 @@ export default function InvestmentAmount() {
     }
 
     setOnboarding({ initialInvestmentAmount: numericAmount });
-    navigate("/invest/auto-invest");
+    // Navigate to payment page with the amount
+    navigate(`/payment?amount=${numericAmount}&portfolio=${onboarding.recommendedPortfolio || onboarding.portfolioPriority || 'balanced'}`);
   };
 
   return (

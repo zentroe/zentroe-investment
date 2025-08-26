@@ -7,6 +7,7 @@ import authRoutes from "./routes/authRoutes";
 import investmentRoutes from "./routes/investmentRoutes";
 import portfolioRoutes from "./routes/portfolioRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
+import onboardingRoutes from "./routes/onboarding";
 import { errorHandler } from "./middleware/errorHandler";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -44,6 +45,7 @@ app.use("/investments", investmentRoutes);
 app.use("/portfolio", portfolioRoutes);
 app.use("/transactions", transactionRoutes);
 app.use("/payments", paymentRoutes);
+app.use("/onboarding", onboardingRoutes);
 
 
 

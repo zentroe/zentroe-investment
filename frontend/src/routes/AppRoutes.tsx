@@ -32,6 +32,9 @@ import AgriculturePage from "@/pages/agriculture/AgriculturePage";
 import PrivateCreditPage from "@/pages/private-credit/PrivateCreditPage";
 import VenturePage from "@/pages/venture/VenturePage";
 import AboutPage from "@/pages/about/AboutPage";
+import PaymentPage from "@/pages/payment/PaymentPage";
+import PaymentSuccessPage from "@/pages/payment/PaymentSuccessPage";
+import PaymentStatusPage from "@/pages/payment/PaymentStatusPage";
 
 
 
@@ -66,6 +69,11 @@ export default function AppRoutes() {
       <Route path="/invest/intro" element={<FinishUpAndInvest />} />
       <Route path="/invest/payment-amount" element={<InvestmentAmount />} />
       <Route path="/invest/auto-invest" element={<RecurringInvestment />} />
+
+      {/* Payment Routes */}
+      <Route path="/payment" element={<PaymentPage />} />
+      <Route path="/payment/success" element={<PaymentSuccessPage />} />
+      <Route path="/payment/status/:paymentId" element={<PaymentStatusPage />} />
 
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<DashboardHome />} />

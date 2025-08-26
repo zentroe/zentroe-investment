@@ -2,6 +2,7 @@ import DashboardStats from "@/components/dashboard/DashboardStats";
 import SalesChart from "@/components/dashboard/SalesChart";
 import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import TotalSales from "@/components/dashboard/TotalSales";
+import PaymentHistory from "@/components/dashboard/PaymentHistory";
 
 export default function DashboardHome() {
   return (
@@ -43,6 +44,11 @@ export default function DashboardHome() {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UpcomingEvents />
+        <PaymentHistory />
+      </div>
+
+      {/* Additional Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue This Month */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-300">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue This Month</h3>

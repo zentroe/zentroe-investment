@@ -4,12 +4,11 @@ import { Helmet } from "react-helmet-async";
 import OnboardingLayout from "./OnboardingLayout";
 import { ChevronRight } from "lucide-react";
 import { useOnboarding } from "@/context/OnboardingContext";
-import { updateOnboarding } from "@/services/auth";
 import { toast } from "sonner";
 
 export default function PrimaryGoal() {
   const navigate = useNavigate();
-  const { setOnboarding } = useOnboarding();
+  const { saveStepData } = useOnboarding();
   const [selected, setSelected] = useState<"diversification" | "fixed_income" | "venture_capital" | "">("");
   const [loading, setLoading] = useState(false);
 
@@ -18,8 +17,7 @@ export default function PrimaryGoal() {
     setLoading(true);
 
     try {
-      await updateOnboarding({ investmentGoal: value });
-      setOnboarding({ investmentGoal: value });
+      await saveStepData('primary_goal', { investmentGoal: value });
       toast.success("Investment goal saved.");
       navigate("/onboarding/income");
     } catch (error) {

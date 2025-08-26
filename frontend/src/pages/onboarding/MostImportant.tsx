@@ -4,12 +4,11 @@ import { Helmet } from "react-helmet-async";
 import OnboardingLayout from "./OnboardingLayout";
 import { ChevronRight } from "lucide-react";
 import { useOnboarding } from "@/context/OnboardingContext";
-import { updateOnboarding } from "@/services/auth";
 import { toast } from "sonner";
 
 export default function MostImportant() {
   const navigate = useNavigate();
-  const { setOnboarding } = useOnboarding();
+  const { saveStepData } = useOnboarding();
 
   const [selected, setSelected] = useState<"long_term" | "short_term" | "">("");
   const [loading, setLoading] = useState(false);
@@ -19,8 +18,7 @@ export default function MostImportant() {
     setLoading(true);
 
     try {
-      await updateOnboarding({ portfolioPriority: value });
-      setOnboarding({ portfolioPriority: value });
+      await saveStepData('most_important', { investmentPriority: value });
       toast.success("Portfolio preference saved.");
       navigate("/onboarding/motivation");
     } catch (error) {

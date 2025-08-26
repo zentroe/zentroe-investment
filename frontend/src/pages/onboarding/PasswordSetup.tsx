@@ -3,21 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { EyeIcon, EyeOffIcon, CheckCircle, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import OnboardingLayout from "./OnboardingLayout";
+import OnboardingLayout from "@/components/OnboardingLayout";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { Helmet } from "react-helmet-async";
-import { signup } from "@/services/auth";
 import { toast } from "sonner";
+
+
 
 
 export default function PasswordSetup() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { saveStepData, isLoading, onboarding } = useOnboarding();
 
-  const { setOnboarding, onboarding } = useOnboarding();
-
+  // Password validation checks
   const hasMinLength = password.length >= 8;
   const hasLetter = /[a-zA-Z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
@@ -27,21 +27,38 @@ export default function PasswordSetup() {
     e.preventDefault();
     if (!isValid) return;
 
-    setLoading(true);
     try {
-      await signup({ email: onboarding.email, password });
-      toast.success("Account created successfully!");
-      navigate("/onboarding/success");
-    } catch (error: any) {
-      if (error?.response?.status === 409) {
-        toast.error("This email is already registered.");
-        navigate("/onboarding/email");
-      } else {
-        toast.error("Signup failed. Please try again.");
+      // Save progress and create account
+      await saveStepData('password', { password });
+
+      // Create account
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: onboarding.email,
+          password: password,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          throw new Error('409');
+        }
+        throw new Error('Failed to create account');
       }
-    }
-    finally {
-      setLoading(false);
+
+      toast.success("Account created successfully!");
+      navigate("/onboarding/investment-profile");
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === '409') {
+          toast.error("This email is already registered.");
+          navigate("/onboarding/email");
+        } else {
+          toast.error("Failed to create account. Please try again.");
+        }
+      }
     }
   };
 
@@ -110,11 +127,11 @@ export default function PasswordSetup() {
 
           <Button
             type="submit"
-            disabled={!isValid || loading}
+            disabled={!isValid || isLoading}
             variant="default"
             className="w-full flex items-center justify-center"
           >
-            {loading ? (
+            {isLoading ? (
               <span className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               "Continue"

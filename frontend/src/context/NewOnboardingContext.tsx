@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { toast } from 'sonner';
-// import { updateOnboardingProgress } from '@/services/auth';
 
 type StepData = {
   email?: string;
@@ -21,9 +20,6 @@ type StepData = {
   investmentGoal?: "diversification" | "fixed_income" | "venture_capital" | "growth" | "income";
   riskTolerance?: "conservative" | "moderate" | "aggressive";
   investmentTimeHorizon?: "1-3 years" | "3-5 years" | "5-10 years" | "10+ years";
-  investmentPriority?: "long_term" | "short_term";
-  annualIncome?: string;
-  hasSeenIntro?: boolean;
 };
 
 type OnboardingContextType = {
@@ -53,7 +49,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setFormData(newData);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
 
-      await fetch('/onboarding/progress', {
+      await fetch('/api/onboarding/progress', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stepId, data })

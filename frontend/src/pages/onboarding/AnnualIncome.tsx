@@ -4,12 +4,11 @@ import { Helmet } from "react-helmet-async";
 import { ChevronRight } from "lucide-react";
 import OnboardingLayout from "./OnboardingLayout";
 import { useOnboarding } from "@/context/OnboardingContext";
-import { updateOnboarding } from "@/services/auth";
 import { toast } from "sonner";
 
 export default function AnnualIncome() {
   const navigate = useNavigate();
-  const { setOnboarding } = useOnboarding();
+  const { saveStepData } = useOnboarding();
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -27,8 +26,7 @@ export default function AnnualIncome() {
     setLoading(true);
 
     try {
-      await updateOnboarding({ annualIncome: value });
-      setOnboarding({ annualIncome: value });
+      await saveStepData('annual_income', { annualIncome: value });
       toast.success("Annual income saved.");
       navigate("/onboarding/satisfied-amount");
     } catch (error) {

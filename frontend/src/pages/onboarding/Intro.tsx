@@ -3,9 +3,17 @@ import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import OnboardingLayout from "./OnboardingLayout";
+import { useOnboarding } from "@/context/OnboardingContext";
 
 export default function Intro() {
   const navigate = useNavigate();
+  const { saveStepData } = useOnboarding();
+
+  const handleGetStarted = async () => {
+    // Save that user has seen the intro
+    await saveStepData('intro', { hasSeenIntro: true });
+    navigate("/onboarding/most-important");
+  };
 
   return (
     <OnboardingLayout>
@@ -33,7 +41,7 @@ export default function Intro() {
           <div className="space-y-3">
             <Button
               className="w-full text-white text-sm bg-primary hover:bg-[#8c391e]"
-              onClick={() => navigate("/onboarding/most-important")}
+              onClick={handleGetStarted}
             >
               Get started
             </Button>

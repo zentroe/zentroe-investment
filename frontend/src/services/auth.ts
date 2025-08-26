@@ -40,6 +40,26 @@ export const updateOnboarding = async (data: Record<string, any>) => {
   }
 };
 
+export const getOnboardingProgress = async (email: string) => {
+  try {
+    const response = await axios.get(`/onboarding/progress/${encodeURIComponent(email)}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching onboarding progress:', error);
+    throw new Error(error.response?.data?.message || 'Failed to fetch onboarding progress');
+  }
+};
+
+export const updateOnboardingProgress = async (data: { email: string; userData: any; forceStep?: number }) => {
+  try {
+    const response = await axios.patch('/onboarding/progress', data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating onboarding progress:', error);
+    throw new Error(error.response?.data?.message || 'Failed to update onboarding progress');
+  }
+};
+
 export const getCurrentUser = async () => {
   try {
     const response = await axios.get("/auth/me");
