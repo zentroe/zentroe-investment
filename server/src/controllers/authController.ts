@@ -273,4 +273,31 @@ export const updateOnboarding = async (req: AuthenticatedRequest, res: Response)
   }
 };
 
+export const getOnboardingProgress = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const userId = req.user.userId;
+
+    // Get user data excluding password
+    const user = await User.findById(userId).select("-password");
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Onboarding progress retrieved successfully",
+      user: user
+    });
+  } catch (error: any) {
+    console.error("Error getting onboarding progress:", error.message);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 

@@ -26,36 +26,39 @@ export default function Login() {
   }, [location.state]);
 
   const getNextOnboardingRoute = (user: any) => {
-    // Define the onboarding step mapping
-    const stepRoutes = [
-      "/onboarding/email",
-      "/onboarding/password",
-      "/onboarding/intro",
-      "/onboarding/most-important",
-      "/onboarding/motivation",
-      "/onboarding/income",
-      "/onboarding/satisfied-amount",
-      "/onboarding/hdyh",
-      "/onboarding/processing",
-      "/onboarding/investment-recommendation",
-      "/onboarding/personal-intro",
-      "/onboarding/select-account-form",
-      "/onboarding/personal-info",
-      "/invest/intro",
-      "/invest/payment-amount",
-      "/invest/auto-invest"
-    ];
-
     // If onboarding is completed, go to dashboard
     if (user.onboardingStatus === "completed") {
       return "/dashboard";
     }
 
-    // Get the current step or default to 0
-    const currentStep = user.onboardingStep || 0;
+    // Define the exact onboarding sequence as per AppRoutes
+    const onboardingSequence = [
+      { route: "/onboarding/account-type", condition: () => !user.accountType },
+      { route: "/onboarding/intro", condition: () => !user.hasSeenIntro },
+      { route: "/onboarding/most-important", condition: () => !user.portfolioPriority },
+      { route: "/onboarding/motivation", condition: () => !user.riskTolerance },
+      { route: "/onboarding/income", condition: () => !user.annualIncome },
+      { route: "/onboarding/satisfied-amount", condition: () => !user.annualInvestmentAmount },
+      { route: "/onboarding/hdyh", condition: () => !user.referralSource },
+      { route: "/onboarding/processing", condition: () => false }, // Skip - this is just a transition page
+      { route: "/onboarding/investment-recommendation", condition: () => !user.recommendedPortfolio },
+      { route: "/onboarding/personal-intro", condition: () => !user.firstName || !user.lastName },
+      { route: "/onboarding/select-account-form", condition: () => !user.accountSubType },
+      { route: "/onboarding/personal-info", condition: () => !user.firstName || !user.lastName },
+      { route: "/invest/intro", condition: () => !user.initialInvestmentAmount },
+      { route: "/invest/payment-amount", condition: () => !user.initialInvestmentAmount },
+      { route: "/invest/auto-invest", condition: () => !user.recurringFrequency },
+    ];
 
-    // Return the route for the current step, or dashboard if beyond known steps
-    return stepRoutes[currentStep] || "/dashboard";
+    // Find the first incomplete step
+    for (const step of onboardingSequence) {
+      if (step.condition()) {
+        return step.route;
+      }
+    }
+
+    // If all steps seem complete but onboarding status isn't "completed", go to dashboard
+    return "/dashboard";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

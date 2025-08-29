@@ -1,103 +1,130 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { toast } from 'sonner';
-// import { updateOnboardingProgress } from '@/services/auth';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { getUserOnboardingData, updateOnboardingStatus } from '@/services/onboardingService';
 
-type StepData = {
+// Define the shape of user onboarding data
+export interface OnboardingData {
+  // Basic Info
   email?: string;
-  password?: string;
   firstName?: string;
   lastName?: string;
-  dateOfBirth?: string;
-  phone?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    zipCode?: string;
-    country?: string;
-  };
-  accountType?: "general" | "retirement";
-  accountSubType?: "individual" | "joint" | "trust" | "other";
-  investmentGoal?: "diversification" | "fixed_income" | "venture_capital" | "growth" | "income";
-  riskTolerance?: "conservative" | "moderate" | "aggressive";
-  investmentTimeHorizon?: "1-3 years" | "3-5 years" | "5-10 years" | "10+ years";
-  investmentPriority?: "long_term" | "short_term";
-  annualIncome?: string;
-  hasSeenIntro?: boolean;
-};
+  accountType?: 'general' | 'retirement';
+  accountSubType?: 'individual' | 'joint' | 'trust' | 'other';
 
-type OnboardingContextType = {
-  currentStep: number;
-  formData: Record<string, StepData>;
-  isLoading: boolean;
-  saveStepData: (stepId: string, data: StepData) => Promise<void>;
-  goToNextStep: () => void;
-  goToPreviousStep: () => void;
-  onboarding: StepData;
-};
+  // Investment Profile
+  portfolioPriority?: 'long_term' | 'short_term' | 'balanced';
+  investmentGoal?: 'diversification' | 'fixed_income' | 'venture_capital' | 'growth' | 'income';
+  annualIncome?: string;
+  annualInvestmentAmount?: string;
+  referralSource?: string;
+  recommendedPortfolio?: string;
+
+  // Investment Setup
+  initialInvestmentAmount?: number;
+  recurringInvestment?: boolean;
+  recurringFrequency?: 'weekly' | 'monthly' | 'quarterly';
+  recurringDay?: string;
+  recurringAmount?: number;
+
+  // Progress Status
+  onboardingStatus?: 'started' | 'basicInfo' | 'investmentProfile' | 'verification' | 'bankConnected' | 'completed';
+}
+
+interface OnboardingContextType {
+  // Data
+  data: OnboardingData;
+
+  // Loading states
+  loading: boolean;
+  error: string | null;
+
+  // Methods
+  refreshData: () => Promise<void>;
+  updateLocalData: (updates: Partial<OnboardingData>) => void;
+  updateStatus: (status: OnboardingData['onboardingStatus']) => Promise<void>;
+}
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'onboarding_progress';
+export const useOnboarding = () => {
+  const context = useContext(OnboardingContext);
+  if (context === undefined) {
+    throw new Error('useOnboarding must be used within an OnboardingProvider');
+  }
+  return context;
+};
 
-export function OnboardingProvider({ children }: { children: ReactNode }) {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<Record<string, StepData>>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [onboarding, setOnboardingData] = useState<StepData>({});
+interface OnboardingProviderProps {
+  children: ReactNode;
+}
 
-  const saveStepData = async (stepId: string, data: StepData) => {
-    setIsLoading(true);
+export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children }) => {
+  const [data, setData] = useState<OnboardingData>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch user onboarding data
+  const fetchData = async () => {
     try {
-      const newData = { ...formData, [stepId]: data };
-      setFormData(newData);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-
-      await fetch('/onboarding/progress', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stepId, data })
-      });
-
-      setOnboardingData(prev => ({ ...prev, ...data }));
-      setCurrentStep(prev => prev + 1);
-    } catch (error) {
-      toast.error('Failed to save progress');
-      throw error;
+      setLoading(true);
+      setError(null);
+      const response = await getUserOnboardingData();
+      setData(response.user || {});
+    } catch (err: any) {
+      console.error('Error fetching onboarding data:', err);
+      setError(err.response?.data?.message || 'Failed to load onboarding data');
+      // Don't throw error - just set error state so app continues working
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const goToNextStep = () => {
-    setCurrentStep(prev => prev + 1);
+  // Refresh data (public method)
+  const refreshData = async () => {
+    await fetchData();
   };
 
-  const goToPreviousStep = () => {
-    setCurrentStep(prev => prev - 1);
+  // Update local data without API call (for optimistic updates)
+  const updateLocalData = (updates: Partial<OnboardingData>) => {
+    setData(prev => ({ ...prev, ...updates }));
+  };
+
+  // Update onboarding status (milestone tracking)
+  const updateStatus = async (status: OnboardingData['onboardingStatus']) => {
+    if (!status) return;
+
+    try {
+      await updateOnboardingStatus(status);
+      // Update local data after successful API call
+      updateLocalData({ onboardingStatus: status });
+    } catch (error) {
+      console.error('Error updating onboarding status:', error);
+      // Don't throw error - just log it so app continues working
+    }
+  };
+
+  // Fetch data on mount
+  useEffect(() => {
+    // Only fetch if user is authenticated
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const value: OnboardingContextType = {
+    data,
+    loading,
+    error,
+    refreshData,
+    updateLocalData,
+    updateStatus,
   };
 
   return (
-    <OnboardingContext.Provider
-      value={{
-        currentStep,
-        formData,
-        isLoading,
-        saveStepData,
-        goToNextStep,
-        goToPreviousStep,
-        onboarding
-      }}
-    >
+    <OnboardingContext.Provider value={value}>
       {children}
     </OnboardingContext.Provider>
   );
-}
-
-export function useOnboarding() {
-  const context = useContext(OnboardingContext);
-  if (!context) {
-    throw new Error('useOnboarding must be used within OnboardingProvider');
-  }
-  return context;
-}
+};

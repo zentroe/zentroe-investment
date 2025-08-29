@@ -8,26 +8,28 @@ import { useOnboarding } from "@/context/OnboardingContext";
 
 export default function Success() {
   const navigate = useNavigate();
-  const { saveStepData } = useOnboarding();
+  const { updateStatus } = useOnboarding();
 
   useEffect(() => {
-    // Save Account Setup phase completion
-    const saveAccountSetupCompletion = async () => {
+    // Set onboarding status to "started" when user reaches success page
+    const initializeOnboarding = async () => {
       try {
-        await saveStepData('account_setup_completion', {});
+        await updateStatus('started');
       } catch (error) {
-        console.error("Failed to save account setup completion:", error);
+        console.error('Failed to update onboarding status:', error);
+        // Don't block the flow if status update fails
       }
     };
 
-    saveAccountSetupCompletion();
+    initializeOnboarding();
 
+    // Redirect to account type selection after 3 seconds to give user time to read the message
     const timeout = setTimeout(() => {
-      navigate("/onboarding/intro");
+      navigate("/onboarding/account-type");
     }, 3000);
 
     return () => clearTimeout(timeout);
-  }, [navigate, saveStepData]);
+  }, [navigate, updateStatus]);
 
   return (
     <OnboardingLayout>
@@ -39,9 +41,16 @@ export default function Success() {
         <div className="w-45 h-45">
           <Lottie animationData={animationData} loop={false} />
         </div>
-        <p className="mt-6 text-lg font-medium text-darkPrimary">
-          Your Zentroe account was created <br /> successfully
-        </p>
+        <div className="mt-6 space-y-4">
+          <p className="text-lg font-medium text-darkPrimary">
+            Your Zentroe account was created <br /> successfully!
+          </p>
+          <div className="max-w-md mx-auto space-y-2">
+            <p className="text-sm text-gray-600">
+              Please check your email for account confirmation instructions.
+            </p>
+          </div>
+        </div>
       </div>
     </OnboardingLayout>
   );

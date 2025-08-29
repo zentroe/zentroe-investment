@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import OnboardingLayout from "./OnboardingLayout";
 import OtherPlans from "./components/OtherPlans";
-import { Link } from "react-router-dom";
-import { useOnboarding } from "@/context/OnboardingContext";
+import { useNavigate } from "react-router-dom";
+import { saveRecommendedPortfolio } from "@/services/onboardingService";
+import { getCurrentUser } from "@/services/auth";
+import { toast } from "sonner";
 
 // Pie chart config
 const pieData = [
@@ -222,14 +224,58 @@ function getRecommendation({
 }
 
 export default function InvestmentRecommendation() {
-  const { onboarding } = useOnboarding();
   const [tab, setTab] = useState("best");
+  const [loading, setLoading] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
+  const [userLoading, setUserLoading] = useState(true);
+  const navigate = useNavigate();
+
+  // Fetch user data to determine recommendation
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await getCurrentUser();
+        setUserData(response.user);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        toast.error("Failed to load user data");
+      } finally {
+        setUserLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const recommendation = getRecommendation({
-    accountType: onboarding.accountType,
-    annualIncome: onboarding.annualIncome,
-    annualInvestmentAmount: onboarding.annualInvestmentAmount,
+    accountType: userData?.accountType,
+    annualIncome: userData?.annualIncome,
+    annualInvestmentAmount: userData?.annualInvestmentAmount,
   });
+
+  const handleSelectRecommendation = async () => {
+    setLoading(true);
+    try {
+      await saveRecommendedPortfolio(recommendation.key);
+      toast.success("Investment recommendation saved");
+      navigate("/onboarding/personal-intro");
+    } catch (error) {
+      console.error("Failed to save investment recommendation:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (userLoading) {
+    return (
+      <OnboardingLayout>
+        <div className="mt-16 px-4 max-w-4xl py-6 mx-auto flex items-center justify-center">
+          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </OnboardingLayout>
+    );
+  }
 
   const tabs = supplementalTabs[recommendation.key as keyof typeof supplementalTabs];
 
@@ -248,11 +294,17 @@ export default function InvestmentRecommendation() {
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <h3 className="text-2xl font-sectra text-darkPrimary">{recommendation.title}</h3>
-              <Link to={"/onboarding/personal-intro"}>
-                <Button className="bg-primary hover:bg-[#8c391e] text-white text-sm px-5 py-2">
-                  Select
-                </Button>
-              </Link>
+              <Button
+                onClick={handleSelectRecommendation}
+                disabled={loading}
+                className="bg-primary hover:bg-[#8c391e] text-white text-sm px-5 py-2"
+              >
+                {loading ? (
+                  <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  "Select"
+                )}
+              </Button>
             </div>
             <p className="text-sm text-gray-600">{recommendation.desc}</p>
           </div>

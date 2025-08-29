@@ -3,15 +3,12 @@ import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import OnboardingLayout from "./OnboardingLayout";
-import { useOnboarding } from "@/context/OnboardingContext";
 
 export default function Intro() {
   const navigate = useNavigate();
-  const { saveStepData } = useOnboarding();
 
-  const handleGetStarted = async () => {
-    // Save that user has seen the intro
-    await saveStepData('intro', { hasSeenIntro: true });
+  const handleGetStarted = () => {
+    // Navigate directly to the first question - no need to save intro step
     navigate("/onboarding/most-important");
   };
 

@@ -7,7 +7,7 @@ import authRoutes from "./routes/authRoutes";
 import investmentRoutes from "./routes/investmentRoutes";
 import portfolioRoutes from "./routes/portfolioRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
-import onboardingRoutes from "./routes/onboarding";
+import onboardingRoutes from "./routes/onboardingRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import OnboardingLayout from "@/components/OnboardingLayout";
 import { Helmet } from "react-helmet-async";
-import { useOnboarding } from "@/context/OnboardingContext";
+import { checkEmail } from "@/services/auth";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -14,26 +14,35 @@ const emailSchema = z.object({
 
 export default function EmailSetup() {
   const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { saveStepData, isLoading } = useOnboarding();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
       // Validate email using Zod schema
       const validatedData = emailSchema.parse({ email });
 
-      // Save progress and move to next step
-      await saveStepData('email', validatedData);
+      // Check if email exists using auth service
+      await checkEmail(validatedData.email);
+
+      // Store email temporarily in localStorage for password setup
+      localStorage.setItem('tempEmail', validatedData.email);
+
       navigate("/onboarding/password");
       toast.success("Email verified! Please set up your password.");
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        toast.error("This email is already registered. Please use a different email or sign in.");
+      } else if (error instanceof z.ZodError) {
+        toast.error(error.issues[0].message);
       } else {
-        toast.error("Invalid email address");
+        toast.error("Please enter a valid email address");
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 

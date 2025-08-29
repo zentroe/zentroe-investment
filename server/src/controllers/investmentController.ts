@@ -3,17 +3,133 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { Investment } from "../models/Investment";
 import { UserInvestment } from "../models/UserInvestment";
+import { User } from "../models/User";
+import { AuthenticatedRequest } from "../types/CustomRequest";
 import { createTransaction } from "./transactionController";
 
-// Extend Request interface to include authenticated user info
-interface AuthRequest extends Request {
-  user?: {
-    _id: string; // assume it's a string; we'll convert it if needed
-    // other properties if needed
-  };
-}
+/**
+ * Investment Setup Controllers
+ * Functions for managing investment onboarding flow
+ */
 
-export const investInInvestment = async (req: AuthRequest, res: Response): Promise<void> => {
+// Update Initial Investment Amount
+export const updateInitialInvestmentAmount = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    const { initialInvestmentAmount } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+
+    if (!initialInvestmentAmount || initialInvestmentAmount <= 0) {
+      res.status(400).json({ message: "Valid initial investment amount is required" });
+      return;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { initialInvestmentAmount },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Initial investment amount updated successfully",
+      user: {
+        id: updatedUser._id,
+        initialInvestmentAmount: updatedUser.initialInvestmentAmount,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating initial investment amount:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Update Recurring Investment Settings
+export const updateRecurringInvestment = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    const { recurringInvestment, recurringFrequency, recurringDay, recurringAmount } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+
+    if (typeof recurringInvestment !== 'boolean') {
+      res.status(400).json({ message: "Recurring investment preference is required" });
+      return;
+    }
+
+    const updateData: any = { recurringInvestment };
+
+    // If user wants recurring investment, validate additional fields
+    if (recurringInvestment) {
+      if (!recurringFrequency) {
+        res.status(400).json({ message: "Recurring frequency is required when enabling recurring investment" });
+        return;
+      }
+
+      const validFrequencies = ["weekly", "monthly", "quarterly"];
+      if (!validFrequencies.includes(recurringFrequency)) {
+        res.status(400).json({ message: "Invalid recurring frequency" });
+        return;
+      }
+
+      if (!recurringAmount || recurringAmount <= 0) {
+        res.status(400).json({ message: "Valid recurring amount is required when enabling recurring investment" });
+        return;
+      }
+
+      updateData.recurringFrequency = recurringFrequency;
+      updateData.recurringDay = recurringDay;
+      updateData.recurringAmount = recurringAmount;
+    } else {
+      // If disabling recurring investment, clear the related fields
+      updateData.recurringFrequency = null;
+      updateData.recurringDay = null;
+      updateData.recurringAmount = null;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Recurring investment settings updated successfully",
+      user: {
+        id: updatedUser._id,
+        recurringInvestment: updatedUser.recurringInvestment,
+        recurringFrequency: updatedUser.recurringFrequency,
+        recurringDay: updatedUser.recurringDay,
+        recurringAmount: updatedUser.recurringAmount,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating recurring investment settings:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * Existing Investment Management Controllers
+ */
+
+export const investInInvestment = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const investmentId = req.params.id;
     const { units } = req.body;
@@ -52,7 +168,7 @@ export const investInInvestment = async (req: AuthRequest, res: Response): Promi
 
     // Create a new investment record for the user
     const userInvestment = new UserInvestment({
-      user: req.user._id,
+      user: req.user.userId,
       investment: investment._id,
       unitsPurchased: units,
       amountInvested: amountInvested,
@@ -61,9 +177,9 @@ export const investInInvestment = async (req: AuthRequest, res: Response): Promi
 
     // Convert req.user._id to ObjectId if it's not already one
     const userObjectId =
-      typeof req.user._id === "string"
-        ? new mongoose.Types.ObjectId(req.user._id)
-        : req.user._id;
+      typeof req.user.userId === "string"
+        ? new mongoose.Types.ObjectId(req.user.userId)
+        : req.user.userId;
 
     // Log the transaction
     await createTransaction({

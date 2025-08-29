@@ -4,7 +4,9 @@ import { Helmet } from "react-helmet-async";
 import OnboardingLayout from "./OnboardingLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useOnboarding } from "@/context/OnboardingContext";
+import { saveRecurringInvestmentSettings } from "@/services/investmentService";
+import { getCurrentUser } from "@/services/auth";
+import { toast } from "sonner";
 
 const frequencyOptions = [
   "Once a month",
@@ -46,15 +48,34 @@ function generatePresetAmounts(annualAmount: string, frequency: string): number[
 
 export default function RecurringInvestment() {
   const navigate = useNavigate();
-  const { onboarding, setOnboarding } = useOnboarding();
+  const [loading, setLoading] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
+  const [userLoading, setUserLoading] = useState(true);
 
   const [frequency, setFrequency] = useState("Once a month");
   const [investmentDay, setInvestmentDay] = useState("1st");
   const [customAmount, setCustomAmount] = useState("");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
 
+  // Fetch user data to get annual investment amount for preset calculations
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await getCurrentUser();
+        setUserData(response.user);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        toast.error("Failed to load user data");
+      } finally {
+        setUserLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
   const presetAmounts = generatePresetAmounts(
-    onboarding.annualInvestmentAmount || "",
+    userData?.annualInvestmentAmount || "",
     frequency
   );
 
@@ -64,18 +85,66 @@ export default function RecurringInvestment() {
   const isContinueEnabled =
     frequency && investmentDay && (selectedAmount !== null || isCustomAmountValid);
 
-  const handleContinue = () => {
-    if (!isContinueEnabled) return;
+  const handleSkip = async () => {
+    setLoading(true);
 
-    const recurringAmount = selectedAmount || Number(customAmount);
-    setOnboarding({
-      recurringFrequency: frequency,
-      recurringDay: investmentDay,
-      recurringAmount,
-    });
+    try {
+      // Set recurring investment to false
+      await saveRecurringInvestmentSettings({
+        recurringInvestment: false,
+      });
 
-    navigate("/onboarding/bank-connect");
+      toast.success("Setup completed!");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error skipping recurring investment:", error);
+      toast.error("Failed to complete setup. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleContinue = async () => {
+    if (!isContinueEnabled) return;
+    setLoading(true);
+
+    try {
+      const recurringAmount = selectedAmount || Number(customAmount);
+
+      // Map frequency to backend format
+      const frequencyMapping: Record<string, string> = {
+        "Once a month": "monthly",
+        "Twice a month": "monthly", // Could be "bi-monthly" if you want to distinguish
+        "Weekly": "weekly",
+        "Every other week": "weekly" // Could be "bi-weekly" if you want to distinguish
+      };
+
+      await saveRecurringInvestmentSettings({
+        recurringInvestment: true,
+        recurringFrequency: frequencyMapping[frequency] || "monthly",
+        recurringDay: investmentDay,
+        recurringAmount,
+      });
+
+      toast.success("Recurring investment setup completed!");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error setting up recurring investment:", error);
+      toast.error("Failed to setup recurring investment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (userLoading) {
+    return (
+      <OnboardingLayout>
+        <div className="mt-24 px-4 max-w-xl mx-auto flex items-center justify-center">
+          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </OnboardingLayout>
+    );
+  }
 
   return (
     <OnboardingLayout>
@@ -157,16 +226,25 @@ export default function RecurringInvestment() {
 
           <div className="flex gap-3">
             <Link to={'/onboarding/bank-connect'}>
-              <Button variant="outline" className="text-sm border border-gray-400">
-                I’ll do this later
+              <Button
+                variant="outline"
+                className="text-sm border border-gray-400"
+                onClick={handleSkip}
+                disabled={loading}
+              >
+                I'll do this later
               </Button>
             </Link>
             <Button
-              disabled={!isContinueEnabled}
+              disabled={!isContinueEnabled || loading}
               onClick={handleContinue}
-              className="text-sm text-white bg-primary hover:bg-[#8c391e] disabled:opacity-50"
+              className="text-sm text-white bg-primary hover:bg-[#8c391e] disabled:opacity-50 flex items-center justify-center"
             >
-              Continue
+              {loading ? (
+                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                "Complete Setup"
+              )}
             </Button>
           </div>
         </div>

@@ -6,17 +6,27 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FileText, X } from "lucide-react";
 import { useOnboarding } from "@/context/OnboardingContext";
+import { saveInitialInvestmentAmount } from "@/services/investmentService";
 import { toast } from "sonner";
 
 export default function InvestmentAmount() {
   const navigate = useNavigate();
-  const { onboarding, setOnboarding } = useOnboarding();
   const [amount, setAmount] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [min, setMin] = useState(0);
   const [max, setMax] = useState(Infinity);
+  const [loading, setLoading] = useState(false);
 
-  const selectedRange = onboarding.annualInvestmentAmount;
+  const { data, loading: contextLoading, updateLocalData } = useOnboarding();
+
+  // Pre-populate from context data
+  useEffect(() => {
+    if (data.initialInvestmentAmount) {
+      setAmount(data.initialInvestmentAmount.toString());
+    }
+  }, [data.initialInvestmentAmount]);
+
+  const selectedRange = data.annualInvestmentAmount;
 
   useEffect(() => {
     switch (selectedRange) {
@@ -53,16 +63,40 @@ export default function InvestmentAmount() {
     numericAmount >= min &&
     numericAmount <= max;
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!isValidAmount) {
       toast.error("Please enter a valid amount.");
       return;
     }
 
-    setOnboarding({ initialInvestmentAmount: numericAmount });
-    // Navigate to payment page with the amount
-    navigate(`/payment?amount=${numericAmount}&portfolio=${onboarding.recommendedPortfolio || onboarding.portfolioPriority || 'balanced'}`);
+    setLoading(true);
+
+    try {
+      await saveInitialInvestmentAmount(numericAmount);
+
+      // Update local context data for immediate UI feedback
+      updateLocalData({ initialInvestmentAmount: numericAmount });
+
+      toast.success("Investment amount saved");
+      // Navigate to payment page with the amount
+      navigate(`/payment?amount=${numericAmount}&portfolio=${data.recommendedPortfolio || 'balanced'}`);
+    } catch (error) {
+      console.error("Error saving investment amount:", error);
+      toast.error("Failed to save investment amount. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (contextLoading) {
+    return (
+      <OnboardingLayout>
+        <div className="mt-24 px-4 max-w-xl mx-auto flex items-center justify-center">
+          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </OnboardingLayout>
+    );
+  }
 
   return (
     <OnboardingLayout>
@@ -111,10 +145,10 @@ export default function InvestmentAmount() {
 
         <Button
           onClick={handleContinue}
-          disabled={!isValidAmount}
+          disabled={!isValidAmount || loading}
           className="text-sm w-full bg-primary text-white hover:bg-[#8c391e] disabled:opacity-50"
         >
-          Continue
+          {loading ? "Saving..." : "Continue"}
         </Button>
 
         {/* Modal */}

@@ -52,7 +52,7 @@ export interface IUser extends Document {
 
   // Onboarding Progress
   onboardingStatus?: "started" | "basicInfo" | "investmentProfile" | "verification" | "bankConnected" | "completed";
-  onboardingStep?: number;
+  // onboardingStep?: number;
 
   // Platform Activity
   lastLogin?: Date;
@@ -142,7 +142,7 @@ const UserSchema = new Schema<IUser>(
       enum: ["started", "basicInfo", "investmentProfile", "verification", "bankConnected", "completed"],
       default: "started",
     },
-    onboardingStep: { type: Number, default: 0, min: 0, max: 12 },
+    // onboardingStep: { type: Number, default: 0, min: 0, max: 12 },
 
     // Platform Activity
     lastLogin: Date,

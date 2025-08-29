@@ -1,21 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { EyeIcon, EyeOffIcon, CheckCircle, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import OnboardingLayout from "@/components/OnboardingLayout";
-import { useOnboarding } from "@/context/OnboardingContext";
+import { signup } from "@/services/auth";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
-
-
-
 
 export default function PasswordSetup() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { saveStepData, isLoading, onboarding } = useOnboarding();
+
+  // Get email from localStorage on component mount
+  useEffect(() => {
+    const tempEmail = localStorage.getItem('tempEmail');
+    if (!tempEmail) {
+      // If no email found, redirect back to email setup
+      navigate("/onboarding/email");
+      return;
+    }
+    setEmail(tempEmail);
+  }, [navigate]);
 
   // Password validation checks
   const hasMinLength = password.length >= 8;
@@ -25,40 +34,31 @@ export default function PasswordSetup() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!isValid) return;
+    if (!isValid || !email) return;
+
+    setIsLoading(true);
 
     try {
-      // Save progress and create account
-      await saveStepData('password', { password });
-
-      // Create account
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: onboarding.email,
-          password: password,
-        }),
+      // Create account using auth service
+      await signup({
+        email: email,
+        password: password,
       });
 
-      if (!response.ok) {
-        if (response.status === 409) {
-          throw new Error('409');
-        }
-        throw new Error('Failed to create account');
-      }
+      // Clear temporary email from localStorage
+      localStorage.removeItem('tempEmail');
 
-      toast.success("Account created successfully!");
-      navigate("/onboarding/investment-profile");
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === '409') {
-          toast.error("This email is already registered.");
-          navigate("/onboarding/email");
-        } else {
-          toast.error("Failed to create account. Please try again.");
-        }
+      toast.success("Account created! Please check your email to confirm your account.");
+      navigate("/onboarding/success");
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        toast.error("This email is already registered.");
+        navigate("/onboarding/email");
+      } else {
+        toast.error("Failed to create account. Please try again.");
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 

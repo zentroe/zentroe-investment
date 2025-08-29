@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import EmailSetup from "@/pages/onboarding/EmailSetup";
 import PasswordSetup from "@/pages/onboarding/PasswordSetup";
 import Login from "@/pages/auth/Login";
+import EmailConfirmation from "@/pages/auth/EmailConfirmation";
 import Success from "@/pages/onboarding/Success";
 import AccountType from "@/pages/onboarding/AccountType";
 import Intro from "@/pages/onboarding/Intro";
@@ -50,7 +51,6 @@ export default function AppRoutes() {
       <Route path="/about" element={<AboutPage />} />
 
       <Route path="/onboarding/email" element={<EmailSetup />} />
-
       <Route path="/onboarding/password" element={<PasswordSetup />} />
       <Route path="/onboarding/success" element={<Success />} />
       <Route path="/onboarding/account-type" element={<AccountType />} />
@@ -86,6 +86,7 @@ export default function AppRoutes() {
 
 
       <Route path="/auth/login" element={<Login />} />
+      <Route path="/confirm-email" element={<EmailConfirmation />} />
     </Routes>
   );
 }

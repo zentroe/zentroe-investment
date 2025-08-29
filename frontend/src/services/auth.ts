@@ -22,7 +22,7 @@ export const signup = async (data: { email: string; password: string }) => {
 
 export const checkEmail = async (email: string) => {
   try {
-    const response = await axios.post("/auth/check-email", { email });
+    const response = await axios.post('/auth/check-email', { email });
     return response.data;
   } catch (error: any) {
     console.error('Check email error:', error.response?.data || error.message);
@@ -36,6 +36,16 @@ export const updateOnboarding = async (data: Record<string, any>) => {
     return response.data;
   } catch (error: any) {
     console.error('Update onboarding error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const getCurrentOnboardingProgress = async () => {
+  try {
+    const response = await axios.get("/auth/onboarding-progress");
+    return response.data;
+  } catch (error: any) {
+    console.error('Get current onboarding progress error:', error.response?.data || error.message);
     throw error;
   }
 };

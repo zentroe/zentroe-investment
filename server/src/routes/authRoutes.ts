@@ -7,6 +7,7 @@ import {
   getCurrentUser,
   checkEmail,
   updateOnboarding,
+  getOnboardingProgress,
 } from "../controllers/authController";
 import { protectRoute } from "../middleware/protectRoute";
 import { check } from "express-validator";
@@ -30,6 +31,7 @@ router.post("/login", login);
 router.post("/logout", logout);
 router.get("/confirm-email/:token", protectRoute, confirmEmail);
 router.get("/me", protectRoute, getCurrentUser);
+router.get("/onboarding-progress", protectRoute, getOnboardingProgress);
 router.patch("/onboarding", protectRoute, updateOnboarding);
 
 export default router;
