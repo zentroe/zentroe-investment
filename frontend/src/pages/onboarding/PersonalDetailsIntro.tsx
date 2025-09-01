@@ -2,12 +2,22 @@ import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import OnboardingLayout from "./OnboardingLayout";
 import { Button } from "@/components/ui/button";
+import { useOnboarding } from "@/context/OnboardingContext";
 
 export default function PersonalDetailsIntro() {
   const navigate = useNavigate();
+  const { updateStatus } = useOnboarding();
 
-  const handleContinue = () => {
-    navigate("/onboarding/select-account-form"); // Update to your actual next route
+
+  const handleContinue = async () => {
+    try {
+      await updateStatus("investmentProfile");
+      navigate("/onboarding/select-account-form");
+    } catch (error) {
+      console.error("Error updating onboarding status:", error);
+      // Still navigate even if status update fails
+      // navigate("/onboarding/select-account-form");
+    }
   };
 
   return (

@@ -4,7 +4,7 @@ import { Helmet } from "react-helmet-async";
 import OnboardingLayout from "./OnboardingLayout";
 import { Button } from "@/components/ui/button";
 import { Circle, CheckCircle } from "lucide-react";
-import { getCurrentOnboardingProgress } from "@/services/auth";
+import { useOnboarding } from "@/context/OnboardingContext";
 import { saveReferralSource } from "@/services/onboardingService";
 import { toast } from "sonner";
 
@@ -14,44 +14,34 @@ export default function HowDidYouHear() {
   const [selected, setSelected] = useState("");
   const [customInput, setCustomInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
 
-  // Fetch existing onboarding data on component mount
+  const { data, loading: contextLoading, updateLocalData } = useOnboarding();
+
+  // Pre-populate from context data
   useEffect(() => {
-    const fetchOnboardingData = async () => {
-      try {
-        const data = await getCurrentOnboardingProgress();
-        if (data.referralSource) {
-          // Check if it's one of our predefined sources
-          const predefinedSources = [
-            "Podcast",
-            "Social Media Influencer",
-            "Social Media Ad",
-            "Yahoo Finance",
-            "Website, Blog or Article",
-            "Frich",
-            "Select Black Card",
-            "The Penny Hoarder",
-            "Family or Friend",
-            "Other"
-          ];
+    if (data.referralSource) {
+      // Check if it's one of our predefined sources
+      const predefinedSources = [
+        "Podcast",
+        "Social Media Influencer",
+        "Social Media Ad",
+        "Yahoo Finance",
+        "Website, Blog or Article",
+        "Frich",
+        "Select Black Card",
+        "The Penny Hoarder",
+        "Family or Friend",
+        "Other"
+      ];
 
-          if (predefinedSources.includes(data.referralSource)) {
-            setSelected(data.referralSource);
-          } else {
-            setSelected("Other");
-            setCustomInput(data.referralSource);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch onboarding data:", error);
-      } finally {
-        setInitialLoading(false);
+      if (predefinedSources.includes(data.referralSource)) {
+        setSelected(data.referralSource);
+      } else {
+        setSelected("Other");
+        setCustomInput(data.referralSource);
       }
-    };
-
-    fetchOnboardingData();
-  }, []);
+    }
+  }, [data.referralSource]);
 
   const sources = [
     "Podcast",
@@ -84,6 +74,9 @@ export default function HowDidYouHear() {
       // Save referral source using our new onboarding service
       await saveReferralSource(source);
 
+      // Update local context data for immediate UI feedback
+      updateLocalData({ referralSource: source });
+
       // toast.success("Referral source saved");
       navigate("/onboarding/processing");
     } catch (error) {
@@ -105,7 +98,7 @@ export default function HowDidYouHear() {
           How did you hear about Zentroe?
         </h1>
 
-        {initialLoading ? (
+        {contextLoading ? (
           <div className="flex justify-center items-center py-8">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
@@ -173,7 +166,7 @@ export default function HowDidYouHear() {
 
             <Button
               className="text-sm text-white bg-primary hover:bg-[#8c391e] disabled:opacity-50"
-              disabled={!isValid || loading || initialLoading}
+              disabled={!isValid || loading || contextLoading}
               onClick={handleContinue}
             >
               {loading ? (

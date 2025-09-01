@@ -1,23 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add auth token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import axios from '@/utils/axios';
 
 /**
  * Onboarding Service
@@ -27,7 +8,7 @@ api.interceptors.request.use((config) => {
 // Get User Onboarding Data (for context)
 export const getUserOnboardingData = async () => {
   try {
-    const response = await api.get('/onboarding/user-data');
+    const response = await axios.get('/onboarding/user-data');
     return response.data;
   } catch (error) {
     console.error('Error fetching user onboarding data:', error);
@@ -38,7 +19,7 @@ export const getUserOnboardingData = async () => {
 // Account Type Service
 export const saveAccountType = async (accountType: 'general' | 'retirement') => {
   try {
-    const response = await api.patch('/onboarding/account-type', {
+    const response = await axios.patch('/onboarding/account-type', {
       accountType
     });
     return response.data;
@@ -51,7 +32,7 @@ export const saveAccountType = async (accountType: 'general' | 'retirement') => 
 // Portfolio Priority Service (Most Important page)
 export const savePortfolioPriority = async (portfolioPriority: 'long_term' | 'short_term' | 'balanced') => {
   try {
-    const response = await api.patch('/onboarding/portfolio-priority', {
+    const response = await axios.patch('/onboarding/portfolio-priority', {
       portfolioPriority
     });
     return response.data;
@@ -61,10 +42,10 @@ export const savePortfolioPriority = async (portfolioPriority: 'long_term' | 'sh
   }
 };
 
-// Investment Goal Service (Primary Goal / Motivation page)
+// Investment Goal Service (Primary Goal page)
 export const saveInvestmentGoal = async (investmentGoal: 'diversification' | 'fixed_income' | 'venture_capital' | 'growth' | 'income') => {
   try {
-    const response = await api.patch('/onboarding/investment-goal', {
+    const response = await axios.patch('/onboarding/investment-goal', {
       investmentGoal
     });
     return response.data;
@@ -74,10 +55,10 @@ export const saveInvestmentGoal = async (investmentGoal: 'diversification' | 'fi
   }
 };
 
-// Annual Income Service (Income page)
+// Annual Income Service
 export const saveAnnualIncome = async (annualIncome: string) => {
   try {
-    const response = await api.patch('/onboarding/annual-income', {
+    const response = await axios.patch('/onboarding/annual-income', {
       annualIncome
     });
     return response.data;
@@ -90,7 +71,7 @@ export const saveAnnualIncome = async (annualIncome: string) => {
 // Annual Investment Amount Service (Amount Choice page)
 export const saveAnnualInvestmentAmount = async (annualInvestmentAmount: string) => {
   try {
-    const response = await api.patch('/onboarding/annual-investment-amount', {
+    const response = await axios.patch('/onboarding/annual-investment-amount', {
       annualInvestmentAmount
     });
     return response.data;
@@ -103,45 +84,52 @@ export const saveAnnualInvestmentAmount = async (annualInvestmentAmount: string)
 // Referral Source Service (How Did You Hear page)
 export const saveReferralSource = async (referralSource: string) => {
   try {
-    const response = await api.patch("/onboarding/referral-source", {
+    const response = await axios.patch("/onboarding/referral-source", {
       referralSource,
     });
     return response.data;
   } catch (error) {
+    console.error('Error saving referral source:', error);
     throw error;
   }
 };
 
+// Recommended Portfolio Service
 export const saveRecommendedPortfolio = async (recommendedPortfolio: string) => {
   try {
-    const response = await api.patch("/onboarding/recommended-portfolio", {
+    const response = await axios.patch("/onboarding/recommended-portfolio", {
       recommendedPortfolio,
     });
     return response.data;
   } catch (error) {
+    console.error('Error saving recommended portfolio:', error);
     throw error;
   }
 };
 
+// Account Sub Type Service (Select Account Type page)
 export const saveAccountSubType = async (accountSubType: string) => {
   try {
-    const response = await api.patch("/onboarding/account-sub-type", {
+    const response = await axios.patch("/onboarding/account-sub-type", {
       accountSubType,
     });
     return response.data;
   } catch (error) {
+    console.error('Error saving account sub type:', error);
     throw error;
   }
 };
 
+// Personal Info Service (Legal Name page)
 export const savePersonalInfo = async (firstName: string, lastName: string) => {
   try {
-    const response = await api.patch("/onboarding/personal-info", {
+    const response = await axios.patch("/onboarding/personal-info", {
       firstName,
       lastName,
     });
     return response.data;
   } catch (error) {
+    console.error('Error saving personal info:', error);
     throw error;
   }
 };
@@ -149,7 +137,7 @@ export const savePersonalInfo = async (firstName: string, lastName: string) => {
 // Onboarding Status Service (for milestone tracking)
 export const updateOnboardingStatus = async (status: 'started' | 'basicInfo' | 'investmentProfile' | 'verification' | 'bankConnected' | 'completed') => {
   try {
-    const response = await api.patch('/onboarding/status', {
+    const response = await axios.patch('/onboarding/status', {
       status
     });
     return response.data;

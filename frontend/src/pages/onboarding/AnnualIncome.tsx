@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { ChevronRight } from "lucide-react";
 import OnboardingLayout from "./OnboardingLayout";
-import { getCurrentOnboardingProgress } from "@/services/auth";
+import { useOnboarding } from "@/context/OnboardingContext";
 import { saveAnnualIncome } from "@/services/onboardingService";
 import { toast } from "sonner";
 
@@ -11,24 +11,15 @@ export default function AnnualIncome() {
   const navigate = useNavigate();
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
 
-  // Fetch existing data on mount
+  const { data, loading: contextLoading, updateLocalData } = useOnboarding();
+
+  // Pre-populate from context data
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await getCurrentOnboardingProgress();
-        if (response.user?.annualIncome) {
-          setSelected(response.user.annualIncome);
-        }
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-      } finally {
-        setInitialLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+    if (data.annualIncome) {
+      setSelected(data.annualIncome);
+    }
+  }, [data.annualIncome]);
 
   const incomeOptions = [
     "Less than $75,000",
@@ -46,6 +37,9 @@ export default function AnnualIncome() {
     try {
       // Save annual income using our new onboarding service
       await saveAnnualIncome(value);
+
+      // Update local context data for immediate UI feedback
+      updateLocalData({ annualIncome: value });
 
       toast.success("Annual income saved.");
       navigate("/onboarding/satisfied-amount");
@@ -69,14 +63,14 @@ export default function AnnualIncome() {
         </h1>
         <p className="text-sm text-gray-600 mb-8">
           Please use your individual pre-tax income.
-          {selected && !initialLoading && (
+          {selected && !contextLoading && (
             <span className="block mt-1 text-primary font-medium">
               Previously selected: {selected}
             </span>
           )}
         </p>
 
-        {initialLoading ? (
+        {contextLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>

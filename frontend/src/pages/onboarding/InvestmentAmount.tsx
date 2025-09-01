@@ -79,7 +79,8 @@ export default function InvestmentAmount() {
 
       toast.success("Investment amount saved");
       // Navigate to payment page with the amount
-      navigate(`/payment?amount=${numericAmount}&portfolio=${data.recommendedPortfolio || 'balanced'}`);
+      // navigate(`/payment?amount=${numericAmount}&portfolio=${data.recommendedPortfolio || 'balanced'}`);
+      navigate('/invest/auto-invest');
     } catch (error) {
       console.error("Error saving investment amount:", error);
       toast.error("Failed to save investment amount. Please try again.");

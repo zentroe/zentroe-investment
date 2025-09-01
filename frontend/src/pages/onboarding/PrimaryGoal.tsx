@@ -3,37 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import OnboardingLayout from "./OnboardingLayout";
 import { ChevronRight } from "lucide-react";
-import { getCurrentOnboardingProgress } from "@/services/auth";
+import { useOnboarding } from "@/context/OnboardingContext";
 import { saveInvestmentGoal } from "@/services/onboardingService";
 import { toast } from "sonner";
 
 export default function PrimaryGoal() {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<"diversification" | "fixed_income" | "venture_capital" | "">("");
+  const [selected, setSelected] = useState<"diversification" | "fixed_income" | "venture_capital" | "growth" | "income" | "">("");
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
 
-  // Fetch existing onboarding data on component mount
+  const { data, loading: contextLoading, updateLocalData } = useOnboarding();
+
+  // Pre-populate from context data
   useEffect(() => {
-    const fetchOnboardingData = async () => {
-      try {
-        const response = await getCurrentOnboardingProgress();
-        const userData = response.user;
-
-        // Pre-populate the selected investment goal if it exists
-        if (userData?.investmentGoal) {
-          setSelected(userData.investmentGoal);
-        }
-      } catch (error) {
-        console.error("Failed to fetch onboarding progress:", error);
-        // Don't show error toast here - user can still proceed
-      } finally {
-        setInitialLoading(false);
-      }
-    };
-
-    fetchOnboardingData();
-  }, []);
+    if (data.investmentGoal) {
+      setSelected(data.investmentGoal);
+    }
+  }, [data.investmentGoal]);
 
   const handleSelect = async (value: "diversification" | "fixed_income" | "venture_capital") => {
     setSelected(value);
@@ -42,6 +28,9 @@ export default function PrimaryGoal() {
     try {
       // Save investment goal using our new onboarding service
       await saveInvestmentGoal(value);
+
+      // Update local context data for immediate UI feedback
+      updateLocalData({ investmentGoal: value });
 
       toast.success("Investment goal saved.");
       navigate("/onboarding/income");
@@ -65,7 +54,7 @@ export default function PrimaryGoal() {
         </h1>
         <p className="text-sm text-gray-600 mb-8">
           Select the option that best describes you.
-          {selected && !initialLoading && (
+          {selected && !contextLoading && (
             <span className="block mt-1 text-primary font-medium">
               Previously selected: {
                 selected === "diversification" ? "Diversification & performance" :
@@ -76,7 +65,7 @@ export default function PrimaryGoal() {
           )}
         </p>
 
-        {initialLoading ? (
+        {contextLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>

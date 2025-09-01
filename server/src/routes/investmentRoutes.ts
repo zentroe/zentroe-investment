@@ -11,6 +11,7 @@ import {
   updateRecurringInvestment
 } from "../controllers/investmentController";
 import { protectRoute } from "../middleware/protectRoute";
+import { protectOnboardingRoute } from "../middleware/protectOnboardingRoute";
 import { isAdmin } from "../middleware/isAdmin";
 
 const router = Router();
@@ -22,9 +23,9 @@ router.get("/:id", getInvestmentById);
 // Endpoint for logged-in users to invest in an opportunity
 router.post("/:id/invest", protectRoute, investInInvestment);
 
-// Investment Setup Routes (for onboarding flow)
-router.patch("/setup/initial-amount", protectRoute, updateInitialInvestmentAmount);
-router.patch("/setup/recurring-settings", protectRoute, updateRecurringInvestment);
+// Investment Setup Routes (for onboarding flow) - Allow unverified users
+router.patch("/setup/initial-amount", protectOnboardingRoute, updateInitialInvestmentAmount);
+router.patch("/setup/recurring-settings", protectOnboardingRoute, updateRecurringInvestment);
 
 // Admin-only endpoints to create, update, and delete investments
 router.post("/", protectRoute, isAdmin, createInvestment);

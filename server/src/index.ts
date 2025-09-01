@@ -41,7 +41,7 @@ app.use(limiter);
 
 
 app.use("/auth", authRoutes);
-app.use("/investments", investmentRoutes);
+app.use("/investment", investmentRoutes);
 app.use("/portfolio", portfolioRoutes);
 app.use("/transactions", transactionRoutes);
 app.use("/payments", paymentRoutes);

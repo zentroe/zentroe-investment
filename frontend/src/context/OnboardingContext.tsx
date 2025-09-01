@@ -104,13 +104,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
 
   // Fetch data on mount
   useEffect(() => {
-    // Only fetch if user is authenticated
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetchData();
-    } else {
-      setLoading(false);
-    }
+    // We're using cookie-based auth, so we should always try to fetch data
+    // since cookies are sent automatically with axios requests
+    fetchData();
   }, []);
 
   const value: OnboardingContextType = {

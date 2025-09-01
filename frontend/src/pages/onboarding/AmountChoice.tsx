@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { ChevronRight } from "lucide-react";
 import OnboardingLayout from "./OnboardingLayout";
-import { getCurrentOnboardingProgress } from "@/services/auth";
+import { useOnboarding } from "@/context/OnboardingContext";
 import { saveAnnualInvestmentAmount } from "@/services/onboardingService";
 import { toast } from "sonner";
 
@@ -11,38 +11,22 @@ export default function AmountChoice() {
   const navigate = useNavigate();
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [accountType, setAccountType] = useState<"general" | "retirement" | null>(null);
 
-  // Fetch existing onboarding data on component mount
+  const { data, loading: contextLoading, updateLocalData } = useOnboarding();
+
+  // Pre-populate from context data
   useEffect(() => {
-    const fetchOnboardingData = async () => {
-      try {
-        const response = await getCurrentOnboardingProgress();
-        const userData = response.user;
+    if (data.annualInvestmentAmount) {
+      setSelected(data.annualInvestmentAmount);
+    }
+  }, [data.annualInvestmentAmount]);
 
-        if (userData?.annualInvestmentAmount) {
-          setSelected(userData.annualInvestmentAmount);
-        }
-
-        if (userData?.accountType) {
-          setAccountType(userData.accountType);
-        }
-      } catch (error) {
-        console.error("Failed to fetch onboarding data:", error);
-      } finally {
-        setInitialLoading(false);
-      }
-    };
-
-    fetchOnboardingData();
-  }, []);
-
+  // Only redirect if context has loaded and accountType is missing
   useEffect(() => {
-    if (!accountType) {
+    if (!contextLoading && !data.accountType) {
       navigate("/onboarding/account-type");
     }
-  }, [accountType, navigate]);
+  }, [contextLoading, data.accountType, navigate]);
 
   const options = [
     "Less than $1,000",
@@ -59,6 +43,9 @@ export default function AmountChoice() {
     try {
       // Save annual investment amount using our new onboarding service
       await saveAnnualInvestmentAmount(value);
+
+      // Update local context data for immediate UI feedback
+      updateLocalData({ annualInvestmentAmount: value });
 
       toast.success("Investment amount saved.");
       navigate("/onboarding/hdyh");
@@ -83,7 +70,7 @@ export default function AmountChoice() {
         <p className="text-sm text-gray-600 mb-8">
           Please answer this question assuming you were{" "}
           <em>completely satisfied</em> with your Zentroe investment experience.
-          {accountType === "retirement" && (
+          {data.accountType === "retirement" && (
             <>
               {" "}
               <strong>Note:</strong> Retirement accounts require a minimum of{" "}
@@ -92,7 +79,7 @@ export default function AmountChoice() {
           )}
         </p>
 
-        {initialLoading ? (
+        {contextLoading ? (
           <div className="flex justify-center items-center py-8">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
@@ -107,17 +94,17 @@ export default function AmountChoice() {
             <div className="divide-y rounded-md">
               {options
                 .filter((option) =>
-                  accountType === "retirement" && option === "Less than $1,000"
+                  data.accountType === "retirement" && option === "Less than $1,000"
                     ? false
                     : true
                 )
                 .map((option, idx) => (
                   <button
                     key={idx}
-                    disabled={loading || initialLoading}
+                    disabled={loading || contextLoading}
                     onClick={() => handleSelect(option)}
                     className={`w-full text-left cursor-pointer py-7 pr-2 flex justify-between items-center hover:bg-gray-50 transition ${selected === option ? "bg-gray-50" : ""
-                      } ${loading || initialLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                      } ${loading || contextLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <span className="text-darkPrimary">{option}</span>
                     {loading && selected === option ? (
@@ -134,7 +121,7 @@ export default function AmountChoice() {
         <button
           onClick={() => navigate(-1)}
           className="mt-10 text-sm font-semibold text-primary hover:underline"
-          disabled={loading || initialLoading}
+          disabled={loading || contextLoading}
         >
           Back
         </button>

@@ -1,23 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add auth token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import axios from '@/utils/axios';
 
 /**
  * Investment Service
@@ -27,7 +8,7 @@ api.interceptors.request.use((config) => {
 // Save Initial Investment Amount
 export const saveInitialInvestmentAmount = async (initialInvestmentAmount: number) => {
   try {
-    const response = await api.patch('/investment/setup/initial-amount', {
+    const response = await axios.patch('/investment/setup/initial-amount', {
       initialInvestmentAmount
     });
     return response.data;
@@ -45,7 +26,7 @@ export const saveRecurringInvestmentSettings = async (settings: {
   recurringAmount?: number;
 }) => {
   try {
-    const response = await api.patch('/investment/setup/recurring-settings', settings);
+    const response = await axios.patch('/investment/setup/recurring-settings', settings);
     return response.data;
   } catch (error) {
     console.error('Error saving recurring investment settings:', error);

@@ -5,42 +5,33 @@ import OnboardingLayout from "./OnboardingLayout";
 import { Button } from "@/components/ui/button";
 import { Circle, CheckCircle } from "lucide-react";
 import { saveAccountSubType } from "@/services/onboardingService";
-import { getCurrentUser } from "@/services/auth";
+import { useOnboarding } from "@/context/OnboardingContext";
 import { toast } from "sonner";
 
 export default function SelectAccType() {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<"individual" | "other" | "">("");
   const [loading, setLoading] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
-  const [userLoading, setUserLoading] = useState(true);
+
+  const { data, loading: contextLoading, updateLocalData } = useOnboarding();
 
   const options = [
     { id: "individual", label: "Individual account" },
     { id: "other", label: "Other account type" },
   ];
 
-  // Fetch user data to check account type and validate navigation
+  // Pre-populate from context data and validate navigation
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await getCurrentUser();
-        setUserData(response.user);
+    // Pre-populate existing selection if it matches our available options
+    if (data.accountSubType && (data.accountSubType === "individual" || data.accountSubType === "other")) {
+      setSelected(data.accountSubType);
+    }
 
-        // Fallback if user skipped previous step
-        if (!response.user?.accountType) {
-          navigate("/onboarding/account-type");
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        toast.error("Failed to load user data");
-      } finally {
-        setUserLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [navigate]);
+    // Validate that user has completed account type step
+    if (!contextLoading && !data.accountType) {
+      navigate("/onboarding/account-type");
+    }
+  }, [data.accountSubType, data.accountType, contextLoading, navigate]);
 
   const handleContinue = async () => {
     if (!selected) return;
@@ -49,6 +40,10 @@ export default function SelectAccType() {
 
     try {
       await saveAccountSubType(selected);
+
+      // Update local context data for immediate UI feedback
+      updateLocalData({ accountSubType: selected });
+
       toast.success("Account type saved.");
       navigate("/onboarding/personal-info");
     } catch (error) {
@@ -59,7 +54,7 @@ export default function SelectAccType() {
     }
   };
 
-  if (userLoading) {
+  if (contextLoading) {
     return (
       <OnboardingLayout>
         <div className="mt-24 px-4 max-w-xl mx-auto flex items-center justify-center">
@@ -70,7 +65,7 @@ export default function SelectAccType() {
   }
 
   // Dynamic label
-  const accountTypeLabel = userData?.accountType === "retirement"
+  const accountTypeLabel = data?.accountType === "retirement"
     ? "retirement"
     : "general";
 
