@@ -4,6 +4,7 @@ import EmailSetup from "@/pages/onboarding/EmailSetup";
 import PasswordSetup from "@/pages/onboarding/PasswordSetup";
 import Login from "@/pages/auth/Login";
 import EmailConfirmation from "@/pages/auth/EmailConfirmation";
+import ResendEmailConfirmation from "@/pages/auth/ResendEmailConfirmation";
 import Success from "@/pages/onboarding/Success";
 import AccountType from "@/pages/onboarding/AccountType";
 import Intro from "@/pages/onboarding/Intro";
@@ -15,8 +16,12 @@ import HowDidYouHear from "@/pages/onboarding/HowDidYouHear";
 import GeneratingRecommend from "@/pages/onboarding/GeneratingRecommend";
 import InvestmentRecommend from "@/pages/onboarding/InvestmentRecommend";
 import PersonalDetailsIntro from "@/pages/onboarding/PersonalDetailsIntro";
+import ConfirmResidence from "@/pages/onboarding/ConfirmResidence";
+import PhoneNumber from "@/pages/onboarding/PhoneNumber";
 import SelectAccType from "@/pages/onboarding/SelectAccType";
 import LegalName from "@/pages/onboarding/LegalName";
+import OtherPersonalInfo from "@/pages/onboarding/OtherPersonalInfo";
+import MorePersonalInfo from "@/pages/onboarding/MorePersonalInfo";
 import FinishUpAndInvest from "@/pages/onboarding/FinishUpAndInvest";
 import InvestmentAmount from "@/pages/onboarding/InvestmentAmount";
 import RecurringInvestment from "@/pages/onboarding/RecurringInvestment";
@@ -63,8 +68,12 @@ export default function AppRoutes() {
       <Route path="/onboarding/processing" element={<GeneratingRecommend />} />
       <Route path="/onboarding/investment-recommendation" element={<InvestmentRecommend />} />
       <Route path="/onboarding/personal-intro" element={<PersonalDetailsIntro />} />
+      <Route path="/onboarding/confirm-residence" element={<ConfirmResidence />} />
+      <Route path="/onboarding/phone-number" element={<PhoneNumber />} />
       <Route path="/onboarding/select-account-form" element={<SelectAccType />} />
       <Route path="/onboarding/personal-info" element={<LegalName />} />
+      <Route path="/onboarding/other-personal-info" element={<OtherPersonalInfo />} />
+      <Route path="/onboarding/more-personal-info" element={<MorePersonalInfo />} />
 
       <Route path="/invest/intro" element={<FinishUpAndInvest />} />
       <Route path="/invest/payment-amount" element={<InvestmentAmount />} />
@@ -87,6 +96,7 @@ export default function AppRoutes() {
 
       <Route path="/auth/login" element={<Login />} />
       <Route path="/confirm-email" element={<EmailConfirmation />} />
+      <Route path="/resend-confirmation" element={<ResendEmailConfirmation />} />
     </Routes>
   );
 }

@@ -13,13 +13,24 @@ export interface IUser extends Document {
   lastName?: string;
   dateOfBirth?: Date;
   phone?: string;
+
+  // Residence and Citizenship
+  countryOfResidence?: string;
+  countryOfCitizenship?: string;
+
+  // Address Information
   address?: {
     street?: string;
+    street2?: string; // Address line 2
     city?: string;
     state?: string;
     zipCode?: string;
     country?: string;
   };
+
+  // Identity Verification
+  socialSecurityNumber?: string;
+  ssn?: string;
 
   // Account Setup
   accountType?: "general" | "retirement";
@@ -78,13 +89,24 @@ const UserSchema = new Schema<IUser>(
     lastName: { type: String, trim: true },
     dateOfBirth: Date,
     phone: { type: String, trim: true },
+
+    // Residence and Citizenship
+    countryOfResidence: { type: String, trim: true },
+    countryOfCitizenship: { type: String, trim: true },
+
+    // Address Information
     address: {
       street: String,
+      street2: String, // Address line 2
       city: String,
       state: String,
       zipCode: String,
       country: { type: String, default: "United States" }
     },
+
+    // Identity Verification
+    socialSecurityNumber: { type: String, trim: true }, // Should be encrypted in production
+    ssn: { type: String, trim: true }, // Alias for SSN
 
     // Account Setup
     accountType: { type: String, enum: ["general", "retirement"] },

@@ -45,8 +45,8 @@ export default function EmailConfirmation() {
   };
 
   const handleResendEmail = () => {
-    // TODO: Implement resend email functionality
-    navigate('/onboarding/email');
+    // Navigate to the dedicated resend email confirmation page
+    navigate('/resend-confirmation');
   };
 
   const renderContent = () => {

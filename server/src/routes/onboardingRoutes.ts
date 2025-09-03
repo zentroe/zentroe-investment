@@ -1,5 +1,21 @@
 import { Router } from "express";
-import { getUserOnboardingData, updateAccountType, updatePortfolioPriority, updateInvestmentGoal, updateAnnualIncome, updateAnnualInvestmentAmount, updateReferralSource, updateRecommendedPortfolio, updateAccountSubType, updatePersonalInfo, updateOnboardingStatus } from "../controllers/onboardingController";
+import {
+  getUserOnboardingData,
+  updateAccountType,
+  updatePortfolioPriority,
+  updateInvestmentGoal,
+  updateAnnualIncome,
+  updateAnnualInvestmentAmount,
+  updateReferralSource,
+  updateRecommendedPortfolio,
+  updateAccountSubType,
+  updatePersonalInfo,
+  updateOnboardingStatus,
+  saveResidenceAndCitizenship,
+  savePhoneNumber,
+  saveAddressInfo,
+  saveIdentityInfo
+} from "../controllers/onboardingController";
 import { protectOnboardingRoute } from "../middleware/protectOnboardingRoute";
 
 const router = Router();
@@ -41,6 +57,18 @@ router.patch("/account-sub-type", protectOnboardingRoute, updateAccountSubType);
 
 // PATCH /api/onboarding/personal-info
 router.patch("/personal-info", protectOnboardingRoute, updatePersonalInfo);
+
+// PATCH /api/onboarding/residence-citizenship
+router.patch("/residence-citizenship", protectOnboardingRoute, saveResidenceAndCitizenship);
+
+// PATCH /api/onboarding/phone-number
+router.patch("/phone-number", protectOnboardingRoute, savePhoneNumber);
+
+// PATCH /api/onboarding/address-info
+router.patch("/address-info", protectOnboardingRoute, saveAddressInfo);
+
+// PATCH /api/onboarding/identity-info
+router.patch("/identity-info", protectOnboardingRoute, saveIdentityInfo);
 
 // PATCH /api/onboarding/status
 router.patch("/status", protectOnboardingRoute, updateOnboardingStatus);

@@ -146,3 +146,62 @@ export const updateOnboardingStatus = async (status: 'started' | 'basicInfo' | '
     throw error;
   }
 };
+
+// Residence and Citizenship Service
+export const saveResidenceAndCitizenship = async (countryOfResidence: string, countryOfCitizenship: string) => {
+  try {
+    const response = await axios.patch('/onboarding/residence-citizenship', {
+      countryOfResidence,
+      countryOfCitizenship
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error saving residence and citizenship:', error);
+    throw error;
+  }
+};
+
+// Phone Number Service
+export const savePhoneNumber = async (phone: string) => {
+  try {
+    const response = await axios.patch('/onboarding/phone-number', {
+      phone
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error saving phone number:', error);
+    throw error;
+  }
+};
+
+// Address Information Service
+export const saveAddressInfo = async (addressData: {
+  street: string;
+  street2?: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country?: string;
+}) => {
+  try {
+    const response = await axios.patch('/onboarding/address-info', addressData);
+    return response.data;
+  } catch (error) {
+    console.error('Error saving address information:', error);
+    throw error;
+  }
+};
+
+// Identity Information Service (SSN and Date of Birth)
+export const saveIdentityInfo = async (socialSecurityNumber: string, dateOfBirth: string) => {
+  try {
+    const response = await axios.patch('/onboarding/identity-info', {
+      socialSecurityNumber,
+      dateOfBirth
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error saving identity information:', error);
+    throw error;
+  }
+};

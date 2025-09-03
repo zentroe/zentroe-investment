@@ -10,6 +10,22 @@ export interface OnboardingData {
   accountType?: 'general' | 'retirement';
   accountSubType?: 'individual' | 'joint' | 'trust' | 'other';
 
+  // Personal Information
+  phone?: string;
+  countryOfResidence?: string;
+  countryOfCitizenship?: string;
+  dateOfBirth?: string;
+  address?: {
+    street?: string;
+    street2?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  socialSecurityNumber?: string;
+  ssn?: string;
+
   // Investment Profile
   portfolioPriority?: 'long_term' | 'short_term' | 'balanced';
   investmentGoal?: 'diversification' | 'fixed_income' | 'venture_capital' | 'growth' | 'income';

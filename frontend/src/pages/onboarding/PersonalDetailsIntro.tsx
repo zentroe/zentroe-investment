@@ -12,11 +12,11 @@ export default function PersonalDetailsIntro() {
   const handleContinue = async () => {
     try {
       await updateStatus("investmentProfile");
-      navigate("/onboarding/select-account-form");
+      navigate("/onboarding/confirm-residence");
     } catch (error) {
       console.error("Error updating onboarding status:", error);
       // Still navigate even if status update fails
-      // navigate("/onboarding/select-account-form");
+      navigate("/onboarding/confirm-residence");
     }
   };
 

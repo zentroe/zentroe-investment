@@ -31,12 +31,38 @@ export default function Login() {
       return "/dashboard";
     }
 
+    // Route based on onboardingStatus milestone
+    switch (user.onboardingStatus) {
+      case "started":
+        // User just signed up - start with account type selection
+        return "/onboarding/account-type";
+
+      case "investmentProfile":
+        // User has completed investment profile - move to personal details
+        return "/onboarding/personal-intro";
+
+      case "basicInfo":
+        // User has completed basic info but not investment profile
+        return "/onboarding/intro";
+
+      case "bankConnected":
+        // User has connected bank but not completed final steps
+        return "/invest/auto-invest";
+
+      default:
+        // Fallback - check individual fields for more specific routing
+        return getLegacyOnboardingRoute(user);
+    }
+  };
+
+  // Legacy routing logic as fallback
+  const getLegacyOnboardingRoute = (user: any) => {
     // Define the exact onboarding sequence as per AppRoutes
     const onboardingSequence = [
       { route: "/onboarding/account-type", condition: () => !user.accountType },
       { route: "/onboarding/intro", condition: () => !user.hasSeenIntro },
       { route: "/onboarding/most-important", condition: () => !user.portfolioPriority },
-      { route: "/onboarding/motivation", condition: () => !user.riskTolerance },
+      { route: "/onboarding/motivation", condition: () => !user.investmentGoal },
       { route: "/onboarding/income", condition: () => !user.annualIncome },
       { route: "/onboarding/satisfied-amount", condition: () => !user.annualInvestmentAmount },
       { route: "/onboarding/hdyh", condition: () => !user.referralSource },
@@ -67,7 +93,9 @@ export default function Login() {
 
     try {
       const response = await login(email, password);
-      const userData = response.data || response.user || response;
+
+      // The response now includes user data
+      const userData = response.user || response.data?.user || response;
 
       // Set user in auth context
       setAuthUser(userData);
@@ -76,11 +104,20 @@ export default function Login() {
 
       // Route user based on onboarding status
       const nextRoute = getNextOnboardingRoute(userData);
+      console.log("Login - User onboarding status:", userData.onboardingStatus);
+      console.log("Login - Redirecting to:", nextRoute);
       navigate(nextRoute);
 
     } catch (error: any) {
       if (error?.response?.status === 403) {
-        toast.error("Please verify your email to log in.");
+        const errorData = error?.response?.data;
+        if (errorData?.needsEmailVerification) {
+          // User completed onboarding but needs email verification for dashboard access
+          toast.error("Please verify your email to access your dashboard.");
+          // TODO: Show resend verification email option
+        } else {
+          toast.error("Please verify your email to log in.");
+        }
       } else {
         toast.error("Invalid email or password.");
       }

@@ -8,6 +8,7 @@ import {
   checkEmail,
   updateOnboarding,
   getOnboardingProgress,
+  resendEmailVerification,
 } from "../controllers/authController";
 import { protectRoute } from "../middleware/protectRoute";
 import { check } from "express-validator";
@@ -29,7 +30,8 @@ router.post("/check-email", checkEmail);
 
 router.post("/login", login);
 router.post("/logout", logout);
-router.get("/confirm-email/:token", protectRoute, confirmEmail);
+router.post("/resend-verification", resendEmailVerification);
+router.get("/confirm-email/:token", confirmEmail);
 router.get("/me", protectRoute, getCurrentUser);
 router.get("/onboarding-progress", protectRoute, getOnboardingProgress);
 router.patch("/onboarding", protectRoute, updateOnboarding);

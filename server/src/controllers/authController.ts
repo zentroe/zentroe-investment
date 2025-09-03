@@ -121,8 +121,14 @@ export const login: (req: Request, res: Response) => Promise<void> = async (req,
       return;
     }
 
-    if (!user.isEmailVerified) {
-      res.status(403).json({ message: "Please confirm your email to log in." });
+    // Only require email verification if user has completed onboarding
+    // This allows users to continue onboarding even with unverified email
+    if (!user.isEmailVerified && user.onboardingStatus === "completed") {
+      res.status(403).json({
+        message: "Please verify your email to access your dashboard.",
+        needsEmailVerification: true,
+        email: user.email
+      });
       return;
     }
 
@@ -143,7 +149,17 @@ export const login: (req: Request, res: Response) => Promise<void> = async (req,
       secure: process.env.NODE_ENV === "production" ? true : false, // Secure in production (HTTPS)
     });
 
-    res.status(200).json({ message: "Logged in successfully" });
+    // Update last login
+    await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
+
+    // Return user data with onboarding information for proper routing
+    const userResponse = await User.findById(user._id).select("-password");
+
+    res.status(200).json({
+      message: "Logged in successfully",
+      user: userResponse,
+      needsEmailVerification: !user.isEmailVerified && user.onboardingStatus === "completed"
+    });
   } catch (error: any) {
     console.error("Error in login controller:", error.message);
     res.status(500).json({ message: "Server error" });
@@ -179,6 +195,52 @@ export const confirmEmail = async (req: Request, res: Response): Promise<void> =
     res.status(200).json({ message: "Email confirmed successfully! You can now log in." });
   } catch (error: any) {
     console.error("Error confirming email:", error.message);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const resendEmailVerification = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email || !email.includes("@")) {
+      res.status(400).json({ message: "A valid email is required." });
+      return;
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(404).json({ message: "User not found." });
+      return;
+    }
+
+    // Check if email is already verified
+    if (user.isEmailVerified) {
+      res.status(400).json({ message: "Email is already verified." });
+      return;
+    }
+
+    // Generate new email confirmation token
+    const emailConfirmationToken = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET!,
+      { expiresIn: "1h" }
+    );
+
+    const confirmationLink = `${process.env.CLIENT_URL}/confirm-email?token=${emailConfirmationToken}`;
+
+    // Send confirmation email
+    try {
+      await sendConfirmationEmail(email, confirmationLink);
+      res.status(200).json({ message: "Verification email sent successfully." });
+    } catch (emailError) {
+      console.error("Error sending verification email:", emailError);
+      res.status(500).json({ message: "Failed to send verification email. Please try again." });
+    }
+
+  } catch (error: any) {
+    console.error("Error in resendEmailVerification:", error.message);
     res.status(500).json({ message: "Server error" });
   }
 };

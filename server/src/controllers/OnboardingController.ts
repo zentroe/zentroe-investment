@@ -18,7 +18,7 @@ export const getUserOnboardingData = async (req: AuthenticatedRequest, res: Resp
     }
 
     const user = await User.findById(userId).select(
-      'accountType portfolioPriority investmentGoal annualIncome annualInvestmentAmount referralSource recommendedPortfolio accountSubType firstName lastName initialInvestmentAmount recurringInvestment recurringFrequency recurringDay recurringAmount onboardingStatus email'
+      'accountType portfolioPriority investmentGoal annualIncome annualInvestmentAmount referralSource recommendedPortfolio accountSubType firstName lastName initialInvestmentAmount recurringInvestment recurringFrequency recurringDay recurringAmount onboardingStatus email phone countryOfResidence countryOfCitizenship address dateOfBirth socialSecurityNumber ssn'
     );
 
     if (!user) {
@@ -50,6 +50,15 @@ export const getUserOnboardingData = async (req: AuthenticatedRequest, res: Resp
         recurringFrequency: user.recurringFrequency,
         recurringDay: user.recurringDay,
         recurringAmount: user.recurringAmount,
+
+        // Personal Information
+        phone: user.phone,
+        countryOfResidence: user.countryOfResidence,
+        countryOfCitizenship: user.countryOfCitizenship,
+        dateOfBirth: user.dateOfBirth,
+        address: user.address,
+        socialSecurityNumber: user.socialSecurityNumber,
+        ssn: user.ssn,
 
         // Progress Status
         onboardingStatus: user.onboardingStatus || 'started'
@@ -610,6 +619,201 @@ export const updateOnboardingStatus = async (req: AuthenticatedRequest, res: Res
     });
   } catch (error) {
     console.error("Error updating onboarding status:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Save Country of Residence and Citizenship
+export const saveResidenceAndCitizenship = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { countryOfResidence, countryOfCitizenship } = req.body;
+    const userId = req.user?.userId;
+
+    // Validation
+    if (!userId) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+
+    if (!countryOfResidence || !countryOfCitizenship) {
+      res.status(400).json({ message: "Country of residence and citizenship are required" });
+      return;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        countryOfResidence: countryOfResidence.trim(),
+        countryOfCitizenship: countryOfCitizenship.trim()
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Residence and citizenship information saved successfully",
+      user: {
+        countryOfResidence: updatedUser.countryOfResidence,
+        countryOfCitizenship: updatedUser.countryOfCitizenship,
+      },
+    });
+  } catch (error) {
+    console.error("Error saving residence and citizenship:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Save Phone Number
+export const savePhoneNumber = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { phone } = req.body;
+    const userId = req.user?.userId;
+
+    // Validation
+    if (!userId) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+
+    if (!phone) {
+      res.status(400).json({ message: "Phone number is required" });
+      return;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { phone: phone.trim() },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Phone number saved successfully",
+      user: {
+        phone: updatedUser.phone,
+      },
+    });
+  } catch (error) {
+    console.error("Error saving phone number:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Save Address Information
+export const saveAddressInfo = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { street, street2, city, state, zipCode, country } = req.body;
+    const userId = req.user?.userId;
+
+    // Validation
+    if (!userId) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+
+    if (!street || !city || !state || !zipCode) {
+      res.status(400).json({ message: "Street address, city, state, and zip code are required" });
+      return;
+    }
+
+    const addressData = {
+      street: street.trim(),
+      street2: street2?.trim() || "",
+      city: city.trim(),
+      state: state.trim(),
+      zipCode: zipCode.trim(),
+      country: country?.trim() || "United States"
+    };
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { address: addressData },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Address information saved successfully",
+      user: {
+        address: updatedUser.address,
+      },
+    });
+  } catch (error) {
+    console.error("Error saving address information:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Save SSN and Date of Birth
+export const saveIdentityInfo = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { socialSecurityNumber, dateOfBirth } = req.body;
+    const userId = req.user?.userId;
+
+    // Validation
+    if (!userId) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+
+    if (!socialSecurityNumber || !dateOfBirth) {
+      res.status(400).json({ message: "Social Security Number and Date of Birth are required" });
+      return;
+    }
+
+    // Validate date format (basic check)
+    const dob = new Date(dateOfBirth);
+    if (isNaN(dob.getTime())) {
+      res.status(400).json({ message: "Invalid date format" });
+      return;
+    }
+
+    // Validate age (must be 18+)
+    const today = new Date();
+    const age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+
+    if (age < 18 || (age === 18 && monthDiff < 0) || (age === 18 && monthDiff === 0 && today.getDate() < dob.getDate())) {
+      res.status(400).json({ message: "You must be at least 18 years old to register" });
+      return;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        socialSecurityNumber: socialSecurityNumber.trim(),
+        ssn: socialSecurityNumber.trim(), // Store in both fields for compatibility
+        dateOfBirth: dob
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Identity information saved successfully",
+      user: {
+        dateOfBirth: updatedUser.dateOfBirth,
+        // Don't return SSN in response for security
+      },
+    });
+  } catch (error) {
+    console.error("Error saving identity information:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

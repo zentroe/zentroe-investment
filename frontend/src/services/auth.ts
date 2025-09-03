@@ -100,3 +100,13 @@ export const confirmEmail = async (token: string) => {
   }
 };
 
+export const resendEmailVerification = async (email: string) => {
+  try {
+    const response = await axios.post('/auth/resend-verification', { email });
+    return response.data;
+  } catch (error: any) {
+    console.error('Resend email verification error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
