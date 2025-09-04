@@ -43,7 +43,7 @@ export default function LegalName() {
       });
 
       toast.success("Name saved");
-      navigate("/invest/intro");
+      navigate("/onboarding/other-personal-info");
     } catch (error) {
       console.error("Error saving legal name:", error);
       toast.error("Failed to save name. Please try again.");

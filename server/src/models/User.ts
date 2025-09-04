@@ -161,7 +161,7 @@ const UserSchema = new Schema<IUser>(
     // Onboarding Progress
     onboardingStatus: {
       type: String,
-      enum: ["started", "basicInfo", "investmentProfile", "verification", "bankConnected", "completed"],
+      enum: ["started", "basicInfo", "investmentProfile", "bankConnected", "completed"],
       default: "started",
     },
     // onboardingStep: { type: Number, default: 0, min: 0, max: 12 },

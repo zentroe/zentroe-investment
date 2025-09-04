@@ -45,7 +45,7 @@ export default function SelectAccType() {
       updateLocalData({ accountSubType: selected });
 
       toast.success("Account type saved.");
-      navigate("/onboarding/personal-info");
+      navigate("/onboarding/phone-number");
     } catch (error) {
       console.error("Error saving account subtype:", error);
       toast.error("Something went wrong. Please try again.");

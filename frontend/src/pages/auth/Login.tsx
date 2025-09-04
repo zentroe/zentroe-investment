@@ -43,7 +43,7 @@ export default function Login() {
 
       case "basicInfo":
         // User has completed basic info but not investment profile
-        return "/onboarding/intro";
+        return "/invest/intro";
 
       case "bankConnected":
         // User has connected bank but not completed final steps

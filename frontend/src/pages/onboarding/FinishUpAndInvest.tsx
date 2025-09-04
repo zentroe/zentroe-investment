@@ -2,11 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import OnboardingLayout from "./OnboardingLayout";
 import { Button } from "@/components/ui/button";
+import { useOnboarding } from "@/context/OnboardingContext";
 
 export default function FinishUpAndInvest() {
   const navigate = useNavigate();
+  const { updateStatus } = useOnboarding();
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    await updateStatus("basicInfo");
     navigate("/invest/payment-amount"); // Adjust route as needed
   };
 
