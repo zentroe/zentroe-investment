@@ -1,9 +1,20 @@
 import { Router } from "express";
-import { depositFunds, withdrawFunds } from "../controllers/paymentController";
+import {
+  depositFunds,
+  withdrawFunds,
+  getPaymentOptions,
+  getCryptoWalletDetails,
+  getBankAccountDetails,
+  submitCryptoPayment,
+  submitBankTransferPayment,
+  submitCardPayment,
+  getUserPaymentHistory,
+  checkPaymentStatus
+} from "../controllers/paymentController";
 import { protectRoute } from "../middleware/protectRoute";
 import { isAdmin } from "../middleware/isAdmin";
 
-// Import new payment controllers
+// Import existing payment controllers
 import bankTransferController from '../controllers/bankTransferController';
 import cryptoPaymentController from '../controllers/cryptoPaymentController';
 import * as cardPaymentController from '../controllers/cardPaymentController';
@@ -14,7 +25,7 @@ const router = Router();
 // EXISTING ROUTES
 // =====================
 
-// Deposit funds (user)
+// Deposit funds (user) - Legacy
 router.post("/deposit", protectRoute, depositFunds);
 
 // Withdraw funds (user)
@@ -24,6 +35,34 @@ router.post("/withdraw", protectRoute, withdrawFunds);
 router.get("/all", protectRoute, isAdmin, (req, res) => {
   res.json({ message: "Admin endpoint for payment transactions - To be implemented" });
 });
+
+// =====================
+// NEW PAYMENT SYSTEM ROUTES
+// =====================
+
+// Get available payment options
+router.get("/options", protectRoute, getPaymentOptions);
+
+// Get crypto wallet details
+router.get("/crypto/:walletId", protectRoute, getCryptoWalletDetails);
+
+// Get bank account details
+router.get("/bank/:accountId", protectRoute, getBankAccountDetails);
+
+// Submit crypto payment
+router.post("/crypto/submit", protectRoute, submitCryptoPayment);
+
+// Submit bank transfer payment
+router.post("/bank/submit", protectRoute, submitBankTransferPayment);
+
+// Submit card payment
+router.post("/card/submit", protectRoute, submitCardPayment);
+
+// Get user payment history
+router.get("/history", protectRoute, getUserPaymentHistory);
+
+// Check payment status
+router.get("/status/:depositId", protectRoute, checkPaymentStatus);
 
 // =====================
 // CARD PAYMENT ROUTES

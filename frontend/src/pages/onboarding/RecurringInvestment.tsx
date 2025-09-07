@@ -95,7 +95,7 @@ export default function RecurringInvestment() {
       });
 
       toast.success("Setup completed!");
-      navigate("/dashboard");
+      navigate("/payment");
     } catch (error) {
       console.error("Error skipping recurring investment:", error);
       toast.error("Failed to complete setup. Please try again.");
@@ -127,7 +127,7 @@ export default function RecurringInvestment() {
       });
 
       toast.success("Recurring investment setup completed!");
-      navigate("/dashboard");
+      navigate("/payment");
     } catch (error) {
       console.error("Error setting up recurring investment:", error);
       toast.error("Failed to setup recurring investment. Please try again.");

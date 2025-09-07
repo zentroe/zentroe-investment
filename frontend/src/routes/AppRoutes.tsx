@@ -41,6 +41,16 @@ import AboutPage from "@/pages/about/AboutPage";
 import PaymentPage from "@/pages/payment/PaymentPage";
 import PaymentSuccessPage from "@/pages/payment/PaymentSuccessPage";
 import PaymentStatusPage from "@/pages/payment/PaymentStatusPage";
+import AdminLogin from "@/pages/admin/AdminLogin";
+import AdminLayout from "@/layouts/AdminLayout";
+import AdminDashboardOverview from "@/pages/admin/AdminDashboardOverview";
+import AdminDepositsManagement from "@/pages/admin/AdminDepositsManagement";
+import AdminPaymentConfiguration from "@/pages/admin/AdminPaymentConfiguration";
+import AdminCryptoWallets from "@/pages/admin/AdminCryptoWallets";
+import AdminBankAccounts from "@/pages/admin/AdminBankAccounts";
+import AdminUsers from "@/pages/admin/AdminUsers";
+import AdminReports from "@/pages/admin/AdminReports";
+import AdminActivityLogs from "@/pages/admin/AdminActivityLogs";
 
 
 
@@ -83,6 +93,19 @@ export default function AppRoutes() {
       <Route path="/payment" element={<PaymentPage />} />
       <Route path="/payment/success" element={<PaymentSuccessPage />} />
       <Route path="/payment/status/:paymentId" element={<PaymentStatusPage />} />
+
+      {/* Admin Routes */}
+      <Route path="/x-admin" element={<AdminLogin />} />
+      <Route path="/x-admin/dashboard" element={<AdminLayout />}>
+        <Route index element={<AdminDashboardOverview />} />
+        <Route path="deposits" element={<AdminDepositsManagement />} />
+        <Route path="payments-config" element={<AdminPaymentConfiguration />} />
+        <Route path="crypto-wallets" element={<AdminCryptoWallets />} />
+        <Route path="bank-accounts" element={<AdminBankAccounts />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="reports" element={<AdminReports />} />
+        <Route path="activity-logs" element={<AdminActivityLogs />} />
+      </Route>
 
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<DashboardHome />} />

@@ -8,10 +8,13 @@ import investmentRoutes from "./routes/investmentRoutes";
 import portfolioRoutes from "./routes/portfolioRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import onboardingRoutes from "./routes/onboardingRoutes";
+import paymentRoutes from "./routes/paymentRoutes";
+import adminRoutes from "./routes/adminRoutes";
+import adminPaymentRoutes from "./routes/adminPaymentRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import paymentRoutes from "./routes/paymentRoutes";
+import path from "path";
 
 
 
@@ -39,6 +42,8 @@ app.use(cookieParser());
 app.use(helmet());
 app.use(limiter);
 
+// Create uploads directory for payment proofs
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use("/auth", authRoutes);
 app.use("/investment", investmentRoutes);
@@ -46,6 +51,8 @@ app.use("/portfolio", portfolioRoutes);
 app.use("/transactions", transactionRoutes);
 app.use("/payments", paymentRoutes);
 app.use("/onboarding", onboardingRoutes);
+app.use("/admin", adminRoutes);
+app.use("/admin/payments", adminPaymentRoutes);
 
 
 

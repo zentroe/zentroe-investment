@@ -1,36 +1,15 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import crypto from 'crypto';
 
-// Card tokenization model
+// Card token model for storing encrypted card details
 export interface ICardToken extends Document {
   userId: mongoose.Types.ObjectId;
-  tokenId: string;           // Unique token for the card
-  encryptedCardData: string; // Encrypted card details
-  last4: string;             // Last 4 digits for display
-  brand: string;             // Visa, MasterCard, Amex, etc.
-  expiryMonth: number;
-  expiryYear: number;
-  holderName: string;
-
-  // Billing information
-  billingAddress: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
-
-  // Security and validation
-  isVerified: boolean;       // Admin verified this card
-  verificationMethod?: string; // How it was verified
-  lastUsed?: Date;
-  usageCount: number;
-
-  // Status
+  tokenId: string;           // Unique token identifier
+  last4: string;            // Last 4 digits of card
+  expiryMonth: string;
+  expiryYear: string;
+  cardType: string;         // 'visa', 'mastercard', etc.
+  cardholderName: string;
   isActive: boolean;
-  deactivatedReason?: string;
-
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,32 +17,12 @@ export interface ICardToken extends Document {
 const CardTokenSchema = new Schema<ICardToken>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   tokenId: { type: String, required: true, unique: true },
-  encryptedCardData: { type: String, required: true },
-  last4: { type: String, required: true, length: 4 },
-  brand: {
-    type: String,
-    required: true,
-    enum: ['Visa', 'MasterCard', 'American Express', 'Discover', 'Other']
-  },
-  expiryMonth: { type: Number, required: true, min: 1, max: 12 },
-  expiryYear: { type: Number, required: true },
-  holderName: { type: String, required: true, trim: true },
-
-  billingAddress: {
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    state: { type: String, required: true },
-    zipCode: { type: String, required: true },
-    country: { type: String, required: true, default: 'United States' }
-  },
-
-  isVerified: { type: Boolean, default: false },
-  verificationMethod: String,
-  lastUsed: Date,
-  usageCount: { type: Number, default: 0 },
-
-  isActive: { type: Boolean, default: true },
-  deactivatedReason: String
+  last4: { type: String, required: true },
+  expiryMonth: { type: String, required: true },
+  expiryYear: { type: String, required: true },
+  cardType: { type: String, required: true },
+  cardholderName: { type: String, required: true, trim: true },
+  isActive: { type: Boolean, default: true }
 }, {
   timestamps: true
 });
