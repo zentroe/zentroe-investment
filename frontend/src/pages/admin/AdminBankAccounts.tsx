@@ -55,66 +55,24 @@ const AdminBankAccounts: React.FC = () => {
   const fetchAccounts = async () => {
     try {
       setLoading(true);
+      const response = await getBankAccounts();
+      console.log('Fetched accounts response:', response);
 
-      // Try to fetch real data, fall back to mock data if needed
-      try {
-        const response = await getBankAccounts();
-        setAccounts(response.data || response);
-        setLoading(false);
-        return;
-      } catch (apiError) {
-        console.log('API not available, using mock data');
+      // The backend returns { accounts: [...] }
+      const accountsData = response.data?.accounts || response.accounts || [];
+
+      console.log('Extracted accounts data:', accountsData);
+
+      if (Array.isArray(accountsData)) {
+        setAccounts(accountsData);
+      } else {
+        console.error('Invalid accounts data format from API:', accountsData);
+        setAccounts([]);
       }
-
-      // Mock data fallback
-      const mockAccounts: BankAccount[] = [
-        {
-          _id: '1',
-          bankName: 'JPMorgan Chase Bank',
-          accountName: 'Zentroe Investment LLC',
-          accountNumber: '****1234',
-          routingNumber: '021000021',
-          swiftCode: 'CHASUS33',
-          country: 'United States',
-          currency: 'USD',
-          active: true,
-          createdAt: '2024-01-15T10:30:00Z',
-          updatedAt: '2024-01-15T10:30:00Z'
-        },
-        {
-          _id: '2',
-          bankName: 'Bank of America',
-          accountName: 'Zentroe Investment LLC',
-          accountNumber: '****5678',
-          routingNumber: '026009593',
-          country: 'United States',
-          currency: 'USD',
-          active: true,
-          createdAt: '2024-01-14T15:45:00Z',
-          updatedAt: '2024-01-14T15:45:00Z'
-        },
-        {
-          _id: '3',
-          bankName: 'HSBC UK',
-          accountName: 'Zentroe Investment UK Ltd',
-          accountNumber: '****9012',
-          routingNumber: '404411',
-          swiftCode: 'HBUKGB4B',
-          iban: 'GB82WEST12345698765432',
-          country: 'United Kingdom',
-          currency: 'GBP',
-          active: false,
-          createdAt: '2024-01-13T09:20:00Z',
-          updatedAt: '2024-01-13T09:20:00Z'
-        }
-      ];
-
-      setTimeout(() => {
-        setAccounts(mockAccounts);
-        setLoading(false);
-      }, 1000);
     } catch (error) {
       console.error('Failed to fetch bank accounts:', error);
+      setAccounts([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -125,34 +83,37 @@ const AdminBankAccounts: React.FC = () => {
     try {
       if (editingAccount) {
         // Update existing account
-        try {
-          await updateBankAccount(editingAccount._id, formData);
-        } catch (apiError) {
-          console.log('API not available, using local update');
-        }
+        const response = await updateBankAccount(editingAccount._id, formData);
+        console.log('Update account response:', response);
 
-        setAccounts(accounts.map(account =>
-          account._id === editingAccount._id
-            ? { ...account, ...formData, updatedAt: new Date().toISOString() }
-            : account
-        ));
+        // Extract the updated account from the response
+        const updatedAccount = response.data?.account || response.account;
+        if (updatedAccount) {
+          setAccounts(accounts.map(account =>
+            account._id === editingAccount._id ? updatedAccount : account
+          ));
+        } else {
+          // Fallback: use the original approach
+          setAccounts(accounts.map(account =>
+            account._id === editingAccount._id
+              ? { ...account, ...formData, updatedAt: new Date().toISOString() }
+              : account
+          ));
+        }
         setEditingAccount(null);
       } else {
         // Create new account
-        const newAccount: BankAccount = {
-          _id: Date.now().toString(),
-          ...formData,
-          active: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
+        const response = await createBankAccount(formData);
+        console.log('Create account response:', response);
 
-        try {
-          const response = await createBankAccount(formData);
-          setAccounts([...accounts, response.data || newAccount]);
-        } catch (apiError) {
-          console.log('API not available, using local creation');
+        // Extract the account from the response
+        const newAccount = response.data?.account || response.account;
+        if (newAccount) {
           setAccounts([...accounts, newAccount]);
+        } else {
+          console.error('No account data in response:', response);
+          // Fallback: refetch all accounts
+          fetchAccounts();
         }
       }
 
@@ -160,6 +121,7 @@ const AdminBankAccounts: React.FC = () => {
       setShowCreateModal(false);
     } catch (error) {
       console.error('Failed to save bank account:', error);
+      alert('Failed to save bank account. Please try again.');
     }
   };
 
@@ -167,31 +129,31 @@ const AdminBankAccounts: React.FC = () => {
     if (!confirm('Are you sure you want to delete this bank account?')) return;
 
     try {
-      try {
-        await deleteBankAccount(accountId);
-      } catch (apiError) {
-        console.log('API not available, using local deletion');
-      }
-
+      await deleteBankAccount(accountId);
       setAccounts(accounts.filter(account => account._id !== accountId));
     } catch (error) {
       console.error('Failed to delete bank account:', error);
+      alert('Failed to delete bank account. Please try again.');
     }
   };
 
   const handleToggleActive = async (account: BankAccount) => {
     try {
-      const updatedAccount = { ...account, active: !account.active };
+      const response = await updateBankAccount(account._id, { active: !account.active });
+      console.log('Toggle account response:', response);
 
-      try {
-        await updateBankAccount(account._id, { active: !account.active });
-      } catch (apiError) {
-        console.log('API not available, using local update');
+      // Extract the updated account from the response
+      const updatedAccount = response.data?.account || response.account;
+      if (updatedAccount) {
+        setAccounts(accounts.map(a => a._id === account._id ? updatedAccount : a));
+      } else {
+        // Fallback: use the original approach
+        const localUpdatedAccount = { ...account, active: !account.active };
+        setAccounts(accounts.map(a => a._id === account._id ? localUpdatedAccount : a));
       }
-
-      setAccounts(accounts.map(a => a._id === account._id ? updatedAccount : a));
     } catch (error) {
       console.error('Failed to toggle account status:', error);
+      alert('Failed to update account status. Please try again.');
     }
   };
 
@@ -218,17 +180,17 @@ const AdminBankAccounts: React.FC = () => {
     return '****' + accountNumber.slice(-4);
   };
 
-  // Filter accounts
-  const filteredAccounts = accounts.filter(account => {
-    const matchesSearch = account.bankName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.country.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter accounts (ensure accounts is always an array)
+  const filteredAccounts = (accounts || []).filter(account => {
+    const matchesSearch = (account.bankName && account.bankName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (account.accountName && account.accountName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (account.country && account.country.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCountry = countryFilter === 'all' || account.country === countryFilter;
 
     return matchesSearch && matchesCountry;
   });
 
-  const countries = [...new Set(accounts.map(account => account.country))];
+  const countries = [...new Set((accounts || []).map(account => account.country).filter(Boolean))];
 
   if (loading) {
     return (
@@ -465,6 +427,27 @@ const AdminBankAccounts: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Empty State */}
+      {!loading && filteredAccounts.length === 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No bank accounts found</h3>
+          <p className="text-gray-500 mb-4">
+            {accounts.length === 0
+              ? "Get started by creating your first bank account for receiving wire transfers and deposits."
+              : "No bank accounts match your current filter criteria."
+            }
+          </p>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Bank Account
+          </button>
+        </div>
+      )}
 
       {/* Create/Edit Modal */}
       {showCreateModal && (

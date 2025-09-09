@@ -70,7 +70,20 @@ export const updatePaymentConfig = async (req: Request, res: Response): Promise<
 export const getCryptoWallets = async (req: Request, res: Response): Promise<void> => {
   try {
     const wallets = await CryptoWallet.find().sort({ createdAt: -1 });
-    res.json({ wallets });
+
+    // Map database field names to frontend-expected field names
+    const formattedWallets = wallets.map(wallet => ({
+      _id: wallet._id,
+      name: wallet.name,
+      address: wallet.address,
+      network: wallet.network,
+      icon: wallet.icon,
+      active: wallet.isActive, // Map isActive to active for frontend consistency
+      createdAt: wallet.createdAt,
+      updatedAt: wallet.updatedAt
+    }));
+
+    res.json({ wallets: formattedWallets });
   } catch (error) {
     console.error('Get crypto wallets error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -79,16 +92,16 @@ export const getCryptoWallets = async (req: Request, res: Response): Promise<voi
 
 export const createCryptoWallet = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, address, network, iconFile } = req.body;
-    let iconUrl = '';
+    const { name, address, network, iconFile, icon } = req.body;
+    let iconUrl = icon || ''; // Use pre-uploaded icon URL if provided
 
     if (!name || !address) {
       res.status(400).json({ message: 'Name and address are required' });
       return;
     }
 
-    // Handle icon upload if provided
-    if (iconFile) {
+    // Handle icon upload if iconFile is provided (fallback method)
+    if (iconFile && !icon) {
       const uploadResult = await uploadAsset(
         iconFile,
         'wallet-icons',
@@ -103,6 +116,11 @@ export const createCryptoWallet = async (req: Request, res: Response): Promise<v
       }
     }
 
+    if (!iconUrl) {
+      res.status(400).json({ message: 'Icon is required' });
+      return;
+    }
+
     const wallet = new CryptoWallet({
       name,
       address,
@@ -112,7 +130,19 @@ export const createCryptoWallet = async (req: Request, res: Response): Promise<v
 
     await wallet.save();
 
-    res.status(201).json({ message: 'Crypto wallet created', wallet });
+    // Format response to match frontend expectations
+    const formattedWallet = {
+      _id: wallet._id,
+      name: wallet.name,
+      address: wallet.address,
+      network: wallet.network,
+      icon: wallet.icon,
+      active: wallet.isActive,
+      createdAt: wallet.createdAt,
+      updatedAt: wallet.updatedAt
+    };
+
+    res.status(201).json({ message: 'Crypto wallet created', wallet: formattedWallet });
   } catch (error) {
     console.error('Create crypto wallet error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -122,11 +152,23 @@ export const createCryptoWallet = async (req: Request, res: Response): Promise<v
 export const updateCryptoWallet = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { name, address, network, isActive, iconFile } = req.body;
-    let updateData: any = { name, address, network, isActive };
+    const { name, address, network, isActive, active, iconFile, icon } = req.body;
 
-    // Handle icon upload if provided
-    if (iconFile) {
+    // Handle both 'active' and 'isActive' for frontend compatibility
+    const activeStatus = active !== undefined ? active : isActive;
+    let updateData: any = { name, address, network };
+
+    if (activeStatus !== undefined) {
+      updateData.isActive = activeStatus;
+    }
+
+    // Handle pre-uploaded icon URL
+    if (icon) {
+      updateData.icon = icon;
+    }
+
+    // Handle icon upload if provided (fallback method)
+    if (iconFile && !icon) {
       const uploadResult = await uploadAsset(
         iconFile,
         'wallet-icons',
@@ -148,7 +190,19 @@ export const updateCryptoWallet = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    res.json({ message: 'Crypto wallet updated', wallet });
+    // Format response to match frontend expectations
+    const formattedWallet = {
+      _id: wallet._id,
+      name: wallet.name,
+      address: wallet.address,
+      network: wallet.network,
+      icon: wallet.icon,
+      active: wallet.isActive,
+      createdAt: wallet.createdAt,
+      updatedAt: wallet.updatedAt
+    };
+
+    res.json({ message: 'Crypto wallet updated', wallet: formattedWallet });
   } catch (error) {
     console.error('Update crypto wallet error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -176,7 +230,24 @@ export const deleteCryptoWallet = async (req: Request, res: Response): Promise<v
 export const getBankAccounts = async (req: Request, res: Response): Promise<void> => {
   try {
     const accounts = await BankAccount.find().sort({ createdAt: -1 });
-    res.json({ accounts });
+
+    // Map database field names to frontend-expected field names
+    const formattedAccounts = accounts.map(account => ({
+      _id: account._id,
+      bankName: account.bankName,
+      accountName: account.accountName,
+      accountNumber: account.accountNumber,
+      routingNumber: account.routingNumber || '',
+      swiftCode: account.swiftCode || '',
+      iban: '', // Not available in current model, set as empty
+      country: 'United States', // Default value since not in current model
+      currency: 'USD', // Default value since not in current model
+      active: account.isActive, // Map isActive to active for frontend consistency
+      createdAt: account.createdAt,
+      updatedAt: account.updatedAt
+    }));
+
+    res.json({ accounts: formattedAccounts });
   } catch (error) {
     console.error('Get bank accounts error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -185,7 +256,7 @@ export const getBankAccounts = async (req: Request, res: Response): Promise<void
 
 export const createBankAccount = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { bankName, accountName, accountNumber, routingNumber, swiftCode, bankAddress } = req.body;
+    const { bankName, accountName, accountNumber, routingNumber, swiftCode, bankAddress, iban, country, currency } = req.body;
 
     if (!bankName || !accountName || !accountNumber) {
       res.status(400).json({ message: 'Bank name, account name, and account number are required' });
@@ -203,7 +274,23 @@ export const createBankAccount = async (req: Request, res: Response): Promise<vo
 
     await account.save();
 
-    res.status(201).json({ message: 'Bank account created', account });
+    // Format response to match frontend expectations
+    const formattedAccount = {
+      _id: account._id,
+      bankName: account.bankName,
+      accountName: account.accountName,
+      accountNumber: account.accountNumber,
+      routingNumber: account.routingNumber || '',
+      swiftCode: account.swiftCode || '',
+      iban: iban || '', // Frontend sends this but we don't store it yet
+      country: country || 'United States', // Frontend sends this but we don't store it yet
+      currency: currency || 'USD', // Frontend sends this but we don't store it yet
+      active: account.isActive,
+      createdAt: account.createdAt,
+      updatedAt: account.updatedAt
+    };
+
+    res.status(201).json({ message: 'Bank account created', account: formattedAccount });
   } catch (error) {
     console.error('Create bank account error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -213,20 +300,40 @@ export const createBankAccount = async (req: Request, res: Response): Promise<vo
 export const updateBankAccount = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { bankName, accountName, accountNumber, routingNumber, swiftCode, bankAddress, isActive } = req.body;
+    const { bankName, accountName, accountNumber, routingNumber, swiftCode, bankAddress, isActive, active, iban, country, currency } = req.body;
 
-    const account = await BankAccount.findByIdAndUpdate(
-      id,
-      { bankName, accountName, accountNumber, routingNumber, swiftCode, bankAddress, isActive },
-      { new: true }
-    );
+    // Handle both 'active' and 'isActive' for frontend compatibility
+    const activeStatus = active !== undefined ? active : isActive;
+    let updateData: any = { bankName, accountName, accountNumber, routingNumber, swiftCode, bankAddress };
+
+    if (activeStatus !== undefined) {
+      updateData.isActive = activeStatus;
+    }
+
+    const account = await BankAccount.findByIdAndUpdate(id, updateData, { new: true });
 
     if (!account) {
       res.status(404).json({ message: 'Bank account not found' });
       return;
     }
 
-    res.json({ message: 'Bank account updated', account });
+    // Format response to match frontend expectations
+    const formattedAccount = {
+      _id: account._id,
+      bankName: account.bankName,
+      accountName: account.accountName,
+      accountNumber: account.accountNumber,
+      routingNumber: account.routingNumber || '',
+      swiftCode: account.swiftCode || '',
+      iban: iban || '', // Frontend sends this but we don't store it yet
+      country: country || 'United States', // Frontend sends this but we don't store it yet
+      currency: currency || 'USD', // Frontend sends this but we don't store it yet
+      active: account.isActive,
+      createdAt: account.createdAt,
+      updatedAt: account.updatedAt
+    };
+
+    res.json({ message: 'Bank account updated', account: formattedAccount });
   } catch (error) {
     console.error('Update bank account error:', error);
     res.status(500).json({ message: 'Internal server error' });

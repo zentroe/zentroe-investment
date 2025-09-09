@@ -11,6 +11,8 @@ import onboardingRoutes from "./routes/onboardingRoutes";
 import paymentRoutes from "./routes/paymentRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import adminPaymentRoutes from "./routes/adminPaymentRoutes";
+import uploadRoutes from "./routes/uploadRoutes";
+import simpleCardPaymentRoutes from "./routes/simpleCardPaymentRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -50,9 +52,11 @@ app.use("/investment", investmentRoutes);
 app.use("/portfolio", portfolioRoutes);
 app.use("/transactions", transactionRoutes);
 app.use("/payments", paymentRoutes);
+app.use("/api/payments/card", simpleCardPaymentRoutes);
 app.use("/onboarding", onboardingRoutes);
 app.use("/admin", adminRoutes);
 app.use("/admin/payments", adminPaymentRoutes);
+app.use("/api", uploadRoutes);
 
 
 
