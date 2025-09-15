@@ -5,12 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CreditCard, Shield, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { 
+  submitSimpleCardPayment, 
+  requestCardPaymentOtp, 
+  verifyCardPaymentOtp 
+} from '@/services/paymentService';
 
 interface SimpleCardPaymentFormProps {
   amount: number;
   currency: string;
-  onSuccess: (data: any) => void;
   onCancel: () => void;
+  onSuccess?: (data: any) => void;
 }
 
 interface CardDetails {
@@ -73,35 +78,22 @@ export default function SimpleCardPaymentForm({
 
     setLoading(true);
     try {
-      const response = await fetch('/api/payments/card/simple', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          amount,
-          currency,
-          cardDetails: {
-            ...cardDetails,
-            cardNumber: cardDetails.cardNumber.replace(/\s/g, '') // Clean spaces
-          }
-        })
+      const result = await submitSimpleCardPayment({
+        amount,
+        currency,
+        cardDetails: {
+          ...cardDetails,
+          cardNumber: cardDetails.cardNumber.replace(/\s/g, '') // Clean spaces
+        }
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        toast.error(result.message || 'Payment failed');
-        setLoading(false);
-        return;
-      }
 
       setPaymentId(result.paymentId);
       setStep('processing');
       toast.success('Payment submitted for processing');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Payment error:', error);
-      toast.error('Payment failed. Please try again.');
+      toast.error(error.response?.data?.message || 'Payment failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -109,20 +101,11 @@ export default function SimpleCardPaymentForm({
 
   const handleOtpRequest = async () => {
     try {
-      const response = await fetch(`/api/payments/card/${paymentId}/request-otp`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        setStep('otp');
-        toast.success('OTP requested. Please enter the OTP sent to your device.');
-      } else {
-        toast.error(result.message || 'Failed to request OTP');
-      }
-    } catch (error) {
-      toast.error('Failed to request OTP');
+      await requestCardPaymentOtp(paymentId);
+      setStep('otp');
+      toast.success('OTP requested. Please enter the OTP sent to your device.');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to request OTP');
     }
   };
 
@@ -133,22 +116,11 @@ export default function SimpleCardPaymentForm({
     }
 
     try {
-      const response = await fetch(`/api/payments/card/${paymentId}/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ otpCode })
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        setStep('processing');
-        toast.success('OTP verified successfully');
-      } else {
-        toast.error(result.message || 'Invalid OTP');
-      }
-    } catch (error) {
-      toast.error('OTP verification failed');
+      await verifyCardPaymentOtp(paymentId, otpCode);
+      setStep('processing');
+      toast.success('OTP verified successfully');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Invalid OTP');
     }
   };
 
@@ -200,9 +172,9 @@ export default function SimpleCardPaymentForm({
               type="text"
               placeholder="JOHN SMITH"
               value={cardDetails.holderName}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardDetails(prev => ({ 
-                ...prev, 
-                holderName: e.target.value.toUpperCase() 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardDetails(prev => ({
+                ...prev,
+                holderName: e.target.value.toUpperCase()
               }))}
             />
           </div>
@@ -310,7 +282,7 @@ export default function SimpleCardPaymentForm({
               <p className="text-sm text-gray-500">
                 Payment ID: <span className="font-mono">{paymentId}</span>
               </p>
-              
+
               {/* OTP Request Button */}
               <Button
                 onClick={handleOtpRequest}
@@ -319,7 +291,7 @@ export default function SimpleCardPaymentForm({
               >
                 Request OTP
               </Button>
-              
+
               <p className="text-xs text-gray-400">
                 If your bank requires OTP verification, click the button above.
               </p>

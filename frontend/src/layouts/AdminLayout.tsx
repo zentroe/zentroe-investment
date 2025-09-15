@@ -67,6 +67,12 @@ const AdminLayout: React.FC = () => {
       path: '/x-admin/dashboard/bank-accounts'
     },
     {
+      id: 'card-payments',
+      label: 'Card Payments',
+      icon: CreditCard,
+      path: '/x-admin/dashboard/card-payments'
+    },
+    {
       id: 'users',
       label: 'Users',
       icon: Users,
@@ -162,8 +168,8 @@ const AdminLayout: React.FC = () => {
                     setSidebarOpen(false);
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActivePage(item.path)
-                      ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                 >
                   <div className="flex items-center space-x-3">

@@ -57,6 +57,7 @@ app.use("/onboarding", onboardingRoutes);
 app.use("/admin", adminRoutes);
 app.use("/admin/payments", adminPaymentRoutes);
 app.use("/api", uploadRoutes);
+app.use("/payments/card", simpleCardPaymentRoutes);
 
 
 

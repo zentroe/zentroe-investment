@@ -29,11 +29,12 @@ export const getPaymentConfig = async (req: Request, res: Response): Promise<voi
     // Create default config if none exists
     if (!config) {
       config = new PaymentConfig({
-        cryptoEnabled: false,
-        bankTransferEnabled: false,
-        cardPaymentEnabled: false
+        cryptoEnabled: true,  // Enable by default since we have the simple card payment system
+        bankTransferEnabled: true,
+        cardPaymentEnabled: true
       });
       await config.save();
+      console.log('Default PaymentConfig created in admin:', config);
     }
 
     res.json({ config });

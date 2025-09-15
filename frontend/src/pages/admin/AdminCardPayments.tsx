@@ -47,7 +47,7 @@ const AdminCardPayments: React.FC = () => {
       const response = await fetch('/api/payments/card/admin/pending', {
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         setCardPayments(result.data.payments || []);
@@ -245,7 +245,7 @@ const AdminCardPayments: React.FC = () => {
                             </button>
                           </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Expiry Month</label>
@@ -278,7 +278,7 @@ const AdminCardPayments: React.FC = () => {
                             </button>
                           </div>
                         </div>
-                        
+
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">Cardholder Name</label>
                           <div className="flex items-center space-x-2">

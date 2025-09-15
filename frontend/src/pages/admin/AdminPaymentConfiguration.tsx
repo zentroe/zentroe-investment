@@ -33,33 +33,18 @@ const AdminPaymentConfiguration: React.FC = () => {
   const fetchPaymentConfig = async () => {
     try {
       setLoading(true);
+      const response = await getPaymentConfig();
+      console.log('Payment config response:', response);
 
-      // Try to fetch real data, fall back to mock data if needed
-      try {
-        const response = await getPaymentConfig();
-        setConfig(response.data || response);
-        setLoading(false);
-        return;
-      } catch (apiError) {
-        console.log('API not available, using mock data');
-      }
+      // Handle the response structure { config: {...} }
+      const configData = response.config || response.data || response;
+      console.log('Extracted config data:', configData);
 
-      // Mock data fallback
-      const mockConfig: PaymentConfig = {
-        _id: '1',
-        cryptoEnabled: true,
-        bankTransferEnabled: true,
-        cardPaymentEnabled: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      setTimeout(() => {
-        setConfig(mockConfig);
-        setLoading(false);
-      }, 1000);
+      setConfig(configData);
     } catch (error) {
       console.error('Failed to fetch payment config:', error);
+      setMessage({ type: 'error', text: 'Failed to load payment configuration. Please refresh the page.' });
+    } finally {
       setLoading(false);
     }
   };
@@ -72,13 +57,19 @@ const AdminPaymentConfiguration: React.FC = () => {
 
       // Try to use actual API call
       try {
-        await updatePaymentConfig({
+        const response = await updatePaymentConfig({
           cryptoEnabled: config.cryptoEnabled,
           bankTransferEnabled: config.bankTransferEnabled,
           cardPaymentEnabled: config.cardPaymentEnabled
         });
+        console.log('Update payment config response:', response);
+
+        // Refresh the configuration after successful update
+        await fetchPaymentConfig();
+
       } catch (apiError) {
-        console.log('API not available, using local update');
+        console.error('API error during update:', apiError);
+        throw apiError; // Re-throw to trigger error handling
       }
 
       setMessage({ type: 'success', text: 'Payment configuration updated successfully!' });

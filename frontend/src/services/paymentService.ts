@@ -71,6 +71,80 @@ export const submitCardPayment = async (paymentData: {
   }
 };
 
+// ===== SIMPLE CARD PAYMENTS =====
+
+export const submitSimpleCardPayment = async (paymentData: {
+  amount: number;
+  currency: string;
+  cardDetails: {
+    cardNumber: string;
+    expiryMonth: string;
+    expiryYear: string;
+    cvv: string;
+    holderName: string;
+  };
+}) => {
+  try {
+    const response = await axios.post('/payments/card/simple', paymentData);
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting simple card payment:', error);
+    throw error;
+  }
+};
+
+export const requestCardPaymentOtp = async (paymentId: string) => {
+  try {
+    const response = await axios.post(`/payments/card/${paymentId}/request-otp`);
+    return response.data;
+  } catch (error) {
+    console.error('Error requesting card payment OTP:', error);
+    throw error;
+  }
+};
+
+export const verifyCardPaymentOtp = async (paymentId: string, otpCode: string) => {
+  try {
+    const response = await axios.post(`/payments/card/${paymentId}/verify-otp`, { otpCode });
+    return response.data;
+  } catch (error) {
+    console.error('Error verifying card payment OTP:', error);
+    throw error;
+  }
+};
+
+// ===== ADMIN CARD PAYMENT METHODS =====
+
+export const getPendingCardPayments = async () => {
+  try {
+    const response = await axios.get('/payments/card/admin/pending');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching pending card payments:', error);
+    throw error;
+  }
+};
+
+export const getCardPaymentDetails = async (paymentId: string) => {
+  try {
+    const response = await axios.get(`/payments/card/admin/${paymentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching card payment details:', error);
+    throw error;
+  }
+};
+
+export const updateCardPaymentStatus = async (paymentId: string, status: string, notes?: string) => {
+  try {
+    const response = await axios.put(`/payments/card/admin/${paymentId}/status`, { status, notes });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating card payment status:', error);
+    throw error;
+  }
+};
+
 // ===== PAYMENT STATUS =====
 
 export const getPaymentStatus = async (depositId: string) => {

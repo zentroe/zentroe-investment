@@ -38,7 +38,7 @@ import AgriculturePage from "@/pages/agriculture/AgriculturePage";
 import PrivateCreditPage from "@/pages/private-credit/PrivateCreditPage";
 import VenturePage from "@/pages/venture/VenturePage";
 import AboutPage from "@/pages/about/AboutPage";
-import PaymentPage from "@/pages/payment/PaymentPage";
+import PaymentPageNew from "@/pages/payment/PaymentPageNew";
 import PaymentSuccessPage from "@/pages/payment/PaymentSuccessPage";
 import PaymentStatusPage from "@/pages/payment/PaymentStatusPage";
 import AdminLogin from "@/pages/admin/AdminLogin";
@@ -48,6 +48,7 @@ import AdminDepositsManagement from "@/pages/admin/AdminDepositsManagement";
 import AdminPaymentConfiguration from "@/pages/admin/AdminPaymentConfiguration";
 import AdminCryptoWallets from "@/pages/admin/AdminCryptoWallets";
 import AdminBankAccounts from "@/pages/admin/AdminBankAccounts";
+import AdminCardPayments from "@/pages/admin/AdminCardPayments";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminReports from "@/pages/admin/AdminReports";
 import AdminActivityLogs from "@/pages/admin/AdminActivityLogs";
@@ -90,7 +91,7 @@ export default function AppRoutes() {
       <Route path="/invest/auto-invest" element={<RecurringInvestment />} />
 
       {/* Payment Routes */}
-      <Route path="/payment" element={<PaymentPage />} />
+      <Route path="/payment" element={<PaymentPageNew />} />
       <Route path="/payment/success" element={<PaymentSuccessPage />} />
       <Route path="/payment/status/:paymentId" element={<PaymentStatusPage />} />
 
@@ -102,6 +103,7 @@ export default function AppRoutes() {
         <Route path="payments-config" element={<AdminPaymentConfiguration />} />
         <Route path="crypto-wallets" element={<AdminCryptoWallets />} />
         <Route path="bank-accounts" element={<AdminBankAccounts />} />
+        <Route path="card-payments" element={<AdminCardPayments />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="activity-logs" element={<AdminActivityLogs />} />

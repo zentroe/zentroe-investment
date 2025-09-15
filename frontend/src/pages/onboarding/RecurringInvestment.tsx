@@ -43,7 +43,11 @@ function generatePresetAmounts(annualAmount: string, frequency: string): number[
   const total = getMidpointFromRange(annualAmount);
   const periods = frequencyMap[frequency] || 12;
   const base = total / periods;
-  return [1, 2, 3, 4].map((m) => Math.round((base * m) / 5) * 5);
+  const amounts = [1, 2, 3, 4].map((m) => Math.round((base * m) / 5) * 5);
+  // Remove duplicates and ensure we have unique values
+  return Array.from(new Set(amounts)).filter((amount, index, arr) =>
+    amount > 0 && (index === 0 || amount !== arr[index - 1])
+  );
 }
 
 export default function RecurringInvestment() {
@@ -95,7 +99,7 @@ export default function RecurringInvestment() {
       });
 
       toast.success("Setup completed!");
-      navigate("/payment");
+      navigate(`/payment?amount=${userData?.initialInvestmentAmount || 1000}`);
     } catch (error) {
       console.error("Error skipping recurring investment:", error);
       toast.error("Failed to complete setup. Please try again.");
@@ -127,7 +131,7 @@ export default function RecurringInvestment() {
       });
 
       toast.success("Recurring investment setup completed!");
-      navigate("/payment");
+      navigate(`/payment?amount=${userData?.initialInvestmentAmount || 1000}`);
     } catch (error) {
       console.error("Error setting up recurring investment:", error);
       toast.error("Failed to setup recurring investment. Please try again.");
@@ -163,9 +167,9 @@ export default function RecurringInvestment() {
         <div className="mb-6">
           <p className="font-medium mb-2">Frequency</p>
           <div className="flex flex-wrap gap-2">
-            {frequencyOptions.map((opt) => (
+            {frequencyOptions.map((opt, index) => (
               <button
-                key={opt}
+                key={`frequency-${opt}-${index}`}
                 onClick={() => {
                   setFrequency(opt);
                   setInvestmentDay(investmentDaysMap[opt][0]);
@@ -185,8 +189,8 @@ export default function RecurringInvestment() {
             onChange={(e) => setInvestmentDay(e.target.value)}
             className="border w-full rounded px-4 py-3 text-sm"
           >
-            {investmentDaysMap[frequency].map((day) => (
-              <option key={day} value={day}>
+            {investmentDaysMap[frequency].map((day, index) => (
+              <option key={`${day}-${index}`} value={day}>
                 {day}
               </option>
             ))}
@@ -196,9 +200,9 @@ export default function RecurringInvestment() {
         <div className="mb-10">
           <p className="font-medium mb-2">Amount</p>
           <div className="flex flex-wrap gap-2 mb-3">
-            {presetAmounts.map((amount) => (
+            {presetAmounts.map((amount, index) => (
               <button
-                key={amount}
+                key={`preset-${amount}-${index}`}
                 onClick={() => {
                   setSelectedAmount(amount);
                   setCustomAmount("");

@@ -93,9 +93,9 @@ export const submitSimpleCardPayment = async (req: AuthenticatedRequest, res: Re
 
   } catch (error) {
     console.error('Submit simple card payment error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Internal server error' 
+      message: 'Internal server error'
     });
   }
 };
@@ -131,9 +131,9 @@ export const requestCardPaymentOtp = async (req: AuthenticatedRequest, res: Resp
 
   } catch (error) {
     console.error('Request OTP error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Internal server error' 
+      message: 'Internal server error'
     });
   }
 };
@@ -174,9 +174,9 @@ export const verifyCardPaymentOtp = async (req: AuthenticatedRequest, res: Respo
 
   } catch (error) {
     console.error('Verify OTP error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Internal server error' 
+      message: 'Internal server error'
     });
   }
 };
@@ -213,9 +213,9 @@ export const getCardPaymentDetails = async (req: Request, res: Response): Promis
 
   } catch (error) {
     console.error('Get card payment details error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Internal server error' 
+      message: 'Internal server error'
     });
   }
 };
@@ -252,9 +252,9 @@ export const getPendingCardPayments = async (req: Request, res: Response): Promi
 
   } catch (error) {
     console.error('Get pending card payments error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Internal server error' 
+      message: 'Internal server error'
     });
   }
 };
@@ -282,7 +282,7 @@ export const updateCardPaymentStatus = async (req: Request, res: Response): Prom
     cardPayments.set(paymentId, cardPayment);
 
     // Update corresponding deposit
-    const deposit = await Deposit.findOne({ 
+    const deposit = await Deposit.findOne({
       userId: cardPayment.userId,
       adminNotes: `Card Payment - ${paymentId}`
     });
@@ -303,9 +303,9 @@ export const updateCardPaymentStatus = async (req: Request, res: Response): Prom
 
   } catch (error) {
     console.error('Update card payment status error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Internal server error' 
+      message: 'Internal server error'
     });
   }
 };

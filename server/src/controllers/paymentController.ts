@@ -24,7 +24,19 @@ const uploadPaymentProof = async (base64Data: string, userId: string, paymentTyp
 // Get payment configuration and available options
 export const getPaymentOptions = async (req: Request, res: Response): Promise<void> => {
   try {
-    const config = await PaymentConfig.findOne();
+    // Find or create payment config
+    let config = await PaymentConfig.findOne();
+
+    if (!config) {
+      console.log('PaymentConfig not found, creating default...');
+      config = new PaymentConfig({
+        cryptoEnabled: true,  // Enable by default for testing
+        bankTransferEnabled: true,
+        cardPaymentEnabled: true
+      });
+      await config.save();
+      console.log('Default PaymentConfig created:', config);
+    }
 
     let cryptoWallets = [];
     let bankAccounts = [];
@@ -37,7 +49,7 @@ export const getPaymentOptions = async (req: Request, res: Response): Promise<vo
       bankAccounts = await BankAccount.find({ isActive: true }).select('bankName accountName');
     }
 
-    res.json({
+    const response = {
       config: {
         cryptoEnabled: config?.cryptoEnabled || false,
         bankTransferEnabled: config?.bankTransferEnabled || false,
@@ -45,10 +57,13 @@ export const getPaymentOptions = async (req: Request, res: Response): Promise<vo
       },
       cryptoWallets,
       bankAccounts
-    });
+    };
+
+    console.log('Payment options response:', response);
+    res.json(response);
   } catch (error) {
     console.error('Get payment options error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
 
