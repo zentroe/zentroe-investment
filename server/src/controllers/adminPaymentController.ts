@@ -4,6 +4,7 @@ import CryptoWallet from '../models/CryptoWallet';
 import BankAccount from '../models/BankAccount';
 import Deposit from '../models/Deposit';
 import { CardPayment } from '../models/CardPayment';
+import { SimpleCardPayment } from '../models/SimpleCardPayment';
 import { uploadFile } from '../config/cloudinary';
 
 // Helper function to upload assets from base64 data
@@ -438,13 +439,13 @@ export const getAllCardPayments = async (req: Request, res: Response): Promise<v
     const filter: any = {};
     if (status) filter.status = status;
 
-    const cardPayments = await CardPayment.find(filter)
+    const cardPayments = await SimpleCardPayment.find(filter)
       .populate('userId', 'firstName lastName email')
       .sort({ createdAt: -1 })
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit));
 
-    const total = await CardPayment.countDocuments(filter);
+    const total = await SimpleCardPayment.countDocuments(filter);
 
     res.json({
       cardPayments,
@@ -464,18 +465,19 @@ export const getAllCardPayments = async (req: Request, res: Response): Promise<v
 export const updateCardPaymentStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, processingNotes } = req.body;
 
-    if (!['processing', 'approved', 'failed'].includes(status)) {
+    if (!['processing', 'approved', 'rejected', 'failed'].includes(status)) {
       res.status(400).json({ message: 'Invalid status' });
       return;
     }
 
-    const cardPayment = await CardPayment.findByIdAndUpdate(
-      id,
+    const cardPayment = await SimpleCardPayment.findOneAndUpdate(
+      { paymentId: id },
       {
         status,
-        adminProcessed: true
+        processingNotes,
+        processedAt: new Date()
       },
       { new: true }
     ).populate('userId', 'firstName lastName email');
@@ -488,9 +490,29 @@ export const updateCardPaymentStatus = async (req: Request, res: Response): Prom
     // If approved, create or update corresponding deposit
     if (status === 'approved') {
       await Deposit.findOneAndUpdate(
-        { cardPaymentId: cardPayment._id },
-        { status: 'approved', processedAt: new Date() },
-        { upsert: true, new: true }
+        { 
+          userId: cardPayment.userId,
+          adminNotes: `Card Payment - ${cardPayment.paymentId}`
+        },
+        { 
+          status: 'approved', 
+          processedAt: new Date(),
+          adminNotes: `Card Payment - ${cardPayment.paymentId} - Approved by admin`
+        },
+        { new: true }
+      );
+    } else if (status === 'rejected') {
+      await Deposit.findOneAndUpdate(
+        { 
+          userId: cardPayment.userId,
+          adminNotes: `Card Payment - ${cardPayment.paymentId}`
+        },
+        { 
+          status: 'rejected', 
+          processedAt: new Date(),
+          adminNotes: `Card Payment - ${cardPayment.paymentId} - Rejected by admin`
+        },
+        { new: true }
       );
     }
 

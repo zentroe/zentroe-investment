@@ -117,7 +117,7 @@ export const verifyCardPaymentOtp = async (paymentId: string, otpCode: string) =
 
 export const getPendingCardPayments = async () => {
   try {
-    const response = await axios.get('/payments/card/admin/pending');
+    const response = await axios.get('/admin/payments/card-payments');
     return response.data;
   } catch (error) {
     console.error('Error fetching pending card payments:', error);
@@ -127,7 +127,7 @@ export const getPendingCardPayments = async () => {
 
 export const getCardPaymentDetails = async (paymentId: string) => {
   try {
-    const response = await axios.get(`/payments/card/admin/${paymentId}`);
+    const response = await axios.get(`/payments/card/${paymentId}/status`);
     return response.data;
   } catch (error) {
     console.error('Error fetching card payment details:', error);
@@ -137,10 +137,30 @@ export const getCardPaymentDetails = async (paymentId: string) => {
 
 export const updateCardPaymentStatus = async (paymentId: string, status: string, notes?: string) => {
   try {
-    const response = await axios.put(`/payments/card/admin/${paymentId}/status`, { status, notes });
+    const response = await axios.put(`/admin/payments/card-payments/${paymentId}/status`, { status, notes });
     return response.data;
   } catch (error) {
     console.error('Error updating card payment status:', error);
+    throw error;
+  }
+};
+
+export const adminRequestCardPaymentOtp = async (paymentId: string) => {
+  try {
+    const response = await axios.post(`/admin/payments/card-payments/${paymentId}/request-otp`);
+    return response.data;
+  } catch (error) {
+    console.error('Error requesting OTP:', error);
+    throw error;
+  }
+};
+
+export const submitCardPaymentOtp = async (paymentId: string, otpCode: string) => {
+  try {
+    const response = await axios.post(`/payments/card/${paymentId}/verify-otp`, { otpCode });
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting OTP:', error);
     throw error;
   }
 };

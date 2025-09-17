@@ -99,7 +99,7 @@ export default function RecurringInvestment() {
       });
 
       toast.success("Setup completed!");
-      navigate(`/payment?amount=${userData?.initialInvestmentAmount || 1000}`);
+      navigate('/payment');
     } catch (error) {
       console.error("Error skipping recurring investment:", error);
       toast.error("Failed to complete setup. Please try again.");
@@ -131,7 +131,7 @@ export default function RecurringInvestment() {
       });
 
       toast.success("Recurring investment setup completed!");
-      navigate(`/payment?amount=${userData?.initialInvestmentAmount || 1000}`);
+      navigate('/payment');
     } catch (error) {
       console.error("Error setting up recurring investment:", error);
       toast.error("Failed to setup recurring investment. Please try again.");

@@ -12,7 +12,7 @@ export const isAdmin = (req: AuthRequest, res: Response, next: NextFunction): vo
   // If user is missing or user.role is not "admin", block access
   if (!req.user || req.user.role !== "admin") {
     res.status(403).json({ message: "Forbidden - Admins only" });
-    return; 
+    return;
   }
 
   next();

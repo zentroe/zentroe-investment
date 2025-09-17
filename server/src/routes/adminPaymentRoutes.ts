@@ -15,6 +15,7 @@ import {
   getAllCardPayments,
   updateCardPaymentStatus
 } from '../controllers/adminPaymentController';
+import { adminRequestCardPaymentOtp } from '../controllers/simpleCardPaymentController';
 import { authenticateAdmin } from '../middleware/adminAuth';
 
 const router = Router();
@@ -45,5 +46,6 @@ router.put('/deposits/:id/status', updateDepositStatus);
 // Card payment management routes
 router.get('/card-payments', getAllCardPayments);
 router.put('/card-payments/:id/status', updateCardPaymentStatus);
+router.post('/card-payments/:paymentId/request-otp', adminRequestCardPaymentOtp);
 
 export default router;

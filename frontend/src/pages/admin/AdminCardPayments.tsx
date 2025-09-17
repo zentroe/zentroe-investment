@@ -11,6 +11,11 @@ import {
   Calendar,
   Hash
 } from 'lucide-react';
+import {
+  getPendingCardPayments,
+  updateCardPaymentStatus,
+  adminRequestCardPaymentOtp
+} from '@/services/paymentService';
 
 interface CardPayment {
   paymentId: string;
@@ -34,26 +39,61 @@ const AdminCardPayments: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showCardDetails, setShowCardDetails] = useState<{ [key: string]: boolean }>({});
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [hasActivePayments, setHasActivePayments] = useState(false);
 
   useEffect(() => {
     fetchCardPayments();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchCardPayments, 30000);
-    return () => clearInterval(interval);
   }, []);
 
-  const fetchCardPayments = async () => {
-    try {
-      const response = await fetch('/api/payments/card/admin/pending', {
-        credentials: 'include'
-      });
+  // Separate useEffect for polling based on active payments
+  useEffect(() => {
+    if (!hasActivePayments) return;
 
-      if (response.ok) {
-        const result = await response.json();
-        setCardPayments(result.data.payments || []);
+    // Poll more frequently when there are active payments (for real-time OTP updates)
+    const interval = setInterval(fetchCardPayments, 5000);
+    return () => clearInterval(interval);
+  }, [hasActivePayments]);
+
+  // Regular polling every 30 seconds regardless
+  useEffect(() => {
+    const interval = setInterval(fetchCardPayments, 30000);
+    return () => clearInterval(interval);
+  }, []); const fetchCardPayments = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching card payments...');
+      console.log('Cookies:', document.cookie);
+
+      const result = await getPendingCardPayments();
+      console.log('Card payments result:', result);
+      console.log('Full response:', JSON.stringify(result, null, 2));
+      if (result.cardPayments) {
+        setCardPayments(result.cardPayments);
+        console.log('Set payments:', result.cardPayments.length, 'items');
+
+        // Check if there are active payments for frequent polling
+        const activePayments = result.cardPayments.some((payment: CardPayment) =>
+          payment.status === 'pending' || payment.status === 'processing'
+        );
+        setHasActivePayments(activePayments);
+
+      } else if (result.success === false) {
+        console.warn('API returned error:', result.message);
+        setCardPayments([]);
+        setHasActivePayments(false);
+      } else {
+        console.warn('No payments found in result, setting empty array');
+        setCardPayments([]);
+        setHasActivePayments(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch card payments:', error);
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      setCardPayments([]);
+      setHasActivePayments(false);
     } finally {
       setLoading(false);
     }
@@ -73,26 +113,26 @@ const AdminCardPayments: React.FC = () => {
   const handleUpdateStatus = async (paymentId: string, status: 'approved' | 'rejected') => {
     setProcessingId(paymentId);
     try {
-      const response = await fetch(`/api/payments/card/admin/${paymentId}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          status,
-          adminNotes: `Payment ${status} via manual card processing`
-        })
-      });
-
-      if (response.ok) {
-        fetchCardPayments(); // Refresh the list
-        alert(`Payment ${status} successfully`);
-      } else {
-        const error = await response.json();
-        alert(error.message || `Failed to ${status} payment`);
-      }
-    } catch (error) {
+      await updateCardPaymentStatus(paymentId, status, `Payment ${status} via manual card processing`);
+      fetchCardPayments(); // Refresh the list
+      alert(`Payment ${status} successfully`);
+    } catch (error: any) {
       console.error('Failed to update payment status:', error);
-      alert(`Failed to ${status} payment`);
+      alert(error.response?.data?.message || `Failed to ${status} payment`);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleRequestOtp = async (paymentId: string) => {
+    setProcessingId(paymentId);
+    try {
+      await adminRequestCardPaymentOtp(paymentId);
+      fetchCardPayments(); // Refresh the list to show updated status
+      alert('OTP request sent to user successfully');
+    } catch (error: any) {
+      console.error('Failed to request OTP:', error);
+      alert(error.response?.data?.message || 'Failed to request OTP');
     } finally {
       setProcessingId(null);
     }
@@ -143,22 +183,46 @@ const AdminCardPayments: React.FC = () => {
             Manage manual card payment processing ({cardPayments.length} pending)
           </p>
         </div>
-        <button
-          onClick={fetchCardPayments}
-          className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-        >
-          Refresh
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={fetchCardPayments}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Refresh
+          </button>
+          <button
+            onClick={() => {
+              console.log('Testing API connection...');
+              fetch('/admin/payments/card-payments', { credentials: 'include' })
+                .then(res => res.json())
+                .then(data => console.log('Direct API test result:', data))
+                .catch(err => console.error('Direct API test error:', err));
+            }}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            Test API
+          </button>
+        </div>
       </div>
 
       {/* Card Payments List */}
-      {cardPayments.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading card payments...</p>
+        </div>
+      ) : cardPayments.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No pending card payments</h3>
-          <p className="text-gray-500">
+          <p className="text-gray-500 mb-4">
             All card payments have been processed or no payments have been submitted yet.
           </p>
+          <div className="text-xs text-gray-400 space-y-1">
+            <p>• Check that card payments have been submitted from the frontend</p>
+            <p>• Verify that the server hasn't restarted (payments are stored in memory)</p>
+            <p>• Ensure the API endpoint /payments/card/admin/pending is accessible</p>
+          </div>
         </div>
       ) : (
         <div className="grid gap-6">
@@ -306,13 +370,13 @@ const AdminCardPayments: React.FC = () => {
                 {/* OTP Section */}
                 {payment.needsOtp && payment.otpCode && (
                   <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h4 className="text-sm font-medium text-blue-800 mb-2">OTP Provided</h4>
+                    <h4 className="text-sm font-medium text-blue-800 mb-2">OTP Provided by User</h4>
                     <div className="flex items-center space-x-2">
                       <code className="text-lg bg-white px-3 py-2 rounded border font-mono text-blue-900">
                         {payment.otpCode}
                       </code>
                       <button
-                        onClick={() => copyToClipboard(payment.otpCode!)}
+                        onClick={() => copyToClipboard(payment.otpCode || '')}
                         className="p-2 text-blue-400 hover:text-blue-600"
                         title="Copy OTP"
                       >
@@ -323,7 +387,28 @@ const AdminCardPayments: React.FC = () => {
                 )}
 
                 {/* Action Buttons */}
-                {payment.status === 'pending' || payment.status === 'processing' ? (
+                {payment.status === 'pending' ? (
+                  <div className="mt-6 space-y-3">
+                    {/* Request OTP Button */}
+                    <button
+                      onClick={() => handleRequestOtp(payment.paymentId)}
+                      disabled={processingId === payment.paymentId}
+                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {processingId === payment.paymentId ? 'Processing...' : 'Request OTP from User'}
+                    </button>
+
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => handleUpdateStatus(payment.paymentId, 'rejected')}
+                        disabled={processingId === payment.paymentId}
+                        className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        {processingId === payment.paymentId ? 'Processing...' : 'Reject Payment'}
+                      </button>
+                    </div>
+                  </div>
+                ) : payment.status === 'processing' ? (
                   <div className="mt-6 flex space-x-3">
                     <button
                       onClick={() => handleUpdateStatus(payment.paymentId, 'approved')}

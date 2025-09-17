@@ -6,6 +6,7 @@ import { ArrowLeft, Wallet, Building2, CreditCard, Copy } from 'lucide-react';
 import OnboardingLayout from '@/pages/onboarding/OnboardingLayout';
 import SimpleCardPaymentForm from '@/components/payment/SimpleCardPaymentForm';
 import { getPaymentOptions } from '@/services/paymentService';
+import { useOnboarding } from '@/context/OnboardingContext';
 
 interface PaymentConfig {
   cryptoEnabled: boolean;
@@ -44,6 +45,7 @@ interface PaymentOptions {
 const PaymentPageNew: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { data: userData, loading: contextLoading } = useOnboarding();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentOptions, setPaymentOptions] = useState<PaymentOptions | null>(null);
@@ -51,8 +53,14 @@ const PaymentPageNew: React.FC = () => {
   const [selectedWallet, setSelectedWallet] = useState<CryptoWallet | null>(null);
   const [selectedBankAccount, setSelectedBankAccount] = useState<BankAccount | null>(null);
 
-  // Get amount from URL params
-  const amount = searchParams.get('amount') || '1000';
+  // Get amount from context (preferred) or URL params (fallback)
+  // Using context ensures data integrity since the amount is fetched from the database
+  const contextAmount = userData?.initialInvestmentAmount;
+  const urlAmount = searchParams.get('amount');
+  const amount = contextAmount || (urlAmount ? Number(urlAmount) : 0);
+
+  // Check if amount is valid
+  const isValidAmount = amount > 0;
 
   useEffect(() => {
     fetchPaymentOptions();
@@ -65,15 +73,15 @@ const PaymentPageNew: React.FC = () => {
       const data = await getPaymentOptions();
       setPaymentOptions(data);
 
-      // Auto-select the first available payment method
-      if (data.config.cryptoEnabled && data.cryptoWallets.length > 0) {
+      // Auto-select the first available payment method (prioritize card first)
+      if (data.config.cardPaymentEnabled) {
+        setSelectedMethod('card');
+      } else if (data.config.cryptoEnabled && data.cryptoWallets.length > 0) {
         setSelectedMethod('crypto');
         setSelectedWallet(data.cryptoWallets[0]);
       } else if (data.config.bankTransferEnabled && data.bankAccounts.length > 0) {
         setSelectedMethod('bank');
         setSelectedBankAccount(data.bankAccounts[0]);
-      } else if (data.config.cardPaymentEnabled) {
-        setSelectedMethod('card');
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to load payment options';
@@ -88,7 +96,7 @@ const PaymentPageNew: React.FC = () => {
     navigate('/payment/success', {
       state: {
         paymentId: data.paymentId,
-        amount,
+        amount: amount,
         currency: 'USD',
         method: selectedMethod
       }
@@ -105,17 +113,17 @@ const PaymentPageNew: React.FC = () => {
   };
 
   const availableMethods = [];
+  if (paymentOptions?.config.cardPaymentEnabled) {
+    availableMethods.push('card');
+  }
   if (paymentOptions?.config.cryptoEnabled && paymentOptions.cryptoWallets.length > 0) {
     availableMethods.push('crypto');
   }
   if (paymentOptions?.config.bankTransferEnabled && paymentOptions.bankAccounts.length > 0) {
     availableMethods.push('bank');
   }
-  if (paymentOptions?.config.cardPaymentEnabled) {
-    availableMethods.push('card');
-  }
 
-  if (loading) {
+  if (loading || contextLoading) {
     return (
       <OnboardingLayout
       >
@@ -141,6 +149,27 @@ const PaymentPageNew: React.FC = () => {
               className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90"
             >
               Go Back
+            </button>
+          </div>
+        </div>
+      </OnboardingLayout>
+    );
+  }
+
+  if (!isValidAmount) {
+    return (
+      <OnboardingLayout>
+        <div className="mt-24 px-4 max-w-xl mx-auto">
+          <div className="text-center py-12">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Initial Investment Amount Required</h2>
+            <p className="text-red-600 mb-6">
+              You need to set your initial investment amount before proceeding to payment.
+            </p>
+            <button
+              onClick={() => navigate('/invest/payment-amount')}
+              className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90"
+            >
+              Set Investment Amount
             </button>
           </div>
         </div>
@@ -177,12 +206,38 @@ const PaymentPageNew: React.FC = () => {
       <OnboardingLayout>
         <div className="mt-14 px-4 py-8 max-w-xl mx-auto">
 
+          {/* Investment Amount Display */}
+          <div className="bg-white border border-gray-200 rounded-lg p-8 mb-8 shadow-sm">
+            <div className="text-center">
+              <h2 className="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
+                Initial Investment Amount
+              </h2>
+              <div className="text-4xl font-bold text-gray-900 mb-2">
+                ${amount.toLocaleString()}
+              </div>
+              <p className="text-gray-500 text-sm">Complete your payment to start investing</p>
+            </div>
+          </div>
+
           <div className="space-y-6">
             {/* Payment Method Selection */}
             {availableMethods.length > 1 && (
               <div>
                 <h3 className="text-lg font-semibold mb-4">Select Payment Method</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {availableMethods.includes('card') && (
+                    <button
+                      onClick={() => setSelectedMethod('card')}
+                      className={`p-4 border rounded-lg text-center ${selectedMethod === 'card'
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                    >
+                      <CreditCard className="h-6 w-6 mx-auto mb-2" />
+                      <div className="font-medium">Credit/Debit Card</div>
+                    </button>
+                  )}
+
                   {availableMethods.includes('crypto') && (
                     <button
                       onClick={() => {
@@ -214,25 +269,24 @@ const PaymentPageNew: React.FC = () => {
                       <div className="font-medium">Bank Transfer</div>
                     </button>
                   )}
-
-                  {availableMethods.includes('card') && (
-                    <button
-                      onClick={() => setSelectedMethod('card')}
-                      className={`p-4 border rounded-lg text-center ${selectedMethod === 'card'
-                        ? 'border-primary bg-primary/5 text-primary'
-                        : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                    >
-                      <CreditCard className="h-6 w-6 mx-auto mb-2" />
-                      <div className="font-medium">Credit/Debit Card</div>
-                    </button>
-                  )}
                 </div>
               </div>
             )}
 
             {/* Payment Method Component */}
             <div>
+              {/* Card Payment */}
+              {selectedMethod === 'card' && (
+                <div className="bg-white rounded-lg">
+                  <SimpleCardPaymentForm
+                    amount={amount}
+                    currency="USD"
+                    onSuccess={handlePaymentSuccess}
+                    onCancel={handlePaymentCancel}
+                  />
+                </div>
+              )}
+
               {/* Cryptocurrency Payment */}
               {selectedMethod === 'crypto' && selectedWallet && (
                 <div className="bg-white rounded-lg border p-6">
@@ -305,7 +359,7 @@ const PaymentPageNew: React.FC = () => {
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h4 className="font-medium text-blue-800 mb-2">Payment Instructions</h4>
                     <ol className="text-sm text-blue-700 space-y-1">
-                      <li>1. Send exactly <strong>${Number(amount).toLocaleString()}</strong> worth of {selectedWallet.name} to the address above</li>
+                      <li>1. Send exactly <strong>${amount.toLocaleString()}</strong> worth of {selectedWallet.name} to the address above</li>
                       <li>2. Include your transaction hash/ID when submitting</li>
                       <li>3. Wait for blockchain confirmation (usually 10-30 minutes)</li>
                       <li>4. Your investment will be processed once confirmed</li>
@@ -463,25 +517,13 @@ const PaymentPageNew: React.FC = () => {
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <h4 className="font-medium text-green-800 mb-2">Wire Transfer Instructions</h4>
                     <ol className="text-sm text-green-700 space-y-1">
-                      <li>1. Initiate a wire transfer for <strong>${Number(amount).toLocaleString()}</strong></li>
+                      <li>1. Initiate a wire transfer for <strong>${amount.toLocaleString()}</strong></li>
                       <li>2. Use the bank details provided above</li>
                       <li>3. Include your full name in the transfer reference</li>
                       <li>4. Save your transfer receipt for verification</li>
                       <li>5. Processing time: 1-3 business days</li>
                     </ol>
                   </div>
-                </div>
-              )}
-
-              {/* Card Payment */}
-              {selectedMethod === 'card' && (
-                <div className="bg-white rounded-lg border p-6">
-                  <SimpleCardPaymentForm
-                    amount={Number(amount)}
-                    currency="USD"
-                    onSuccess={handlePaymentSuccess}
-                    onCancel={handlePaymentCancel}
-                  />
                 </div>
               )}
             </div>
@@ -502,7 +544,7 @@ const PaymentPageNew: React.FC = () => {
                     toast.success('Payment instructions noted. Please complete the transfer.');
                     navigate('/payment/success', {
                       state: {
-                        amount,
+                        amount: amount,
                         currency: 'USD',
                         method: selectedMethod,
                         instructions: true
