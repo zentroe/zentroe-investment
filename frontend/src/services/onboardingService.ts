@@ -205,3 +205,49 @@ export const saveIdentityInfo = async (socialSecurityNumber: string, dateOfBirth
     throw error;
   }
 };
+
+// Investment Plans Service - Get available investment plans for recommendations
+export const getInvestmentPlans = async () => {
+  try {
+    console.log("🌐 Making request to /onboarding/investment-plans...");
+    const response = await axios.get('/onboarding/investment-plans');
+    console.log("✅ Response received:", response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Error fetching investment plans:', error);
+    if (error.response) {
+      console.error('Error response:', error.response.data);
+      console.error('Error status:', error.response.status);
+    }
+    throw error;
+  }
+};
+
+// Interface for investment plan (matches backend)
+export interface InvestmentPlan {
+  _id: string;
+  name: string;
+  description: string;
+  category: 'retirement' | 'starter' | 'highGrowth' | 'default';
+  profitPercentage: number;
+  duration: number;
+  minInvestment: number;
+  maxInvestment?: number;
+  pieChartData: Array<{
+    name: string;
+    value: number;
+    color: string;
+  }>;
+  supplementalTabs: {
+    best: Array<{ title: string; desc: string }>;
+    strategy: Array<{ title: string; desc: string }>;
+    assets: Array<{ title: string; desc: string }>;
+  };
+  isActive: boolean;
+  priority: number;
+  targetIncomeRanges: string[];
+  targetInvestmentAmounts: string[];
+  targetAccountTypes: string[];
+  createdAt: string;
+  updatedAt: string;
+}

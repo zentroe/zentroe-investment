@@ -30,7 +30,7 @@ export default function AccountType() {
       {
         id: "general",
         title: "General investing account",
-        min: "$10 minimum",
+        min: "$500 minimum",
         desc: "A flexible investing account created to help you build long-term wealth.",
       },
       {
@@ -76,11 +76,11 @@ export default function AccountType() {
             </h1>
             <p className="text-sm text-gray-600 mt-2">
               Start creating an account that meets your goals. You can add another later.
-              {selected && !contextLoading && (
+              {/* {selected && !contextLoading && (
                 <span className="block mt-1 text-primary font-medium">
                   Previously selected: {selected === "general" ? "General investing account" : "Retirement account"}
                 </span>
-              )}
+              )} */}
             </p>
           </div>
 

@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { User } from "../models/User";
 import { AuthenticatedRequest } from "../types/CustomRequest";
+import { InvestmentPlan } from "../models/InvestmentPlan";
 
 /**
  * Onboarding Controller
@@ -814,6 +815,48 @@ export const saveIdentityInfo = async (req: AuthenticatedRequest, res: Response)
     });
   } catch (error) {
     console.error("Error saving identity information:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get Public Investment Plans (for onboarding recommendations)
+export const getPublicInvestmentPlans = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    console.log("🔍 getPublicInvestmentPlans called by user:", req.user?.userId);
+
+    // Get only active investment plans with essential fields for users
+    const plans = await InvestmentPlan.find({
+      isActive: true
+    })
+      .select('name description category profitPercentage duration minInvestment maxInvestment pieChartData supplementalTabs priority targetIncomeRanges targetInvestmentAmounts targetAccountTypes isActive')
+      .sort({ priority: -1 }); // Sort by priority descending
+
+    console.log("📊 Total investment plans found:", plans.length);
+    console.log("📋 Plan details:", plans.map(p => ({
+      name: p.name,
+      category: p.category,
+      isActive: p.isActive,
+      priority: p.priority
+    })));
+
+    // Also check all plans (including inactive ones) for debugging
+    const allPlans = await InvestmentPlan.find({})
+      .select('name isActive priority')
+      .sort({ priority: -1 });
+
+    console.log("🔍 All plans in database (active/inactive):", allPlans.map(p => ({
+      name: p.name,
+      isActive: p.isActive,
+      priority: p.priority
+    })));
+
+    res.status(200).json({
+      message: "Investment plans retrieved successfully",
+      plans,
+      count: plans.length
+    });
+  } catch (error) {
+    console.error("❌ Error fetching public investment plans:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

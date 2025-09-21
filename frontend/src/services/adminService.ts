@@ -305,6 +305,72 @@ export const uploadFile = async (file: File, folder: string = 'admin-uploads') =
   }
 };
 
+// ===== INVESTMENT PLAN MANAGEMENT =====
+
+export const createInvestmentPlan = async (planData: any) => {
+  try {
+    const response = await axios.post('/admin/investment-plans', planData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating investment plan:', error);
+    throw error;
+  }
+};
+
+export const getAllInvestmentPlans = async (filters?: { category?: string; isActive?: boolean }) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters?.category) params.append('category', filters.category);
+    if (filters?.isActive !== undefined) params.append('isActive', filters.isActive.toString());
+
+    const response = await axios.get(`/admin/investment-plans?${params.toString()}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching investment plans:', error);
+    throw error;
+  }
+};
+
+export const getInvestmentPlanById = async (id: string) => {
+  try {
+    const response = await axios.get(`/admin/investment-plans/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching investment plan:', error);
+    throw error;
+  }
+};
+
+export const updateInvestmentPlan = async (id: string, planData: any) => {
+  try {
+    const response = await axios.put(`/admin/investment-plans/${id}`, planData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating investment plan:', error);
+    throw error;
+  }
+};
+
+export const deleteInvestmentPlan = async (id: string) => {
+  try {
+    const response = await axios.delete(`/admin/investment-plans/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting investment plan:', error);
+    throw error;
+  }
+};
+
+export const toggleInvestmentPlanStatus = async (id: string) => {
+  try {
+    const response = await axios.patch(`/admin/investment-plans/${id}/toggle-status`);
+    return response.data;
+  } catch (error) {
+    console.error('Error toggling investment plan status:', error);
+    throw error;
+  }
+};
+
 // ===== TYPE DEFINITIONS =====
 
 export interface AdminProfile {
@@ -377,11 +443,62 @@ export interface CardPayment {
 }
 
 export interface DashboardStats {
+  totalUsers: number;
   totalDeposits: number;
   pendingDeposits: number;
   approvedDeposits: number;
   rejectedDeposits: number;
   totalCardPayments: number;
+  pendingCardPayments: number;
+  cryptoPayments: number;
+  bankTransfers: number;
+  cardPayments: number;
   totalAmount: number;
-  recentActivity: any[];
+}
+
+export interface PieChartData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+export interface TabContent {
+  title: string;
+  desc: string;
+}
+
+export interface SupplementalTabs {
+  best: TabContent[];
+  strategy: TabContent[];
+  assets: TabContent[];
+}
+
+export interface InvestmentPlan {
+  _id: string;
+  name: string;
+  description: string;
+  category: 'retirement' | 'starter' | 'highGrowth' | 'default';
+  profitPercentage: number;
+  duration: number; // Investment duration in days
+  minInvestment: number;
+  maxInvestment?: number;
+  pieChartData: PieChartData[];
+  supplementalTabs: SupplementalTabs;
+  isActive: boolean;
+  priority: number;
+  targetIncomeRanges: string[];
+  targetInvestmentAmounts: string[];
+  targetAccountTypes: string[];
+  createdBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  updatedBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 }

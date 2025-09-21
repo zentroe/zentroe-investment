@@ -52,6 +52,7 @@ import AdminCardPayments from "@/pages/admin/AdminCardPayments";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminReports from "@/pages/admin/AdminReports";
 import AdminActivityLogs from "@/pages/admin/AdminActivityLogs";
+import AdminInvestmentPlans from "@/pages/admin/AdminInvestmentPlans";
 
 
 
@@ -105,6 +106,7 @@ export default function AppRoutes() {
         <Route path="bank-accounts" element={<AdminBankAccounts />} />
         <Route path="card-payments" element={<AdminCardPayments />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="investment-plans" element={<AdminInvestmentPlans />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="activity-logs" element={<AdminActivityLogs />} />
       </Route>

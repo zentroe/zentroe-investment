@@ -5,258 +5,182 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import OnboardingLayout from "./OnboardingLayout";
 import OtherPlans from "./components/OtherPlans";
+import PlanPreviewModal from "./components/PlanPreviewModal";
 import { useNavigate } from "react-router-dom";
-import { saveRecommendedPortfolio } from "@/services/onboardingService";
-import { getCurrentUser } from "@/services/auth";
+import { saveRecommendedPortfolio, getInvestmentPlans, getUserOnboardingData, type InvestmentPlan } from "@/services/onboardingService";
 import { toast } from "sonner";
 
-// Pie chart config
-const pieData = [
-  { name: "Private credit", value: 80, color: "#6B8FAE" },
-  { name: "Real estate", value: 20, color: "#B4C8D1" },
-];
+// New recommendation logic using database plans
+function getRecommendedPlan(userData: any, investmentPlans: InvestmentPlan[]): InvestmentPlan | null {
+  console.log("🔍 getRecommendedPlan called with:", { userData, planCount: investmentPlans.length });
 
-// Tab content based on strategy
-const supplementalTabs = {
-  retirement: {
-    best: [
-      {
-        title: "Those near or in retirement",
-        desc:
-          "This strategy offers reliable income streams designed to support living expenses during retirement, helping retirees preserve capital while meeting ongoing financial needs in a stable and predictable manner.",
-      },
-      {
-        title: "Investors focused on stability",
-        desc:
-          "Perfect for individuals seeking low-volatility returns and a conservative growth approach, prioritizing capital preservation and peace of mind over chasing high but uncertain profits.",
-      },
-    ],
-    strategy: [
-      {
-        title: "Long-term income generation",
-        desc:
-          "Focused on generating steady, dependable cash flow through diversified, income-producing assets that align with the financial goals of long-term retirees and conservative investors alike.",
-      },
-      {
-        title: "Risk-managed allocation",
-        desc:
-          "Employs a cautious approach that diversifies across stable asset classes, aiming to minimize short-term losses while maintaining consistent performance over long horizons.",
-      },
-    ],
-    assets: [
-      {
-        title: "Income-oriented real estate",
-        desc:
-          "Focuses on properties like apartments and industrial spaces that generate consistent rental income, offering a dependable foundation for income-focused investors.",
-      },
-      {
-        title: "Private credit",
-        desc:
-          "Provides fixed-interest returns by lending to qualified borrowers, often with collateral backing, offering reduced volatility and consistent monthly income.",
-      },
-    ],
-  },
-
-  highGrowth: {
-    best: [
-      {
-        title: "High-net-worth investors",
-        desc:
-          "Ideal for affluent individuals seeking aggressive expansion beyond traditional investments, balancing portfolio risk with exposure to alternative, high-yield private market opportunities.",
-      },
-      {
-        title: "Those tolerant of market swings",
-        desc:
-          "Best suited for investors willing to endure short-term volatility in exchange for the potential of outsized, long-term gains in dynamic and high-growth sectors.",
-      },
-    ],
-    strategy: [
-      {
-        title: "Aggressive diversification",
-        desc:
-          "Combines multiple alternative investment classes like real estate, private equity, and venture capital to pursue significant long-term capital appreciation and resilience across economic cycles.",
-      },
-      {
-        title: "Access to exclusive deals",
-        desc:
-          "Enables exposure to premium private market opportunities, including tech startups and strategic funding rounds, typically reserved for institutional or accredited investors.",
-      },
-    ],
-    assets: [
-      {
-        title: "Private tech & equity",
-        desc:
-          "Includes direct investment in venture-backed startups and pre-IPO companies that offer strong growth prospects but carry higher risk due to market fluctuations.",
-      },
-      {
-        title: "Mixed-use real estate",
-        desc:
-          "Invests in commercial and residential properties in high-demand markets, targeting capital appreciation and diverse income sources from multi-use development projects.",
-      },
-    ],
-  },
-
-  starter: {
-    best: [
-      {
-        title: "New & cautious investors",
-        desc:
-          "Tailored for first-time or cautious investors who prefer stability over high risk, allowing them to grow wealth gradually through secure and predictable investments.",
-      },
-      {
-        title: "Those building capital",
-        desc:
-          "Suited for those in early wealth-building stages who want simple, repeatable investment structures that generate modest, but reliable returns for future reinvestment.",
-      },
-    ],
-    strategy: [
-      {
-        title: "Lower risk entry point",
-        desc:
-          "Focused on safety and simplicity, this strategy balances affordability with financial growth, helping investors build confidence before progressing into more complex investments.",
-      },
-      {
-        title: "Simple asset mix",
-        desc:
-          "Utilizes a balanced combination of low-volatility real estate and conservative credit products that require minimal management but still offer meaningful results over time.",
-      },
-    ],
-    assets: [
-      {
-        title: "Low-volatility REITs",
-        desc:
-          "Real estate investment trusts (REITs) with consistent performance and minimal risk, ideal for generating returns without exposure to extreme market ups and downs.",
-      },
-      {
-        title: "Secured credit notes",
-        desc:
-          "Short-duration, collateral-backed lending instruments that provide predictable income and lower risk than unsecured alternatives, making them ideal for cautious investors.",
-      },
-    ],
-  },
-
-  default: {
-    best: [
-      {
-        title: "Steady income seekers",
-        desc:
-          "Ideal for individuals aiming to generate passive income monthly, while still maintaining exposure to long-term value growth through real estate and credit-based strategies.",
-      },
-      {
-        title: "Working professionals",
-        desc:
-          "Designed for busy professionals who need hands-off investment solutions that provide regular earnings and steady wealth accumulation in the background.",
-      },
-    ],
-    strategy: [
-      {
-        title: "Cash-flow optimization",
-        desc:
-          "Targets assets that deliver frequent income with limited downside, allowing investors to reinvest, save, or spend without compromising overall portfolio stability.",
-      },
-      {
-        title: "Opportunistic lending",
-        desc:
-          "Leverages current credit tightness to lend at attractive terms, generating high-yield interest income with calculated exposure to well-vetted borrowers.",
-      },
-    ],
-    assets: [
-      {
-        title: "Private credit",
-        desc:
-          "Involves lending to private businesses or real estate developers, typically with strong collateral backing and higher interest rates than traditional savings products.",
-      },
-      {
-        title: "Sunbelt real estate",
-        desc:
-          "Focuses on fast-growing regions in the southern Europe, where population growth drives stable demand for residential and industrial rental assets.",
-      },
-    ],
-  },
-};
-
-
-// Decision logic
-function getRecommendation({
-  accountType,
-  annualIncome,
-  annualInvestmentAmount,
-}: {
-  accountType?: string;
-  annualIncome?: string;
-  annualInvestmentAmount?: string;
-}) {
-  if (accountType === "retirement") {
-    return {
-      key: "retirement",
-      title: "Retirement Income Strategy",
-      desc: "Designed for long-term income generation and portfolio stability to support your retirement goals.",
-    };
+  if (!userData || investmentPlans.length === 0) {
+    console.log("❌ No userData or no plans available");
+    return null;
   }
 
-  if (
-    annualIncome === "Less than $75,000" ||
-    annualInvestmentAmount === "Less than $1,000"
-  ) {
-    return {
-      key: "starter",
-      title: "Starter Income Strategy",
-      desc: "An accessible plan ideal for new investors seeking to build consistent cash flow and minimize risk.",
-    };
+  // Filter plans based on user profile matching
+  const matchingPlans = investmentPlans.filter(plan => {
+    console.log(`🔍 Checking plan "${plan.name}" against user profile:`);
+
+    // Check account type matching
+    const accountTypeMatch = !plan.targetAccountTypes.length ||
+      plan.targetAccountTypes.includes(userData.accountType);
+    console.log(`  - Account type match: ${accountTypeMatch} (user: ${userData.accountType}, targets: [${plan.targetAccountTypes.join(', ')}])`);
+
+    // Check income range matching
+    const incomeMatch = !plan.targetIncomeRanges.length ||
+      plan.targetIncomeRanges.includes(userData.annualIncome);
+    console.log(`  - Income match: ${incomeMatch} (user: ${userData.annualIncome}, targets: [${plan.targetIncomeRanges.join(', ')}])`);
+
+    // Check investment amount matching  
+    const investmentMatch = !plan.targetInvestmentAmounts.length ||
+      plan.targetInvestmentAmounts.includes(userData.annualInvestmentAmount);
+    console.log(`  - Investment amount match: ${investmentMatch} (user: ${userData.annualInvestmentAmount}, targets: [${plan.targetInvestmentAmounts.join(', ')}])`);
+
+    const isMatch = accountTypeMatch && incomeMatch && investmentMatch;
+    console.log(`  ✨ Overall match: ${isMatch}`);
+
+    return isMatch;
+  });
+
+  console.log(`🎯 Found ${matchingPlans.length} matching plans:`, matchingPlans.map(p => p.name));
+
+  // If we have matching plans, return the highest priority one
+  if (matchingPlans.length > 0) {
+    const topPlan = matchingPlans.sort((a, b) => b.priority - a.priority)[0];
+    console.log(`✅ Returning top priority matching plan: ${topPlan.name} (priority: ${topPlan.priority})`);
+    return topPlan;
   }
 
-  if (
-    annualIncome === "More than $500,000" ||
-    annualInvestmentAmount === "More than $1,000,000"
-  ) {
-    return {
-      key: "highGrowth",
-      title: "High-Growth Diversified Strategy",
-      desc: "Tailored for high-capacity investors seeking aggressive diversification and long-term growth.",
-    };
+  console.log("🔄 No exact matches, trying fallback logic...");
+
+  // Fallback: return highest priority plan that matches account type or category
+  const fallbackPlans = investmentPlans.filter(plan => {
+    if (userData.accountType === 'retirement') {
+      console.log(`🔍 Fallback: Checking retirement plan ${plan.name}, category: ${plan.category}`);
+      return plan.category === 'retirement';
+    }
+    if (userData.annualInvestmentAmount === 'Less than $1,000') {
+      console.log(`🔍 Fallback: Checking starter plan ${plan.name}, category: ${plan.category}`);
+      return plan.category === 'starter';
+    }
+    if (userData.annualIncome === 'More than $200,000') {
+      console.log(`🔍 Fallback: Checking high growth plan ${plan.name}, category: ${plan.category}`);
+      return plan.category === 'highGrowth';
+    }
+    console.log(`🔍 Fallback: Checking default plan ${plan.name}, category: ${plan.category}`);
+    return plan.category === 'default';
+  });
+
+  console.log(`🔄 Found ${fallbackPlans.length} fallback plans:`, fallbackPlans.map(p => `${p.name} (${p.category})`));
+
+  if (fallbackPlans.length > 0) {
+    const topFallback = fallbackPlans.sort((a, b) => b.priority - a.priority)[0];
+    console.log(`✅ Returning top fallback plan: ${topFallback.name} (priority: ${topFallback.priority})`);
+    return topFallback;
   }
 
-  return {
-    key: "default",
-    title: "Supplemental Income",
-    desc: "An opportunistic strategy for income-focused investors looking to generate current cash flow.",
-  };
-}
+  console.log("🔄 No fallback matches, returning highest priority plan...");
 
-export default function InvestmentRecommendation() {
+  // Final fallback: return highest priority active plan
+  const finalPlan = investmentPlans.sort((a, b) => b.priority - a.priority)[0] || null;
+  if (finalPlan) {
+    console.log(`✅ Returning highest priority plan: ${finalPlan.name} (priority: ${finalPlan.priority})`);
+  } else {
+    console.log("❌ No plans available at all");
+  }
+
+  return finalPlan;
+} export default function InvestmentRecommendation() {
   const [tab, setTab] = useState("best");
   const [loading, setLoading] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const [userLoading, setUserLoading] = useState(true);
+  const [investmentPlans, setInvestmentPlans] = useState<InvestmentPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [recommendedPlan, setRecommendedPlan] = useState<InvestmentPlan | null>(null);
+
+  // Modal state
+  const [selectedPlanForPreview, setSelectedPlanForPreview] = useState<InvestmentPlan | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const navigate = useNavigate();
 
   // Fetch user data to determine recommendation
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await getCurrentUser();
-        setUserData(response.user);
+        const response = await getUserOnboardingData();
+        console.log('✅ User data response:', response);
+
+        // The user data might be directly in response or in response.user
+        const userData = response.user || response;
+        console.log('👤 User object:', userData);
+        console.log('🔍 User data keys:', Object.keys(userData || {}));
+
+        setUserData(userData);
       } catch (error) {
-        console.error("Error fetching user data:", error);
-        toast.error("Failed to load user data");
+        console.error('❌ Error fetching user data:', error);
       } finally {
         setUserLoading(false);
       }
     };
 
     fetchUserData();
+  }, []);  // Fetch investment plans from database
+  useEffect(() => {
+    const fetchInvestmentPlans = async () => {
+      try {
+        console.log("🔍 Fetching investment plans...");
+        const response = await getInvestmentPlans();
+        console.log("📊 Investment plans response:", response);
+        console.log("📋 Plans array:", response.plans);
+        console.log("🔢 Plans count:", response.count);
+
+        // Log each plan's isActive status
+        response.plans.forEach((plan: InvestmentPlan, index: number) => {
+          console.log(`📋 Plan ${index + 1}: "${plan.name}" - isActive:`, plan.isActive, typeof plan.isActive);
+        });
+
+        // Since backend already filters for active plans, we can use all returned plans
+        console.log("✅ Using all plans returned from backend (should already be active)");
+        setInvestmentPlans(response.plans);
+      } catch (error) {
+        console.error("❌ Error fetching investment plans:", error);
+        toast.error("Failed to load investment plans");
+      } finally {
+        setPlansLoading(false);
+      }
+    };
+
+    fetchInvestmentPlans();
   }, []);
 
-  const recommendation = getRecommendation({
-    accountType: userData?.accountType,
-    annualIncome: userData?.annualIncome,
-    annualInvestmentAmount: userData?.annualInvestmentAmount,
-  });
+  // Update recommended plan when user data and plans are loaded
+  useEffect(() => {
+    if (userData && investmentPlans.length > 0) {
+      console.log("🎯 Matching user data:", userData);
+      console.log("📋 Available plans for matching:", investmentPlans);
+
+      const recommended = getRecommendedPlan(userData, investmentPlans);
+      console.log("✨ Recommended plan result:", recommended);
+
+      setRecommendedPlan(recommended);
+    } else {
+      console.log("⏳ Waiting for data - userData:", !!userData, "plans count:", investmentPlans.length);
+    }
+  }, [userData, investmentPlans]);
 
   const handleSelectRecommendation = async () => {
+    if (!recommendedPlan) {
+      toast.error("No investment plan selected");
+      return;
+    }
+
     setLoading(true);
     try {
-      await saveRecommendedPortfolio(recommendation.key);
+      await saveRecommendedPortfolio(recommendedPlan._id);
       toast.success("Investment recommendation saved");
       navigate("/onboarding/personal-intro");
     } catch (error) {
@@ -267,7 +191,34 @@ export default function InvestmentRecommendation() {
     }
   };
 
-  if (userLoading) {
+  // Modal handlers
+  const handlePlanPreview = (plan: InvestmentPlan) => {
+    setSelectedPlanForPreview(plan);
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedPlanForPreview(null);
+  };
+
+  const handleSelectFromModal = async (plan: InvestmentPlan) => {
+    setLoading(true);
+    try {
+      await saveRecommendedPortfolio(plan._id);
+      toast.success("Investment plan selected successfully");
+      navigate("/onboarding/personal-intro");
+    } catch (error) {
+      console.error("Failed to save selected investment plan:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+      setIsModalOpen(false);
+      setSelectedPlanForPreview(null);
+    }
+  };
+
+  if (userLoading || plansLoading) {
     return (
       <OnboardingLayout>
         <div className="mt-16 px-4 max-w-4xl py-6 mx-auto flex items-center justify-center">
@@ -277,7 +228,18 @@ export default function InvestmentRecommendation() {
     );
   }
 
-  const tabs = supplementalTabs[recommendation.key as keyof typeof supplementalTabs];
+  if (!recommendedPlan) {
+    return (
+      <OnboardingLayout>
+        <div className="mt-16 px-4 max-w-4xl py-6 mx-auto text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">No Investment Plans Available</h2>
+          <p className="text-gray-600">Please check back later or contact support.</p>
+        </div>
+      </OnboardingLayout>
+    );
+  }
+
+  const tabs = recommendedPlan.supplementalTabs;
 
   return (
     <OnboardingLayout>
@@ -287,13 +249,13 @@ export default function InvestmentRecommendation() {
 
       <div className="mt-16 px-4 max-w-4xl py-6 mx-auto space-y-10">
         <h2 className="text-xl text-gray-800 font-sectra font-medium">
-          Based on your answers, here’s our recommendation for you:
+          Based on your answers, here's our recommendation for you:
         </h2>
 
         <div className="rounded-lg border p-6 gap-10">
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-2xl font-sectra text-darkPrimary">{recommendation.title}</h3>
+              <h3 className="text-2xl font-sectra text-darkPrimary">{recommendedPlan.name}</h3>
               <Button
                 onClick={handleSelectRecommendation}
                 disabled={loading}
@@ -306,7 +268,16 @@ export default function InvestmentRecommendation() {
                 )}
               </Button>
             </div>
-            <p className="text-sm text-gray-600">{recommendation.desc}</p>
+            <p className="text-sm text-gray-600">{recommendedPlan.description}</p>
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              <span className="font-semibold text-green-600">
+                {recommendedPlan.profitPercentage}% return in {Math.round(recommendedPlan.duration / 365 * 10) / 10} year{recommendedPlan.duration !== 365 ? 's' : ''}
+              </span>
+              <span>
+                Min: ${recommendedPlan.minInvestment.toLocaleString()}
+                {recommendedPlan.maxInvestment && ` - Max: $${recommendedPlan.maxInvestment.toLocaleString()}`}
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-col md:flex-row justify-between py-6 gap-6">
@@ -352,11 +323,11 @@ export default function InvestmentRecommendation() {
             </Tabs>
 
             <div className="w-full md:w-64">
-              <p className="text-sm text-gray-500 font-medium mb-2 uppercase">Current Allocation</p>
+              <p className="text-sm text-gray-500 font-medium mb-2 uppercase">Asset Allocation</p>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
-                    data={pieData}
+                    data={recommendedPlan.pieChartData}
                     cx="50%"
                     cy="50%"
                     innerRadius={55}
@@ -365,7 +336,7 @@ export default function InvestmentRecommendation() {
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {pieData.map((entry, index) => (
+                    {recommendedPlan.pieChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -373,9 +344,15 @@ export default function InvestmentRecommendation() {
                 </PieChart>
               </ResponsiveContainer>
               <ul className="mt-4 text-sm text-gray-700 space-y-1">
-                {pieData.map((item) => (
+                {recommendedPlan.pieChartData.map((item) => (
                   <li key={item.name} className="flex justify-between">
-                    <span>{item.name}</span>
+                    <span className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      {item.name}
+                    </span>
                     <span>{item.value}%</span>
                   </li>
                 ))}
@@ -385,9 +362,22 @@ export default function InvestmentRecommendation() {
         </div>
 
         <div>
-          <OtherPlans />
+          <OtherPlans
+            investmentPlans={investmentPlans}
+            recommendedPlanId={recommendedPlan?._id}
+            onPlanPreview={handlePlanPreview}
+          />
         </div>
       </div>
+
+      {/* Plan Preview Modal */}
+      <PlanPreviewModal
+        plan={selectedPlanForPreview}
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onSelectPlan={handleSelectFromModal}
+        loading={loading}
+      />
     </OnboardingLayout>
   );
 }

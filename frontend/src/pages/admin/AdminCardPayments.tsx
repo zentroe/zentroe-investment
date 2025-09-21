@@ -400,6 +400,13 @@ const AdminCardPayments: React.FC = () => {
 
                     <div className="flex space-x-3">
                       <button
+                        onClick={() => handleUpdateStatus(payment.paymentId, 'approved')}
+                        disabled={processingId === payment.paymentId}
+                        className="flex-1 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        {processingId === payment.paymentId ? 'Processing...' : 'Approve Directly'}
+                      </button>
+                      <button
                         onClick={() => handleUpdateStatus(payment.paymentId, 'rejected')}
                         disabled={processingId === payment.paymentId}
                         className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"

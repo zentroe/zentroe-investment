@@ -22,9 +22,12 @@ interface Deposit {
   method: 'crypto' | 'bank' | 'card';
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
-  user: {
-    name: string;
-    email: string;
+  userId?: {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    email?: string;
   };
   cryptoDetails?: {
     wallet: string;
@@ -56,69 +59,34 @@ const AdminDepositsManagement: React.FC = () => {
     fetchDeposits();
   }, []);
 
-  const fetchDeposits = async () => {
+  // Helper functions to safely access user data
+  const getUserName = (deposit: Deposit): string => {
+    if (deposit.userId?.firstName || deposit.userId?.lastName) {
+      return `${deposit.userId.firstName || ''} ${deposit.userId.lastName || ''}`.trim();
+    }
+    return 'Unknown User';
+  };
+
+  const getUserEmail = (deposit: Deposit): string => {
+    return deposit.userId?.email || 'No email provided';
+  }; const fetchDeposits = async () => {
     try {
       setLoading(true);
 
-      // Try to fetch real data, fall back to mock data if needed
-      try {
-        const response = await getAllDeposits();
-        const depositsData = response.data || response;
-        // Ensure we have an array
-        if (Array.isArray(depositsData)) {
-          setDeposits(depositsData);
-          setLoading(false);
-          return;
-        } else {
-          console.log('Invalid data format from API, using mock data');
-        }
-      } catch (apiError) {
-        console.log('API not available, using mock data');
+      const response = await getAllDeposits();
+
+      // The backend returns { deposits, pagination }
+      if (response.deposits && Array.isArray(response.deposits)) {
+        setDeposits(response.deposits);
+      } else {
+        console.warn('Invalid data format from API, expected deposits array');
+        console.warn('Received:', response);
+        setDeposits([]);
       }
-
-      // Mock data fallback
-      const mockDeposits: Deposit[] = [
-        {
-          _id: '1',
-          amount: 5000,
-          currency: 'USD',
-          method: 'crypto',
-          status: 'pending',
-          createdAt: '2024-01-15T10:30:00Z',
-          user: { name: 'John Doe', email: 'john@example.com' },
-          cryptoDetails: { wallet: 'Bitcoin', txId: 'abc123xyz789' },
-          proofOfPayment: 'proof1.jpg'
-        },
-        {
-          _id: '2',
-          amount: 10000,
-          currency: 'USD',
-          method: 'bank',
-          status: 'approved',
-          createdAt: '2024-01-14T15:45:00Z',
-          user: { name: 'Jane Smith', email: 'jane@example.com' },
-          bankDetails: { accountName: 'Jane Smith', routingNumber: '123456789' },
-          proofOfPayment: 'proof2.jpg'
-        },
-        {
-          _id: '3',
-          amount: 2500,
-          currency: 'USD',
-          method: 'card',
-          status: 'rejected',
-          createdAt: '2024-01-13T09:20:00Z',
-          user: { name: 'Mike Johnson', email: 'mike@example.com' },
-          cardDetails: { last4: '4532', brand: 'Visa' },
-          adminNotes: 'Insufficient documentation provided'
-        }
-      ];
-
-      setTimeout(() => {
-        setDeposits(mockDeposits);
-        setLoading(false);
-      }, 1000);
     } catch (error) {
-      console.error('Failed to fetch deposits:', error);
+      console.error('Error fetching deposits:', error);
+      setDeposits([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -192,8 +160,11 @@ const AdminDepositsManagement: React.FC = () => {
 
   // Filter deposits
   const filteredDeposits = (deposits || []).filter(deposit => {
-    const matchesSearch = deposit.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      deposit.user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const userName = getUserName(deposit);
+    const userEmail = getUserEmail(deposit);
+
+    const matchesSearch = userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userEmail.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || deposit.status === statusFilter;
     const matchesMethod = methodFilter === 'all' || deposit.method === methodFilter;
 
@@ -328,8 +299,8 @@ const AdminDepositsManagement: React.FC = () => {
                         </div>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{deposit.user.name}</div>
-                        <div className="text-sm text-gray-500">{deposit.user.email}</div>
+                        <div className="text-sm font-medium text-gray-900">{getUserName(deposit)}</div>
+                        <div className="text-sm text-gray-500">{getUserEmail(deposit)}</div>
                       </div>
                     </div>
                   </td>
@@ -476,8 +447,8 @@ const AdminDepositsManagement: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">User Information</label>
                   <div className="bg-gray-50 p-3 rounded-md">
-                    <p className="text-sm font-medium text-gray-900">{selectedDeposit.user.name}</p>
-                    <p className="text-sm text-gray-500">{selectedDeposit.user.email}</p>
+                    <p className="text-sm font-medium text-gray-900">{getUserName(selectedDeposit)}</p>
+                    <p className="text-sm text-gray-500">{getUserEmail(selectedDeposit)}</p>
                   </div>
                 </div>
 

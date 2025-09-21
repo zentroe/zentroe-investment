@@ -58,7 +58,16 @@ const AdminDashboardOverview: React.FC = () => {
         ]);
 
         setStats(statsResponse.data || statsResponse);
-        setRecentActivity(activityResponse.data || activityResponse);
+
+        // Handle recent activity response properly
+        if (activityResponse && Array.isArray(activityResponse.activities)) {
+          setRecentActivity(activityResponse.activities);
+        } else if (Array.isArray(activityResponse)) {
+          setRecentActivity(activityResponse);
+        } else {
+          console.warn('Recent activity response is not in expected format:', activityResponse);
+          setRecentActivity([]);
+        }
         setLoading(false);
         return;
       } catch (apiError) {
@@ -114,6 +123,9 @@ const AdminDashboardOverview: React.FC = () => {
       }, 1000);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
+      // Ensure safe defaults on error
+      setStats(null);
+      setRecentActivity([]);
       setLoading(false);
     }
   };
@@ -305,30 +317,36 @@ const AdminDashboardOverview: React.FC = () => {
         </div>
         <div className="p-6">
           <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div key={activity.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                <div className="flex items-center space-x-4">
-                  {getStatusIcon(activity.status)}
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{activity.description}</p>
-                    <p className="text-xs text-gray-500">
-                      {activity.user.name} • {activity.user.email}
-                    </p>
+            {Array.isArray(recentActivity) && recentActivity.length > 0 ? (
+              recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                  <div className="flex items-center space-x-4">
+                    {getStatusIcon(activity.status)}
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{activity.description}</p>
+                      <p className="text-xs text-gray-500">
+                        {activity.user.name} • {activity.user.email}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    {activity.amount && (
+                      <span className="text-sm font-bold text-gray-900">
+                        {formatCurrency(activity.amount)}
+                      </span>
+                    )}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(activity.status)}`}>
+                      {activity.status}
+                    </span>
+                    <span className="text-xs text-gray-500">{activity.timestamp}</span>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  {activity.amount && (
-                    <span className="text-sm font-bold text-gray-900">
-                      {formatCurrency(activity.amount)}
-                    </span>
-                  )}
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(activity.status)}`}>
-                    {activity.status}
-                  </span>
-                  <span className="text-xs text-gray-500">{activity.timestamp}</span>
-                </div>
+              ))
+            ) : (
+              <div className="flex items-center justify-center p-8 text-gray-500">
+                <p>No recent activity</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

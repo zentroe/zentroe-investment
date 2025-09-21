@@ -10,42 +10,66 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+import { getDashboardStats, getRecentActivity, type DashboardStats } from '@/services/adminService';
 
-interface DashboardStats {
-  totalUsers: number;
-  pendingDeposits: number;
-  totalDeposits: number;
-  cryptoPayments: number;
-  bankTransfers: number;
-  cardPayments: number;
+interface RecentActivity {
+  id: string;
+  type: string;
+  action: string;
+  amount: number;
+  paymentMethod: string;
+  user: {
+    name: string;
+    email: string;
+  } | null;
+  timestamp: string;
 }
 
 const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardData();
+
+    // Refresh dashboard data every 60 seconds
+    const interval = setInterval(fetchDashboardData, 60000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      // Simulate API calls - in real implementation, these would be actual API endpoints
-      const mockStats: DashboardStats = {
-        totalUsers: 1247,
-        pendingDeposits: 23,
-        totalDeposits: 156,
-        cryptoPayments: 45,
-        bankTransfers: 78,
-        cardPayments: 33
-      };
+      setLoading(true);
 
-      setTimeout(() => {
-        setStats(mockStats);
-        setLoading(false);
-      }, 1000);
+      // Fetch dashboard stats and recent activity in parallel
+      const [statsResponse, activityResponse] = await Promise.all([
+        getDashboardStats(),
+        getRecentActivity(5) // Get 5 recent activities
+      ]);
+
+      console.log('Stats response:', statsResponse);
+      console.log('Activity response:', activityResponse);
+
+      setStats(statsResponse);
+
+      // Ensure recentActivity is always an array
+      if (activityResponse && Array.isArray(activityResponse.activities)) {
+        setRecentActivity(activityResponse.activities);
+      } else if (Array.isArray(activityResponse)) {
+        // Handle case where response is directly an array
+        setRecentActivity(activityResponse);
+      } else {
+        console.warn('Recent activity response is not in expected format:', activityResponse);
+        setRecentActivity([]);
+      }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
+      // Ensure we always have safe defaults on error
+      setStats(null);
+      setRecentActivity([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -79,7 +103,7 @@ const AdminDashboard: React.FC = () => {
                 <Users className="h-8 w-8 text-blue-500" />
                 <div className="ml-4">
                   <p className="text-sm text-gray-600">Total Users</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats?.totalUsers}</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats?.totalUsers || 0}</p>
                 </div>
               </div>
             </div>
@@ -89,7 +113,7 @@ const AdminDashboard: React.FC = () => {
                 <Clock className="h-8 w-8 text-yellow-500" />
                 <div className="ml-4">
                   <p className="text-sm text-gray-600">Pending Deposits</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats?.pendingDeposits}</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats?.pendingDeposits || 0}</p>
                 </div>
               </div>
             </div>
@@ -99,7 +123,7 @@ const AdminDashboard: React.FC = () => {
                 <TrendingUp className="h-8 w-8 text-green-500" />
                 <div className="ml-4">
                   <p className="text-sm text-gray-600">Total Deposits</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats?.totalDeposits}</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats?.totalDeposits || 0}</p>
                 </div>
               </div>
             </div>
@@ -109,7 +133,7 @@ const AdminDashboard: React.FC = () => {
                 <CreditCard className="h-8 w-8 text-purple-500" />
                 <div className="ml-4">
                   <p className="text-sm text-gray-600">Card Payments</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats?.cardPayments}</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats?.totalCardPayments || 0}</p>
                 </div>
               </div>
             </div>
@@ -122,7 +146,7 @@ const AdminDashboard: React.FC = () => {
                 <Wallet className="h-6 w-6 text-orange-500" />
                 <h3 className="text-lg font-semibold ml-2">Crypto Payments</h3>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{stats?.cryptoPayments}</p>
+              <p className="text-3xl font-bold text-gray-900">{stats?.cryptoPayments || 0}</p>
               <p className="text-sm text-gray-600">Active transactions</p>
             </div>
 
@@ -131,7 +155,7 @@ const AdminDashboard: React.FC = () => {
                 <Building className="h-6 w-6 text-blue-500" />
                 <h3 className="text-lg font-semibold ml-2">Bank Transfers</h3>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{stats?.bankTransfers}</p>
+              <p className="text-3xl font-bold text-gray-900">{stats?.bankTransfers || 0}</p>
               <p className="text-sm text-gray-600">Wire transfers</p>
             </div>
 
@@ -140,7 +164,7 @@ const AdminDashboard: React.FC = () => {
                 <CreditCard className="h-6 w-6 text-green-500" />
                 <h3 className="text-lg font-semibold ml-2">Card Payments</h3>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{stats?.cardPayments}</p>
+              <p className="text-3xl font-bold text-gray-900">{stats?.cardPayments || 0}</p>
               <p className="text-sm text-gray-600">Manual processing</p>
             </div>
           </div>
@@ -179,38 +203,38 @@ const AdminDashboard: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
             <h2 className="text-xl font-semibold mb-6">Recent Activity</h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                  <div>
-                    <p className="font-medium">Crypto payment approved</p>
-                    <p className="text-sm text-gray-600">$5,000 - Bitcoin payment</p>
+              {Array.isArray(recentActivity) && recentActivity.length > 0 ? (
+                (recentActivity || []).map((activity) => (
+                  <div key={activity.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center">
+                      {activity.action === 'approved' && (
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                      )}
+                      {activity.action === 'pending' && (
+                        <Clock className="h-5 w-5 text-yellow-500 mr-3" />
+                      )}
+                      {activity.action === 'rejected' && (
+                        <XCircle className="h-5 w-5 text-red-500 mr-3" />
+                      )}
+                      <div>
+                        <p className="font-medium">
+                          {activity.paymentMethod.charAt(0).toUpperCase() + activity.paymentMethod.slice(1)} payment {activity.action}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          ${activity.amount.toLocaleString()} - {activity.user?.name || 'Unknown User'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {new Date(activity.timestamp).toLocaleString()}
+                    </span>
                   </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center p-8 text-gray-500">
+                  <p>No recent activity</p>
                 </div>
-                <span className="text-sm text-gray-500">2 mins ago</span>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <Clock className="h-5 w-5 text-yellow-500 mr-3" />
-                  <div>
-                    <p className="font-medium">Bank transfer pending</p>
-                    <p className="text-sm text-gray-600">$10,000 - Wire transfer</p>
-                  </div>
-                </div>
-                <span className="text-sm text-gray-500">15 mins ago</span>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <XCircle className="h-5 w-5 text-red-500 mr-3" />
-                  <div>
-                    <p className="font-medium">Card payment failed</p>
-                    <p className="text-sm text-gray-600">$2,500 - Insufficient funds</p>
-                  </div>
-                </div>
-                <span className="text-sm text-gray-500">1 hour ago</span>
-              </div>
+              )}
             </div>
           </div>
         </div>

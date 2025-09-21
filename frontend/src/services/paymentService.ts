@@ -117,10 +117,16 @@ export const verifyCardPaymentOtp = async (paymentId: string, otpCode: string) =
 
 export const getPendingCardPayments = async () => {
   try {
+    console.log('Making request to /admin/payments/card-payments');
     const response = await axios.get('/admin/payments/card-payments');
+    console.log('Raw response:', response);
+    console.log('Response data:', response.data);
+    console.log('Response status:', response.status);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching pending card payments:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
     throw error;
   }
 };

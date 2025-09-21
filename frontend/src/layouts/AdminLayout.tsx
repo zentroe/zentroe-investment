@@ -14,10 +14,11 @@ import {
   X,
   LogOut,
   User,
-  Bell
+  Bell,
+  Target
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { adminLogout, getAdminProfile, type AdminProfile } from '@/services/adminService';
+import { adminLogout, getAdminProfile, getAllDeposits, type AdminProfile } from '@/services/adminService';
 
 interface SidebarItem {
   id: string;
@@ -33,6 +34,7 @@ const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingDepositsCount, setPendingDepositsCount] = useState<number>(0);
 
   const sidebarItems: SidebarItem[] = [
     {
@@ -46,7 +48,7 @@ const AdminLayout: React.FC = () => {
       label: 'Deposits',
       icon: CreditCard,
       path: '/x-admin/dashboard/deposits',
-      badge: 5 // This would come from API
+      badge: pendingDepositsCount > 0 ? pendingDepositsCount : undefined
     },
     {
       id: 'payments',
@@ -79,6 +81,12 @@ const AdminLayout: React.FC = () => {
       path: '/x-admin/dashboard/users'
     },
     {
+      id: 'investment-plans',
+      label: 'Investment Plans',
+      icon: Target,
+      path: '/x-admin/dashboard/investment-plans'
+    },
+    {
       id: 'reports',
       label: 'Reports',
       icon: BarChart3,
@@ -94,6 +102,12 @@ const AdminLayout: React.FC = () => {
 
   useEffect(() => {
     fetchAdminProfile();
+    fetchPendingDepositsCount();
+
+    // Refresh pending deposits count every 30 seconds
+    const interval = setInterval(fetchPendingDepositsCount, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const fetchAdminProfile = async () => {
@@ -105,6 +119,18 @@ const AdminLayout: React.FC = () => {
       navigate('/x-admin');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingDepositsCount = async () => {
+    try {
+      const response = await getAllDeposits({ status: 'pending' });
+      if (response.deposits && Array.isArray(response.deposits)) {
+        setPendingDepositsCount(response.deposits.length);
+      }
+    } catch (error) {
+      console.error('Failed to fetch pending deposits count:', error);
+      // Keep count at 0 if fetch fails
     }
   };
 
