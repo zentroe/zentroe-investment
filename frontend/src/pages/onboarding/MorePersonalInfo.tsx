@@ -99,8 +99,8 @@ export default function MorePersonalInfo() {
         dateOfBirth: formData.dateOfBirth
       });
 
-      // Update onboarding status to 'verification' since personal details are complete
-      await updateStatus("verification");
+      // Update onboarding status to 'basicInfo' since personal details are complete
+      await updateStatus("basicInfo");
 
       toast.success("Identity information saved.");
       navigate("/invest/intro");

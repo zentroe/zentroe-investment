@@ -9,6 +9,7 @@ import PaymentMethodSelector from '@/components/payment/PaymentMethodSelector';
 
 // Services
 import { getPaymentOptions, createPayment, type PaymentOptions } from '@/services/paymentService';
+import { updateOnboardingStatus } from '@/services/onboardingService';
 
 const PaymentPage: React.FC = () => {
   const navigate = useNavigate();
@@ -53,9 +54,28 @@ const PaymentPage: React.FC = () => {
     navigate('/invest/payment-amount');
   };
 
-  const handlePaymentSuccess = (depositId: string) => {
-    toast.success('Payment submitted successfully!');
-    navigate(`/payment/status/${depositId}`);
+  const handlePaymentSuccess = async (_depositId: string) => {
+    try {
+      // Update onboarding status to completed since payment is successful/pending
+      console.log('🎯 Updating onboarding status to completed after successful payment');
+      await updateOnboardingStatus('completed');
+      console.log('✅ Onboarding status successfully updated to completed');
+      toast.success('Payment submitted successfully! Welcome to your dashboard!');
+
+      // Redirect directly to dashboard after successful payment
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
+    } catch (error) {
+      console.error('❌ Error updating onboarding status:', error);
+      // Still show success for payment even if status update fails
+      toast.success('Payment submitted successfully! Welcome to your dashboard!');
+
+      // Still redirect to dashboard even if status update fails
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
+    }
   };
 
   const handleCancel = () => {

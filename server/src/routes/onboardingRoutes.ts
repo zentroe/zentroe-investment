@@ -15,7 +15,8 @@ import {
   savePhoneNumber,
   saveAddressInfo,
   saveIdentityInfo,
-  getPublicInvestmentPlans
+  getPublicInvestmentPlans,
+  saveSelectedInvestmentPlan
 } from "../controllers/onboardingController";
 import { protectOnboardingRoute } from "../middleware/protectOnboardingRoute";
 
@@ -76,5 +77,8 @@ router.patch("/status", protectOnboardingRoute, updateOnboardingStatus);
 
 // GET /api/onboarding/investment-plans - Public endpoint for getting available investment plans
 router.get("/investment-plans", protectOnboardingRoute, getPublicInvestmentPlans);
+
+// PATCH /api/onboarding/selected-investment-plan - Save user's selected investment plan
+router.patch("/selected-investment-plan", protectOnboardingRoute, saveSelectedInvestmentPlan);
 
 export default router;

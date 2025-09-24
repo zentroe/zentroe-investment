@@ -25,6 +25,7 @@ import MorePersonalInfo from "@/pages/onboarding/MorePersonalInfo";
 import FinishUpAndInvest from "@/pages/onboarding/FinishUpAndInvest";
 import InvestmentAmount from "@/pages/onboarding/InvestmentAmount";
 import RecurringInvestment from "@/pages/onboarding/RecurringInvestment";
+import BankConnect from "@/pages/onboarding/BankConnect";
 import DashboardLayout from "@/pages/dashboard/DashboardLayout";
 import DashboardHome from "@/pages/dashboard/DashboardHome";
 import PortfolioPage from "@/pages/dashboard/PortfolioPage";
@@ -86,6 +87,7 @@ export default function AppRoutes() {
       <Route path="/onboarding/personal-info" element={<LegalName />} />
       <Route path="/onboarding/other-personal-info" element={<OtherPersonalInfo />} />
       <Route path="/onboarding/more-personal-info" element={<MorePersonalInfo />} />
+      <Route path="/onboarding/bank-connect" element={<BankConnect />} />
 
       <Route path="/invest/intro" element={<FinishUpAndInvest />} />
       <Route path="/invest/payment-amount" element={<InvestmentAmount />} />

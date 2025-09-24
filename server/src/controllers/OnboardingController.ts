@@ -19,8 +19,8 @@ export const getUserOnboardingData = async (req: AuthenticatedRequest, res: Resp
     }
 
     const user = await User.findById(userId).select(
-      'accountType portfolioPriority investmentGoal annualIncome annualInvestmentAmount referralSource recommendedPortfolio accountSubType firstName lastName initialInvestmentAmount recurringInvestment recurringFrequency recurringDay recurringAmount onboardingStatus email phone countryOfResidence countryOfCitizenship address dateOfBirth socialSecurityNumber ssn'
-    );
+      'accountType portfolioPriority investmentGoal annualIncome annualInvestmentAmount referralSource recommendedPortfolio selectedInvestmentPlan accountSubType firstName lastName initialInvestmentAmount recurringInvestment recurringFrequency recurringDay recurringAmount onboardingStatus email phone countryOfResidence countryOfCitizenship address dateOfBirth socialSecurityNumber ssn'
+    ).populate('selectedInvestmentPlan', 'name description category profitPercentage duration');
 
     if (!user) {
       res.status(404).json({ message: "User not found" });
@@ -44,6 +44,7 @@ export const getUserOnboardingData = async (req: AuthenticatedRequest, res: Resp
         annualInvestmentAmount: user.annualInvestmentAmount,
         referralSource: user.referralSource,
         recommendedPortfolio: user.recommendedPortfolio,
+        selectedInvestmentPlan: user.selectedInvestmentPlan,
 
         // Investment Setup
         initialInvestmentAmount: user.initialInvestmentAmount,
@@ -857,6 +858,69 @@ export const getPublicInvestmentPlans = async (req: AuthenticatedRequest, res: R
     });
   } catch (error) {
     console.error("❌ Error fetching public investment plans:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Save Selected Investment Plan
+export const saveSelectedInvestmentPlan = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    const { selectedInvestmentPlan } = req.body;
+
+    console.log("🎯 saveSelectedInvestmentPlan - userId:", userId);
+    console.log("📋 selectedInvestmentPlan:", selectedInvestmentPlan);
+
+    if (!userId) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+
+    if (!selectedInvestmentPlan) {
+      res.status(400).json({ message: "Investment plan ID is required" });
+      return;
+    }
+
+    // Validate that the investment plan exists and is active
+    const investmentPlan = await InvestmentPlan.findOne({ 
+      _id: selectedInvestmentPlan, 
+      isActive: true 
+    });
+
+    if (!investmentPlan) {
+      console.log("❌ Investment plan not found or inactive:", selectedInvestmentPlan);
+      res.status(404).json({ message: "Investment plan not found or is not active" });
+      return;
+    }
+
+    console.log("✅ Found investment plan:", investmentPlan.name);
+
+    // Update the user with the selected investment plan
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { 
+        selectedInvestmentPlan,
+        recommendedPortfolio: investmentPlan.name // Keep for backward compatibility
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    console.log("✅ Updated user with selected investment plan");
+
+    res.status(200).json({
+      message: "Investment plan selected successfully",
+      user: {
+        selectedInvestmentPlan: updatedUser.selectedInvestmentPlan,
+        recommendedPortfolio: updatedUser.recommendedPortfolio
+      }
+    });
+  } catch (error) {
+    console.error("❌ Error in saveSelectedInvestmentPlan:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

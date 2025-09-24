@@ -94,13 +94,24 @@ export const saveReferralSource = async (referralSource: string) => {
   }
 };
 
-// Recommended Portfolio Service
-export const saveRecommendedPortfolio = async (recommendedPortfolio: string) => {
+// Selected Investment Plan Service
+export const saveSelectedInvestmentPlan = async (investmentPlanId: string) => {
   try {
-    const response = await axios.patch("/onboarding/recommended-portfolio", {
-      recommendedPortfolio,
+    const response = await axios.patch("/onboarding/selected-investment-plan", {
+      selectedInvestmentPlan: investmentPlanId,
     });
     return response.data;
+  } catch (error) {
+    console.error('Error saving selected investment plan:', error);
+    throw error;
+  }
+};
+
+// Recommended Portfolio Service (Backward compatibility)
+export const saveRecommendedPortfolio = async (recommendedPortfolio: string) => {
+  try {
+    // Use the new endpoint for investment plan selection
+    return await saveSelectedInvestmentPlan(recommendedPortfolio);
   } catch (error) {
     console.error('Error saving recommended portfolio:', error);
     throw error;

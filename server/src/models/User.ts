@@ -49,7 +49,8 @@ export interface IUser extends Document {
 
   // Preferences
   referralSource?: string;
-  recommendedPortfolio?: string;
+  selectedInvestmentPlan?: Schema.Types.ObjectId; // Reference to InvestmentPlan
+  recommendedPortfolio?: string; // Keep for backward compatibility
   recurringInvestment?: boolean;
   recurringFrequency?: "weekly" | "monthly" | "quarterly";
   recurringDay?: string;
@@ -140,7 +141,11 @@ const UserSchema = new Schema<IUser>(
 
     // Preferences
     referralSource: String,
-    recommendedPortfolio: String,
+    selectedInvestmentPlan: {
+      type: Schema.Types.ObjectId,
+      ref: 'InvestmentPlan'
+    },
+    recommendedPortfolio: String, // Keep for backward compatibility
     recurringInvestment: { type: Boolean, default: false },
     recurringFrequency: {
       type: String,

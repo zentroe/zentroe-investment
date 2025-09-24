@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import OnboardingLayout from "./OnboardingLayout";
 import { Button } from "@/components/ui/button";
@@ -229,16 +229,17 @@ export default function RecurringInvestment() {
           </button>
 
           <div className="flex gap-3">
-            <Link to={'/onboarding/bank-connect'}>
-              <Button
-                variant="outline"
-                className="text-sm border border-gray-400"
-                onClick={handleSkip}
-                disabled={loading}
-              >
-                I'll do this later
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              className="text-sm border border-gray-400"
+              onClick={() => {
+                handleSkip();
+                navigate('/dashboard');
+              }}
+              disabled={loading}
+            >
+              I'll do this later
+            </Button>
             <Button
               disabled={!isContinueEnabled || loading}
               onClick={handleContinue}

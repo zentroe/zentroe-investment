@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Clock, CheckCircle, XCircle, AlertCircle, Download } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import OnboardingLayout from '@/pages/onboarding/OnboardingLayout';
+import { updateOnboardingStatus } from '@/services/onboardingService';
 
 interface PaymentStatus {
   id: string;
@@ -36,6 +37,18 @@ const PaymentStatusPage: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setPayment(data.data);
+
+        // Update onboarding status to completed if payment is completed or pending
+        // This ensures the user's onboarding is marked complete after successful payment
+        if (data.data.status === 'completed' || data.data.status === 'pending') {
+          try {
+            await updateOnboardingStatus('completed');
+            console.log('✅ Onboarding status updated to completed after payment');
+          } catch (error) {
+            console.error('❌ Error updating onboarding status:', error);
+            // Don't throw error, just log it - payment status is still valid
+          }
+        }
       } else {
         setError('Payment not found');
       }
@@ -204,18 +217,37 @@ const PaymentStatusPage: React.FC = () => {
           {/* Actions */}
           <div className="space-y-3">
             {payment.status === 'completed' && (
-              <button className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center">
-                <Download className="w-4 h-4 mr-2" />
-                Download Receipt
-              </button>
+              <>
+                <Link
+                  to="/dashboard"
+                  className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center"
+                >
+                  Go to Dashboard
+                </Link>
+                <button className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Receipt
+                </button>
+              </>
             )}
 
-            <Link
-              to="/dashboard"
-              className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center"
-            >
-              Back to Dashboard
-            </Link>
+            {payment.status === 'pending' && (
+              <Link
+                to="/dashboard"
+                className="w-full bg-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-yellow-700 transition-colors flex items-center justify-center"
+              >
+                Go to Dashboard
+              </Link>
+            )}
+
+            {(payment.status === 'processing') && (
+              <Link
+                to="/dashboard"
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
+              >
+                Go to Dashboard
+              </Link>
+            )}
 
             {(payment.status === 'failed' || payment.status === 'cancelled') && (
               <Link
