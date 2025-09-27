@@ -48,7 +48,7 @@ export default function LandingNavbar() {
               Log in
             </Link>
             <Link
-              to="/onboarding/email"
+              to="/signup"
               className="px-5 py-2 bg-primary text-white rounded-md hover:bg-[#8c391e] text-sm transition"
             >
               Get Started
@@ -114,7 +114,7 @@ export default function LandingNavbar() {
                   Log in
                 </Link>
                 <Link
-                  to="/onboarding/email"
+                  to="/signup"
                   className="px-5 py-2 bg-primary text-white rounded-md text-center hover:bg-[#8c391e]"
                 >
                   Get Started

@@ -5,6 +5,7 @@ import {
   confirmEmail,
   logout,
   getCurrentUser,
+  updateUserProfile,
   checkEmail,
   updateOnboarding,
   getOnboardingProgress,
@@ -33,6 +34,8 @@ router.post("/logout", logout);
 router.post("/resend-verification", resendEmailVerification);
 router.get("/confirm-email/:token", confirmEmail);
 router.get("/me", protectRoute, getCurrentUser);
+router.get("/profile", protectRoute, getCurrentUser); // Alias for comprehensive user profile
+router.patch("/profile", protectRoute, updateUserProfile); // Update user profile
 router.get("/onboarding-progress", protectRoute, getOnboardingProgress);
 router.patch("/onboarding", protectRoute, updateOnboarding);
 

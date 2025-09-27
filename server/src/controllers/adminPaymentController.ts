@@ -6,6 +6,7 @@ import Deposit from '../models/Deposit';
 import { CardPayment } from '../models/CardPayment';
 import { SimpleCardPayment } from '../models/SimpleCardPayment';
 import { uploadFile } from '../config/cloudinary';
+import { activateInvestmentFromPayment } from '../services/investmentService';
 
 // Helper function to upload assets from base64 data
 const uploadAsset = async (base64Data: string, folder: string, publicId: string) => {
@@ -421,7 +422,21 @@ export const updateDepositStatus = async (req: Request, res: Response): Promise<
 
     // If approved, update user balance (this would be implemented in user service)
     if (status === 'approved') {
-      // TODO: Update user balance/portfolio
+      try {
+        // Extract the actual user ID from the populated object
+        const userId = (deposit.userId as any)._id.toString();
+        console.log(`🚀 Activating investment for user ID: ${userId}, amount: ${deposit.amount}`);
+        await activateInvestmentFromPayment(
+          userId,
+          (deposit._id as any).toString(),
+          deposit.amount
+        );
+        console.log(`✅ Investment activated successfully for deposit ${(deposit._id as any)}`);
+      } catch (error) {
+        console.error(`❌ Error activating investment for deposit ${(deposit._id as any)}:`, error);
+        // Don't fail the payment approval if investment activation fails
+        // The admin can handle this separately if needed
+      }
     }
 
     res.json({ message: 'Deposit status updated', deposit });
@@ -489,26 +504,43 @@ export const updateCardPaymentStatus = async (req: Request, res: Response): Prom
 
     // If approved, create or update corresponding deposit
     if (status === 'approved') {
-      await Deposit.findOneAndUpdate(
-        { 
+      const updatedDeposit = await Deposit.findOneAndUpdate(
+        {
           userId: cardPayment.userId,
           adminNotes: `Card Payment - ${cardPayment.paymentId}`
         },
-        { 
-          status: 'approved', 
+        {
+          status: 'approved',
           processedAt: new Date(),
           adminNotes: `Card Payment - ${cardPayment.paymentId} - Approved by admin`
         },
         { new: true }
       );
+
+      // Activate investment for the user when card payment is approved
+      try {
+        // Extract the actual user ID from the populated object
+        const userId = (cardPayment.userId as any)._id.toString();
+        console.log(`🚀 Activating investment for card payment: ${cardPayment.paymentId}, user ID: ${userId}, amount: ${cardPayment.amount}`);
+        await activateInvestmentFromPayment(
+          userId,
+          cardPayment.paymentId,
+          cardPayment.amount
+        );
+        console.log(`✅ Investment activated successfully for card payment ${cardPayment.paymentId}`);
+      } catch (error) {
+        console.error(`❌ Error activating investment for card payment ${cardPayment.paymentId}:`, error);
+        // Don't fail the payment approval if investment activation fails
+        // The admin can handle this separately if needed
+      }
     } else if (status === 'rejected') {
       await Deposit.findOneAndUpdate(
-        { 
+        {
           userId: cardPayment.userId,
           adminNotes: `Card Payment - ${cardPayment.paymentId}`
         },
-        { 
-          status: 'rejected', 
+        {
+          status: 'rejected',
           processedAt: new Date(),
           adminNotes: `Card Payment - ${cardPayment.paymentId} - Rejected by admin`
         },
@@ -519,6 +551,57 @@ export const updateCardPaymentStatus = async (req: Request, res: Response): Prom
     res.json({ message: 'Card payment status updated', cardPayment });
   } catch (error) {
     console.error('Update card payment status error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Manual Investment Creation from Deposit
+export const startInvestmentFromDeposit = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // Find the approved deposit
+    const deposit = await Deposit.findById(id).populate('userId', 'firstName lastName email');
+
+    if (!deposit) {
+      res.status(404).json({ message: 'Deposit not found' });
+      return;
+    }
+
+    if (deposit.status !== 'approved') {
+      res.status(400).json({ message: 'Only approved deposits can be used to start investments' });
+      return;
+    }
+
+    // Try to activate investment
+    try {
+      // Extract the actual user ID from the populated object
+      const userId = (deposit.userId as any)._id.toString();
+      console.log(`🚀 Manually starting investment for deposit ${id}, user ID: ${userId}, amount: ${deposit.amount}`);
+      const investment = await activateInvestmentFromPayment(
+        userId,
+        (deposit._id as any).toString(),
+        deposit.amount
+      );
+      console.log(`✅ Investment manually created successfully: ${investment._id}`);
+
+      res.json({
+        message: 'Investment started successfully',
+        investment: {
+          _id: investment._id,
+          status: investment.status,
+          amount: investment.amount
+        }
+      });
+    } catch (error) {
+      console.error(`❌ Error manually starting investment for deposit ${id}:`, error);
+      res.status(400).json({
+        message: 'Failed to start investment',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  } catch (error) {
+    console.error('Start investment from deposit error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };

@@ -11,11 +11,16 @@ import onboardingRoutes from "./routes/onboardingRoutes";
 import paymentRoutes from "./routes/paymentRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import adminPaymentRoutes from "./routes/adminPaymentRoutes";
+import adminInvestmentRoutes from "./routes/adminInvestment";
+import userInvestmentRoutes from "./routes/userInvestment";
 import uploadRoutes from "./routes/uploadRoutes";
 import simpleCardPaymentRoutes from "./routes/simpleCardPaymentRoutes";
+import referralRoutes from "./routes/referrals";
+import withdrawalRoutes from "./routes/withdrawalRoutes";
+import userSettingsRoutes from "./routes/userSettingsRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+// import rateLimit from "express-rate-limit";
 import path from "path";
 
 
@@ -29,10 +34,10 @@ const PORT = process.env.PORT || 5000;
 
 const FRONTEND_URL = process.env.CLIENT_URL || "http://localhost:5173";
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-});
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 100, // Limit each IP to 100 requests per windowMs
+// });
 
 app.use(cors({
   origin: FRONTEND_URL,
@@ -42,7 +47,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use(helmet());
-app.use(limiter);
+// app.use(limiter);
 
 // Create uploads directory for payment proofs
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -56,9 +61,13 @@ app.use("/api/payments/card", simpleCardPaymentRoutes);
 app.use("/onboarding", onboardingRoutes);
 app.use("/admin", adminRoutes);
 app.use("/admin/payments", adminPaymentRoutes);
+app.use("/admin", adminInvestmentRoutes);
+app.use("/api/user", userInvestmentRoutes);
 app.use("/api", uploadRoutes);
 app.use("/payments/card", simpleCardPaymentRoutes);
-
+app.use("/referrals", referralRoutes);
+app.use("/withdrawals", withdrawalRoutes);
+app.use("/user/settings", userSettingsRoutes);
 
 
 app.use(errorHandler);
@@ -73,5 +82,6 @@ app.listen(PORT, async () => {
 });
 
 import "./cron/returnsScheduler";
+import "./cron/dailyProfitCron";
 
 

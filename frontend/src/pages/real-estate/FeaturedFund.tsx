@@ -41,7 +41,7 @@ export default function FeaturedFund() {
 
           {/* CTA Button */}
           <div className="pt-8">
-            <Link to="/onboarding/email" className="text-primary font-semibold hover:border-b-1 hover:border-primary inline-flex items-center gap-1">
+            <Link to="/signup" className="text-primary font-semibold hover:border-b-1 hover:border-primary inline-flex items-center gap-1">
               Get Started
               <span className="text-xl">&#8594;</span>
             </Link>

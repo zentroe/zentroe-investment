@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
-import { ArrowLeft, Wallet, Building2, CreditCard, Copy } from 'lucide-react';
+import { ArrowLeft, Wallet, Building2, CreditCard, Copy, Mail, AlertTriangle } from 'lucide-react';
 import OnboardingLayout from '@/pages/onboarding/OnboardingLayout';
 import SimpleCardPaymentForm from '@/components/payment/SimpleCardPaymentForm';
+import { Button } from '@/components/ui/button';
 import { getPaymentOptions } from '@/services/paymentService';
+import { resendEmailVerification } from '@/services/auth';
 import { useOnboarding } from '@/context/OnboardingContext';
+import { useAuth } from '@/context/AuthContext';
 
 interface PaymentConfig {
   cryptoEnabled: boolean;
@@ -45,13 +48,16 @@ interface PaymentOptions {
 const PaymentPageNew: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { data: userData, loading: contextLoading } = useOnboarding();
+  const { data: userData, loading: contextLoading, updateStatus } = useOnboarding();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentOptions, setPaymentOptions] = useState<PaymentOptions | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<'crypto' | 'bank' | 'card' | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<CryptoWallet | null>(null);
   const [selectedBankAccount, setSelectedBankAccount] = useState<BankAccount | null>(null);
+  const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   // Get amount from context (preferred) or URL params (fallback)
   // Using context ensures data integrity since the amount is fetched from the database
@@ -61,6 +67,13 @@ const PaymentPageNew: React.FC = () => {
 
   // Check if amount is valid
   const isValidAmount = amount > 0;
+
+  // Check email verification status
+  useEffect(() => {
+    if (user && !user.isEmailVerified) {
+      setShowEmailVerificationModal(true);
+    }
+  }, [user]);
 
   useEffect(() => {
     fetchPaymentOptions();
@@ -91,8 +104,34 @@ const PaymentPageNew: React.FC = () => {
     }
   };
 
-  const handlePaymentSuccess = (data: any) => {
-    toast.success('Payment submitted successfully!');
+  const handleResendEmail = async () => {
+    if (!user?.email) return;
+
+    setResendingEmail(true);
+    try {
+      await resendEmailVerification(user.email);
+      toast.success('Verification email sent! Please check your inbox.');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to send verification email';
+      toast.error(errorMessage);
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (data: any) => {
+    try {
+      // Update onboarding status to completed since payment is successful/pending
+      console.log('🎯 Updating onboarding status to completed after successful payment');
+      await updateStatus('completed');
+      console.log('✅ Onboarding status successfully updated to completed');
+      toast.success('Payment submitted successfully! Welcome to your dashboard!');
+    } catch (error) {
+      console.error('❌ Error updating onboarding status:', error);
+      // Still show success for payment even if status update fails
+      toast.success('Payment submitted successfully!');
+    }
+
     navigate('/payment/success', {
       state: {
         paymentId: data.paymentId,
@@ -215,13 +254,18 @@ const PaymentPageNew: React.FC = () => {
               <div className="text-4xl font-bold text-gray-900 mb-2">
                 ${amount.toLocaleString()}
               </div>
-              <p className="text-gray-500 text-sm">Complete your payment to start investing</p>
+              <p className="text-gray-500 text-sm">
+                {user?.isEmailVerified
+                  ? 'Complete your payment to start investing'
+                  : 'Please verify your email address to proceed with payment'
+                }
+              </p>
             </div>
           </div>
 
           <div className="space-y-6">
-            {/* Payment Method Selection */}
-            {availableMethods.length > 1 && (
+            {/* Payment Method Selection - Only show if email is verified */}
+            {user?.isEmailVerified && availableMethods.length > 1 && (
               <div>
                 <h3 className="text-lg font-semibold mb-4">Select Payment Method</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -274,259 +318,292 @@ const PaymentPageNew: React.FC = () => {
             )}
 
             {/* Payment Method Component */}
-            <div>
-              {/* Card Payment */}
-              {selectedMethod === 'card' && (
-                <div className="bg-white rounded-lg">
-                  <SimpleCardPaymentForm
-                    amount={amount}
-                    currency="USD"
-                    onSuccess={handlePaymentSuccess}
-                    onCancel={handlePaymentCancel}
-                  />
-                </div>
-              )}
+            {user?.isEmailVerified ? (
+              <div>
+                {/* Card Payment */}
+                {selectedMethod === 'card' && (
+                  <div className="bg-white rounded-lg">
+                    <SimpleCardPaymentForm
+                      amount={amount}
+                      currency="USD"
+                      onSuccess={handlePaymentSuccess}
+                      onCancel={handlePaymentCancel}
+                    />
+                  </div>
+                )}
 
-              {/* Cryptocurrency Payment */}
-              {selectedMethod === 'crypto' && selectedWallet && (
-                <div className="bg-white rounded-lg border p-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <Wallet className="h-5 w-5 mr-2" />
-                    Cryptocurrency Payment
-                  </h3>
+                {/* Cryptocurrency Payment */}
+                {selectedMethod === 'crypto' && selectedWallet && (
+                  <div className="bg-white rounded-lg border p-6">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <Wallet className="h-5 w-5 mr-2" />
+                      Cryptocurrency Payment
+                    </h3>
 
-                  {/* Wallet Selection */}
-                  {(paymentOptions?.cryptoWallets.length || 0) > 1 && (
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select Wallet
-                      </label>
-                      <select
-                        value={selectedWallet._id}
-                        onChange={(e) => {
-                          const wallet = paymentOptions?.cryptoWallets.find(w => w._id === e.target.value);
-                          setSelectedWallet(wallet || null);
-                        }}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        {paymentOptions?.cryptoWallets.map(wallet => (
-                          <option key={wallet._id} value={wallet._id}>
-                            {wallet.name} {wallet.network && `(${wallet.network})`}
-                          </option>
-                        ))}
-                      </select>
+                    {/* Wallet Selection */}
+                    {(paymentOptions?.cryptoWallets.length || 0) > 1 && (
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Select Wallet
+                        </label>
+                        <select
+                          value={selectedWallet._id}
+                          onChange={(e) => {
+                            const wallet = paymentOptions?.cryptoWallets.find(w => w._id === e.target.value);
+                            setSelectedWallet(wallet || null);
+                          }}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          {paymentOptions?.cryptoWallets.map(wallet => (
+                            <option key={wallet._id} value={wallet._id}>
+                              {wallet.name} {wallet.network && `(${wallet.network})`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Wallet Details */}
+                    <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                      <div className="flex items-center mb-3">
+                        {selectedWallet.icon && (
+                          <img
+                            src={selectedWallet.icon}
+                            alt={selectedWallet.name}
+                            className="w-8 h-8 rounded-full mr-3"
+                          />
+                        )}
+                        <div>
+                          <h4 className="font-medium">{selectedWallet.name}</h4>
+                          {selectedWallet.network && (
+                            <p className="text-sm text-gray-500">{selectedWallet.network}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Wallet Address
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <code className="flex-1 text-xs bg-white px-3 py-2 rounded border font-mono break-all">
+                            {selectedWallet.address}
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard(selectedWallet.address)}
+                            className="p-2 text-gray-400 hover:text-gray-600"
+                            title="Copy address"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  )}
 
-                  {/* Wallet Details */}
-                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                    <div className="flex items-center mb-3">
-                      {selectedWallet.icon && (
-                        <img
-                          src={selectedWallet.icon}
-                          alt={selectedWallet.name}
-                          className="w-8 h-8 rounded-full mr-3"
-                        />
-                      )}
-                      <div>
-                        <h4 className="font-medium">{selectedWallet.name}</h4>
-                        {selectedWallet.network && (
-                          <p className="text-sm text-gray-500">{selectedWallet.network}</p>
+                    {/* Payment Instructions */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-medium text-blue-800 mb-2">Payment Instructions</h4>
+                      <ol className="text-sm text-blue-700 space-y-1">
+                        <li>1. Send exactly <strong>${amount.toLocaleString()}</strong> worth of {selectedWallet.name} to the address above</li>
+                        <li>2. Include your transaction hash/ID when submitting</li>
+                        <li>3. Wait for blockchain confirmation (usually 10-30 minutes)</li>
+                        <li>4. Your investment will be processed once confirmed</li>
+                      </ol>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bank Transfer Payment */}
+                {selectedMethod === 'bank' && selectedBankAccount && (
+                  <div className="bg-white rounded-lg border p-6">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <Building2 className="h-5 w-5 mr-2" />
+                      Bank Transfer Payment
+                    </h3>
+
+                    {/* Bank Account Selection */}
+                    {(paymentOptions?.bankAccounts.length || 0) > 1 && (
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Select Bank Account
+                        </label>
+                        <select
+                          value={selectedBankAccount._id}
+                          onChange={(e) => {
+                            const account = paymentOptions?.bankAccounts.find(acc => acc._id === e.target.value);
+                            setSelectedBankAccount(account || null);
+                          }}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          {paymentOptions?.bankAccounts.map(account => (
+                            <option key={account._id} value={account._id}>
+                              {account.bankName} - {account.accountName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Bank Account Details */}
+                    <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                      <h4 className="font-medium mb-3">{selectedBankAccount.bankName}</h4>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Account Name
+                          </label>
+                          <div className="flex items-center space-x-2">
+                            <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
+                              {selectedBankAccount.accountName}
+                            </code>
+                            <button
+                              onClick={() => copyToClipboard(selectedBankAccount.accountName)}
+                              className="p-2 text-gray-400 hover:text-gray-600"
+                              title="Copy account name"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Account Number
+                          </label>
+                          <div className="flex items-center space-x-2">
+                            <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
+                              {selectedBankAccount.accountNumber}
+                            </code>
+                            <button
+                              onClick={() => copyToClipboard(selectedBankAccount.accountNumber)}
+                              className="p-2 text-gray-400 hover:text-gray-600"
+                              title="Copy account number"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {selectedBankAccount.routingNumber && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Routing Number
+                            </label>
+                            <div className="flex items-center space-x-2">
+                              <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
+                                {selectedBankAccount.routingNumber}
+                              </code>
+                              <button
+                                onClick={() => copyToClipboard(selectedBankAccount.routingNumber!)}
+                                className="p-2 text-gray-400 hover:text-gray-600"
+                                title="Copy routing number"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedBankAccount.swiftCode && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              SWIFT Code
+                            </label>
+                            <div className="flex items-center space-x-2">
+                              <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
+                                {selectedBankAccount.swiftCode}
+                              </code>
+                              <button
+                                onClick={() => copyToClipboard(selectedBankAccount.swiftCode!)}
+                                className="p-2 text-gray-400 hover:text-gray-600"
+                                title="Copy SWIFT code"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedBankAccount.iban && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              IBAN
+                            </label>
+                            <div className="flex items-center space-x-2">
+                              <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
+                                {selectedBankAccount.iban}
+                              </code>
+                              <button
+                                onClick={() => copyToClipboard(selectedBankAccount.iban!)}
+                                className="p-2 text-gray-400 hover:text-gray-600"
+                                title="Copy IBAN"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </div>
 
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Wallet Address
-                      </label>
-                      <div className="flex items-center space-x-2">
-                        <code className="flex-1 text-xs bg-white px-3 py-2 rounded border font-mono break-all">
-                          {selectedWallet.address}
-                        </code>
-                        <button
-                          onClick={() => copyToClipboard(selectedWallet.address)}
-                          className="p-2 text-gray-400 hover:text-gray-600"
-                          title="Copy address"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Country:</span>
+                          <span className="font-medium">{selectedBankAccount.country}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm mt-1">
+                          <span className="text-gray-600">Currency:</span>
+                          <span className="font-medium">{selectedBankAccount.currency}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Payment Instructions */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-800 mb-2">Payment Instructions</h4>
-                    <ol className="text-sm text-blue-700 space-y-1">
-                      <li>1. Send exactly <strong>${amount.toLocaleString()}</strong> worth of {selectedWallet.name} to the address above</li>
-                      <li>2. Include your transaction hash/ID when submitting</li>
-                      <li>3. Wait for blockchain confirmation (usually 10-30 minutes)</li>
-                      <li>4. Your investment will be processed once confirmed</li>
-                    </ol>
+                    {/* Payment Instructions */}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <h4 className="font-medium text-green-800 mb-2">Wire Transfer Instructions</h4>
+                      <ol className="text-sm text-green-700 space-y-1">
+                        <li>1. Initiate a wire transfer for <strong>${amount.toLocaleString()}</strong></li>
+                        <li>2. Use the bank details provided above</li>
+                        <li>3. Include your full name in the transfer reference</li>
+                        <li>4. Save your transfer receipt for verification</li>
+                        <li>5. Processing time: 1-3 business days</li>
+                      </ol>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* Bank Transfer Payment */}
-              {selectedMethod === 'bank' && selectedBankAccount && (
-                <div className="bg-white rounded-lg border p-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <Building2 className="h-5 w-5 mr-2" />
-                    Bank Transfer Payment
+                )}
+              </div>
+            ) : (
+              // Email not verified - show message
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <AlertTriangle className="h-6 w-6 text-orange-600" />
+                  <h3 className="text-lg font-semibold text-orange-900">
+                    Email Verification Required
                   </h3>
-
-                  {/* Bank Account Selection */}
-                  {(paymentOptions?.bankAccounts.length || 0) > 1 && (
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select Bank Account
-                      </label>
-                      <select
-                        value={selectedBankAccount._id}
-                        onChange={(e) => {
-                          const account = paymentOptions?.bankAccounts.find(acc => acc._id === e.target.value);
-                          setSelectedBankAccount(account || null);
-                        }}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        {paymentOptions?.bankAccounts.map(account => (
-                          <option key={account._id} value={account._id}>
-                            {account.bankName} - {account.accountName}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Bank Account Details */}
-                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                    <h4 className="font-medium mb-3">{selectedBankAccount.bankName}</h4>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Account Name
-                        </label>
-                        <div className="flex items-center space-x-2">
-                          <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
-                            {selectedBankAccount.accountName}
-                          </code>
-                          <button
-                            onClick={() => copyToClipboard(selectedBankAccount.accountName)}
-                            className="p-2 text-gray-400 hover:text-gray-600"
-                            title="Copy account name"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Account Number
-                        </label>
-                        <div className="flex items-center space-x-2">
-                          <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
-                            {selectedBankAccount.accountNumber}
-                          </code>
-                          <button
-                            onClick={() => copyToClipboard(selectedBankAccount.accountNumber)}
-                            className="p-2 text-gray-400 hover:text-gray-600"
-                            title="Copy account number"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {selectedBankAccount.routingNumber && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Routing Number
-                          </label>
-                          <div className="flex items-center space-x-2">
-                            <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
-                              {selectedBankAccount.routingNumber}
-                            </code>
-                            <button
-                              onClick={() => copyToClipboard(selectedBankAccount.routingNumber!)}
-                              className="p-2 text-gray-400 hover:text-gray-600"
-                              title="Copy routing number"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedBankAccount.swiftCode && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            SWIFT Code
-                          </label>
-                          <div className="flex items-center space-x-2">
-                            <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
-                              {selectedBankAccount.swiftCode}
-                            </code>
-                            <button
-                              onClick={() => copyToClipboard(selectedBankAccount.swiftCode!)}
-                              className="p-2 text-gray-400 hover:text-gray-600"
-                              title="Copy SWIFT code"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedBankAccount.iban && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            IBAN
-                          </label>
-                          <div className="flex items-center space-x-2">
-                            <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
-                              {selectedBankAccount.iban}
-                            </code>
-                            <button
-                              onClick={() => copyToClipboard(selectedBankAccount.iban!)}
-                              className="p-2 text-gray-400 hover:text-gray-600"
-                              title="Copy IBAN"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Country:</span>
-                        <span className="font-medium">{selectedBankAccount.country}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm mt-1">
-                        <span className="text-gray-600">Currency:</span>
-                        <span className="font-medium">{selectedBankAccount.currency}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Payment Instructions */}
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-medium text-green-800 mb-2">Wire Transfer Instructions</h4>
-                    <ol className="text-sm text-green-700 space-y-1">
-                      <li>1. Initiate a wire transfer for <strong>${amount.toLocaleString()}</strong></li>
-                      <li>2. Use the bank details provided above</li>
-                      <li>3. Include your full name in the transfer reference</li>
-                      <li>4. Save your transfer receipt for verification</li>
-                      <li>5. Processing time: 1-3 business days</li>
-                    </ol>
-                  </div>
                 </div>
-              )}
-            </div>
+                <p className="text-orange-700 mb-4">
+                  Please verify your email address before proceeding with payment. We need to send you important payment confirmations and investment updates.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    onClick={handleResendEmail}
+                    disabled={resendingEmail}
+                    className="flex items-center justify-center space-x-2"
+                  >
+                    <Mail className="h-4 w-4" />
+                    <span>
+                      {resendingEmail ? 'Sending...' : 'Resend Verification Email'}
+                    </span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/dashboard')}
+                  >
+                    Go to Dashboard
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Navigation Buttons */}
             <div className="flex justify-between pt-6">
@@ -559,6 +636,66 @@ const PaymentPageNew: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Email Verification Modal */}
+        {showEmailVerificationModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="flex-shrink-0">
+                  <AlertTriangle className="h-8 w-8 text-orange-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Email Verification Required
+                  </h3>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-600 mb-4">
+                  We need to verify your email address before processing payments. This ensures we can send you important payment confirmations and investment updates.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Please check your email <strong>{user?.email}</strong> for a verification link.
+                </p>
+              </div>
+
+              <div className="flex flex-col space-y-3">
+                <Button
+                  onClick={handleResendEmail}
+                  disabled={resendingEmail}
+                  className="w-full flex items-center justify-center space-x-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  <span>
+                    {resendingEmail ? 'Sending...' : 'Resend Verification Email'}
+                  </span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full"
+                >
+                  Go to Dashboard
+                </Button>
+
+                <div className="text-center text-xs text-gray-500">
+                  <p>
+                    Need help?{' '}
+                    <Link
+                      to="/resend-confirmation"
+                      className="text-primary hover:underline"
+                    >
+                      Visit our help page
+                    </Link>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </OnboardingLayout>
     </>
   );

@@ -16,7 +16,7 @@ export const ONBOARDING_MILESTONES: OnboardingMilestone[] = [
     name: 'Account Creation',
     description: 'Email address provided',
     step: 0,
-    route: '/onboarding/email',
+    route: '/signup',
     requiredFields: ['email']
   },
   {

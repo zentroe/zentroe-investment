@@ -29,7 +29,7 @@ export default function RealEstateHero() {
           </p>
 
           <div>
-            <Link to={'/onboarding/email'}>
+            <Link to={'/signup'}>
               <button
                 type="submit"
                 className="bg-primary text-white px-8 py-4 rounded-sm font-semibold text-sm hover:bg-primary/90 transition-colors"

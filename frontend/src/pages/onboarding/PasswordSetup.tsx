@@ -20,7 +20,7 @@ export default function PasswordSetup() {
     const tempEmail = localStorage.getItem('tempEmail');
     if (!tempEmail) {
       // If no email found, redirect back to email setup
-      navigate("/onboarding/email");
+      navigate("/signup");
       return;
     }
     setEmail(tempEmail);
@@ -53,7 +53,7 @@ export default function PasswordSetup() {
     } catch (error: any) {
       if (error.response?.status === 409) {
         toast.error("This email is already registered.");
-        navigate("/onboarding/email");
+        navigate("/signup");
       } else {
         toast.error("Failed to create account. Please try again.");
       }

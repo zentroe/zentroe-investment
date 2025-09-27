@@ -6,7 +6,7 @@ export default function PrivateCreditHero() {
   return (
     <section className="bg-[#2d4b53] text-white py-24 px-6 md:px-0">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-        
+
         {/* Left: Text Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -24,7 +24,7 @@ export default function PrivateCreditHero() {
             offering some of the most attractive potential risk-adjusted returns of the past decade.
           </p>
           <Link
-            to="/onboarding/email"
+            to="/signup"
             className="bg-primary text-white px-6 py-3 rounded-md text-sm hover:bg-[#8c391e] transition"
           >
             Sign up

@@ -25,7 +25,7 @@ export default function VentureHero() {
             We aim to give all investors the opportunity to invest in a portfolio of
             top-tier private technology companies before they IPO.
           </p>
-          <Link to={"/onboarding/email"}>
+          <Link to={"/signup"}>
             <Button className="bg-primary hover:bg-[#8c391e] text-white text-sm px-6 py-3 rounded-md">
               Sign up
             </Button>

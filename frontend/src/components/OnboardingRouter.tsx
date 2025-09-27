@@ -14,15 +14,20 @@ export const OnboardingRouter = ({ children }: OnboardingRouterProps) => {
   const [hasInitialized, setHasInitialized] = useState(false);
 
   const getOnboardingRoute = (user: any) => {
-    // If onboarding is completed, go to dashboard
-    if (user?.onboardingStatus === "completed") {
+    // If onboarding is completed AND email is verified, go to dashboard
+    if (user?.onboardingStatus === "completed" && user?.isEmailVerified) {
       return "/dashboard";
+    }
+
+    // If onboarding is completed but email is not verified, the DashboardLayout will handle this
+    if (user?.onboardingStatus === "completed" && !user?.isEmailVerified) {
+      return "/dashboard"; // Let DashboardLayout show the email verification screen
     }
 
     // Use server-side step if available, otherwise determine from data
     if (user?.onboardingStep !== undefined && user.onboardingStep > 0) {
       const stepRoutes = [
-        "/onboarding/email",
+        "/signup",
         "/onboarding/password",
         "/onboarding/intro",
         "/onboarding/most-important",
@@ -40,11 +45,11 @@ export const OnboardingRouter = ({ children }: OnboardingRouterProps) => {
         "/invest/auto-invest"
       ];
 
-      return stepRoutes[user.onboardingStep] || "/onboarding/email";
+      return stepRoutes[user.onboardingStep] || "/signup";
     }
 
     // Fallback: determine step based on available data
-    if (!user?.email) return "/onboarding/email";
+    if (!user?.email) return "/signup";
     if (!user?.hasPassword && !user?.password) return "/onboarding/password";
     if (!user?.investmentGoal) return "/onboarding/motivation";
     if (!user?.annualIncome) return "/onboarding/income";
@@ -61,6 +66,9 @@ export const OnboardingRouter = ({ children }: OnboardingRouterProps) => {
     // Skip routing for certain paths to avoid infinite loops
     const skipPaths = [
       '/',
+      '/auth/login',
+      '/confirm-email',
+      '/resend-confirmation',
       '/real-estate',
       '/agriculture',
       '/private-credit',
@@ -85,17 +93,24 @@ export const OnboardingRouter = ({ children }: OnboardingRouterProps) => {
           return;
         }
 
-        // Allow dashboard access only if onboarding is complete
+        // Allow dashboard access only if email is verified AND onboarding is complete
         if (currentPath.startsWith('/dashboard')) {
-          if (user.onboardingStatus === "completed") {
+          if (user.onboardingStatus === "completed" && user.isEmailVerified) {
             setHasInitialized(true);
             return;
           } else {
-            // Force incomplete onboarding users back to onboarding
-            console.log("Redirecting incomplete user from dashboard to onboarding");
-            navigate(correctRoute, { replace: true });
-            setHasInitialized(true);
-            return;
+            // Force incomplete onboarding users or unverified emails back to appropriate step
+            if (!user.isEmailVerified) {
+              console.log("Redirecting user with unverified email to email verification");
+              // The DashboardLayout will handle the email verification UI
+              setHasInitialized(true);
+              return;
+            } else {
+              console.log("Redirecting incomplete user from dashboard to onboarding");
+              navigate(correctRoute, { replace: true });
+              setHasInitialized(true);
+              return;
+            }
           }
         }
 
@@ -120,7 +135,7 @@ export const OnboardingRouter = ({ children }: OnboardingRouterProps) => {
       else {
         // Allow access to public routes and auth routes
         if (currentPath.startsWith('/auth') ||
-          currentPath.startsWith('/onboarding/email') ||
+          currentPath.startsWith('/signup') ||
           currentPath.startsWith('/onboarding/password')) {
           setHasInitialized(true);
           return;
@@ -130,7 +145,7 @@ export const OnboardingRouter = ({ children }: OnboardingRouterProps) => {
         if (currentPath.startsWith('/dashboard') ||
           currentPath.startsWith('/invest') ||
           currentPath.startsWith('/payment')) {
-          navigate("/onboarding/email", { replace: true });
+          navigate("/signup", { replace: true });
         }
       }
     } catch (error) {

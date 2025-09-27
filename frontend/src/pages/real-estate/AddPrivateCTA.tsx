@@ -26,7 +26,7 @@ export default function AddPrivateCTA() {
           transition={{ duration: 0.7 }}
         >
           <Link
-            to="/onboarding/email"
+            to="/signup"
             className="inline-block bg-primary text-white text-sm md:text-base font-medium px-8 py-3 rounded-sm hover:bg-[#8c391e] transition-all duration-300"
           >
             Get Started

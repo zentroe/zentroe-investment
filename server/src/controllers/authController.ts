@@ -88,6 +88,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     );
 
     const confirmationLink = `${process.env.CLIENT_URL}/confirm-email?token=${emailConfirmationToken}`;
+    console.log("📧 Generated confirmation link:", confirmationLink.replace(emailConfirmationToken, "TOKEN_HIDDEN"));
 
     // Send confirmation email (fire-and-forget)
     sendConfirmationEmail(email, confirmationLink).catch((emailError) =>
@@ -171,12 +172,27 @@ export const confirmEmail = async (req: Request, res: Response): Promise<void> =
     const { token } = req.params;
 
     if (!token) {
+      console.log("❌ No token provided in email confirmation");
       res.status(400).json({ message: "Token is required." });
       return;
     }
 
+    console.log("🔍 Attempting to verify email confirmation token:", token.substring(0, 20) + "...");
+
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+      console.log("✅ Token verified successfully for userId:", decoded.userId);
+    } catch (jwtError: any) {
+      console.log("❌ JWT verification failed:", jwtError.message);
+      if (jwtError.name === 'TokenExpiredError') {
+        res.status(400).json({ message: "Confirmation link has expired. Please request a new one." });
+      } else {
+        res.status(400).json({ message: "Invalid confirmation link." });
+      }
+      return;
+    }
 
     const userId = decoded.userId;
 
@@ -188,13 +204,15 @@ export const confirmEmail = async (req: Request, res: Response): Promise<void> =
     );
 
     if (!user) {
+      console.log("❌ User not found for userId:", userId);
       res.status(400).json({ message: "Invalid or expired token." });
       return;
     }
 
+    console.log("✅ Email confirmed successfully for user:", user.email);
     res.status(200).json({ message: "Email confirmed successfully! You can now log in." });
   } catch (error: any) {
-    console.error("Error confirming email:", error.message);
+    console.error("❌ Error confirming email:", error.message);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -267,6 +285,37 @@ export const getCurrentUser = async (req: Request, res: Response): Promise<void>
     res.status(200).json(user);
   } catch (error: any) {
     console.error("Error in getCurrentUser controller:", error.message);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const updateUserProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as any).user?.userId;
+    const updateData = req.body;
+
+    // Remove fields that shouldn't be updated via this endpoint
+    delete updateData.password;
+    delete updateData.email; // Email changes should go through separate verification
+    delete updateData.role; // Role changes should be admin only
+    delete updateData._id;
+    delete updateData.createdAt;
+    delete updateData.updatedAt;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { ...updateData, updatedAt: new Date() },
+      { new: true, select: "-password" }
+    );
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json(user);
+  } catch (error: any) {
+    console.error("Error in updateUserProfile controller:", error.message);
     res.status(500).json({ message: "Server error" });
   }
 };

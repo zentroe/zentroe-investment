@@ -1,62 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, CheckCircle, XCircle, AlertCircle, Eye, Plus } from 'lucide-react';
-
-interface PaymentItem {
-  id: string;
-  amount: number;
-  currency: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
-  paymentMethod: string;
-  createdAt: string;
-}
+import { useUser } from '@/context/UserContext';
 
 const PaymentHistory: React.FC = () => {
-  const [payments, setPayments] = useState<PaymentItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { paymentHistory, loading, errors, refreshPayments } = useUser();
 
-  useEffect(() => {
-    fetchPayments();
-  }, []);
-
-  const fetchPayments = async () => {
-    try {
-      setLoading(true);
-      // Mock data for now - replace with actual API call
-      const mockPayments: PaymentItem[] = [
-        {
-          id: 'pay_123456789',
-          amount: 5000,
-          currency: 'USD',
-          status: 'completed',
-          paymentMethod: 'card',
-          createdAt: '2024-01-15T10:30:00Z'
-        },
-        {
-          id: 'pay_123456788',
-          amount: 2500,
-          currency: 'USD',
-          status: 'processing',
-          paymentMethod: 'bank_transfer',
-          createdAt: '2024-01-10T14:20:00Z'
-        },
-        {
-          id: 'pay_123456787',
-          amount: 1000,
-          currency: 'USD',
-          status: 'completed',
-          paymentMethod: 'crypto',
-          createdAt: '2024-01-05T09:15:00Z'
-        }
-      ];
-
-      setPayments(mockPayments);
-    } catch (error) {
-      console.error('Failed to fetch payments:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const payments = paymentHistory?.payments || [];
+  const isLoading = loading.payments;
+  const error = errors.payments;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -101,44 +53,40 @@ const PaymentHistory: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Payments</h3>
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-100 rounded w-1/2"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-300">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Recent Payments</h3>
+    <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-gray-900">Payment History</h3>
         <Link
-          to="/payment"
-          className="flex items-center text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+          to="/dashboard/payments"
+          className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
         >
-          <Plus className="w-4 h-4 mr-1" />
-          New Payment
+          View All
         </Link>
       </div>
 
-      {payments.length === 0 ? (
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : error ? (
         <div className="text-center py-8">
-          <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-3">
-            <AlertCircle className="w-6 h-6 text-gray-400" />
-          </div>
-          <p className="text-gray-500 text-sm mb-4">No payments yet</p>
+          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
+          <p className="text-gray-500 mb-4">{error}</p>
+          <button
+            onClick={refreshPayments}
+            className="text-primary hover:text-primary/80 text-sm font-medium"
+          >
+            Try Again
+          </button>
+        </div>
+      ) : payments.length === 0 ? (
+        <div className="text-center py-8">
+          <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-500 mb-4">No payments yet</p>
           <Link
             to="/payment"
-            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors border border-transparent"
           >
             <Plus className="w-4 h-4 mr-2" />
             Make Your First Payment
@@ -149,7 +97,7 @@ const PaymentHistory: React.FC = () => {
           <div className="space-y-3 mb-4">
             {payments.slice(0, 3).map((payment) => (
               <div
-                key={payment.id}
+                key={payment._id}
                 className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center space-x-3">
@@ -169,9 +117,8 @@ const PaymentHistory: React.FC = () => {
                   </div>
                 </div>
                 <Link
-                  to={`/payment/status/${payment.id}`}
-                  className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
-                  title="View details"
+                  to={`/payment/status/${payment._id}`}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                 </Link>
@@ -180,10 +127,10 @@ const PaymentHistory: React.FC = () => {
           </div>
 
           {payments.length > 3 && (
-            <div className="text-center">
+            <div className="pt-3 border-t border-gray-100">
               <Link
                 to="/dashboard/payments"
-                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                className="text-sm text-gray-600 hover:text-gray-900 font-medium"
               >
                 View all payments ({payments.length})
               </Link>

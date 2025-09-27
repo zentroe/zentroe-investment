@@ -31,7 +31,7 @@ export default function StartBuilding() {
               <span className="w-1 h-1 bg-darkPrimary rounded-full" />
               <span>Quarterly liquidity</span>
             </div>
-            <Link to={'/onboarding/email'}>
+            <Link to={'/signup'}>
               <button className="px-6 py-3 bg-primary mt-8 text-white rounded-lg hover:bg-primary/90 transition">
                 Start Investing
               </button>

@@ -277,6 +277,7 @@ export const getUserPaymentHistory = async (req: Request, res: Response): Promis
     const userId = (req as any).user.id;
     const { page = 1, limit = 10 } = req.query;
 
+    // Get deposits
     const deposits = await Deposit.find({ userId })
       .populate('cryptoWallet', 'name')
       .populate('bankAccount', 'bankName')
@@ -284,15 +285,24 @@ export const getUserPaymentHistory = async (req: Request, res: Response): Promis
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit));
 
-    const total = await Deposit.countDocuments({ userId });
+    // Get card payments
+    const { SimpleCardPayment } = await import('../models/SimpleCardPayment');
+    const cardPayments = await SimpleCardPayment.find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit));
+
+    const totalDeposits = await Deposit.countDocuments({ userId });
+    const totalCardPayments = await SimpleCardPayment.countDocuments({ userId });
 
     res.json({
       deposits,
+      cardPayments,
       pagination: {
         page: Number(page),
         limit: Number(limit),
-        total,
-        pages: Math.ceil(total / Number(limit))
+        total: totalDeposits + totalCardPayments,
+        pages: Math.ceil((totalDeposits + totalCardPayments) / Number(limit))
       }
     });
   } catch (error) {
@@ -330,5 +340,8 @@ export const depositFunds = async (req: Request, res: Response): Promise<void> =
 };
 
 export const withdrawFunds = async (req: Request, res: Response): Promise<void> => {
-  res.status(200).json({ message: "Withdraw endpoint - to be implemented" });
+  res.status(200).json({
+    message: "Withdraw endpoint deprecated. Please use /api/withdrawals/request endpoint instead",
+    newEndpoint: "/api/withdrawals/request"
+  });
 };

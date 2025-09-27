@@ -15,7 +15,8 @@ import {
   LogOut,
   User,
   Bell,
-  Target
+  Target,
+  ArrowDownLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminLogout, getAdminProfile, getAllDeposits, type AdminProfile } from '@/services/adminService';
@@ -51,6 +52,12 @@ const AdminLayout: React.FC = () => {
       badge: pendingDepositsCount > 0 ? pendingDepositsCount : undefined
     },
     {
+      id: 'withdrawals',
+      label: 'Withdrawals',
+      icon: ArrowDownLeft,
+      path: '/x-admin/dashboard/withdrawals'
+    },
+    {
       id: 'payments',
       label: 'Payment Config',
       icon: Settings,
@@ -79,6 +86,12 @@ const AdminLayout: React.FC = () => {
       label: 'Users',
       icon: Users,
       path: '/x-admin/dashboard/users'
+    },
+    {
+      id: 'investments',
+      label: 'Investments',
+      icon: Target,
+      path: '/x-admin/dashboard/investments'
     },
     {
       id: 'investment-plans',

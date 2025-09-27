@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import {
   submitCardPaymentOtp,
   getCardPaymentDetails
 } from '@/services/paymentService';
+import { useOnboarding } from '@/context/OnboardingContext';
 
 interface SimpleCardPaymentFormProps {
   amount: number;
@@ -40,6 +42,8 @@ export default function SimpleCardPaymentForm({
   });
   const [otpCode, setOtpCode] = useState('');
   const [paymentId, setPaymentId] = useState<string>('');
+  const { updateStatus } = useOnboarding();
+  const navigate = useNavigate();
 
   // Poll for payment status when in processing or submitted state
   useEffect(() => {
@@ -59,6 +63,15 @@ export default function SimpleCardPaymentForm({
             } else if (payment.status === 'approved') {
               setStep('approved');
               toast.success('Payment approved! Your investment has been processed.');
+
+              // Update onboarding status to completed when payment is approved
+              try {
+                console.log('🎯 Updating onboarding status to completed after card payment approval');
+                await updateStatus('completed');
+                console.log('✅ Onboarding status successfully updated to completed');
+              } catch (error) {
+                console.error('❌ Error updating onboarding status:', error);
+              }
             } else if (payment.status === 'rejected') {
               setStep('rejected');
               toast.error('Payment rejected. Please contact support for assistance.');
@@ -75,7 +88,7 @@ export default function SimpleCardPaymentForm({
         clearInterval(interval);
       }
     };
-  }, [step, paymentId]);
+  }, [step, paymentId, updateStatus]);
   // const [needsOtp, setNeedsOtp] = useState(false);
 
   // Simple card number formatting
@@ -370,7 +383,7 @@ export default function SimpleCardPaymentForm({
                 Payment ID: <span className="font-mono">{paymentId}</span>
               </p>
               <Button
-                onClick={onCancel}
+                onClick={() => navigate('/dashboard')}
                 className="w-full bg-green-600 hover:bg-green-700"
               >
                 Continue to Dashboard

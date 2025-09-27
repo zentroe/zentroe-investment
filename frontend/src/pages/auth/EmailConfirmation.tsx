@@ -4,6 +4,7 @@ import { confirmEmail } from "@/services/auth";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Loader } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { useAuth } from "@/context/AuthContext";
 
 type ConfirmationStatus = 'loading' | 'success' | 'error' | 'expired' | 'invalid';
 
@@ -12,27 +13,56 @@ export default function EmailConfirmation() {
   const [message, setMessage] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
   const token = searchParams.get('token');
+  const [showSuccessDelay, setShowSuccessDelay] = useState(false);
 
   useEffect(() => {
     const confirmUserEmail = async () => {
       if (!token) {
+        console.log('❌ No token found in URL parameters');
         setStatus('invalid');
-        setMessage('Invalid confirmation link');
+        setMessage('Invalid confirmation link. Please check the email link and try again.');
         return;
       }
 
+      console.log('🔍 Attempting to confirm email with token:', token.substring(0, 20) + '...');
+
       try {
         const response = await confirmEmail(token);
+        console.log('✅ Email confirmation successful:', response);
         setStatus('success');
         setMessage(response.message || 'Email confirmed successfully!');
+
+        // Refresh user data to update email verification status
+        try {
+          await refreshUser();
+        } catch (refreshError) {
+          console.log('Note: Could not refresh user data immediately:', refreshError);
+        }
+
+        // Show success message for 2 seconds before enabling navigation
+        setTimeout(() => {
+          setShowSuccessDelay(true);
+        }, 2000);
       } catch (error: any) {
+        console.error('❌ Email confirmation failed:', error);
+
         if (error.response?.status === 400) {
-          setStatus('expired');
-          setMessage('This confirmation link has expired or is invalid');
+          const errorMessage = error.response.data?.message;
+          if (errorMessage?.includes('expired')) {
+            setStatus('expired');
+            setMessage('This confirmation link has expired. Please request a new verification email.');
+          } else {
+            setStatus('invalid');
+            setMessage(errorMessage || 'This confirmation link is invalid or has already been used.');
+          }
+        } else if (error.response?.status === 500) {
+          setStatus('error');
+          setMessage('Server error occurred. Please try again later or contact support.');
         } else {
           setStatus('error');
-          setMessage(error.response?.data?.message || 'Failed to confirm email');
+          setMessage(error.response?.data?.message || 'Failed to confirm email. Please try again.');
         }
       }
     };
@@ -67,16 +97,29 @@ export default function EmailConfirmation() {
       case 'success':
         return (
           <div className="text-center">
-            <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
+            <div className="relative mb-4">
+              <CheckCircle className="mx-auto h-12 w-12 text-green-500 animate-pulse" />
+              <div className="absolute -top-2 -right-2 h-4 w-4 bg-green-400 rounded-full animate-ping"></div>
+            </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Email Confirmed!
+              Email Confirmed! 🎉
             </h1>
             <p className="text-gray-600 mb-6">
               {message}
+              <br />
+              <span className="text-green-600 font-medium">
+                You can now log in and access all features of your Zentroe account!
+              </span>
             </p>
-            <Button onClick={handleContinueToLogin} className="w-full">
-              Continue to Login
-            </Button>
+            {showSuccessDelay ? (
+              <Button onClick={handleContinueToLogin} className="w-full">
+                Continue to Login
+              </Button>
+            ) : (
+              <div className="text-sm text-gray-500">
+                Redirecting you in a moment...
+              </div>
+            )}
           </div>
         );
 

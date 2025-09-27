@@ -11,31 +11,15 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import {
+  getAllUsers,
+  toggleUserStatus,
+  updateKycStatus,
+  AdminUserData
+} from '@/services/adminService';
 
-interface UserData {
-  _id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  dateOfBirth?: string;
-  address?: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
-  kyc: {
-    status: 'pending' | 'approved' | 'rejected';
-    submittedAt?: string;
-    reviewedAt?: string;
-  };
-  totalInvested: number;
-  isActive: boolean;
-  lastLogin?: string;
-  createdAt: string;
-}
+// Use AdminUserData from the service
+type UserData = AdminUserData;
 
 const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
@@ -46,111 +30,101 @@ const AdminUsers: React.FC = () => {
   const [kycFilter, setKycFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentPage, searchTerm, statusFilter, kycFilter]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setError(null);
 
-      // Mock data - in production, this would come from API
-      const mockUsers: UserData[] = [
-        {
-          _id: '1',
-          email: 'john.doe@example.com',
-          firstName: 'John',
-          lastName: 'Doe',
-          phone: '+1-555-0123',
-          dateOfBirth: '1990-05-15',
-          address: {
-            street: '123 Main St',
-            city: 'New York',
-            state: 'NY',
-            zipCode: '10001',
-            country: 'United States'
-          },
-          kyc: {
-            status: 'approved',
-            submittedAt: '2024-01-10T10:00:00Z',
-            reviewedAt: '2024-01-12T14:30:00Z'
-          },
-          totalInvested: 50000,
-          isActive: true,
-          lastLogin: '2024-01-15T09:30:00Z',
-          createdAt: '2024-01-01T10:00:00Z'
-        },
-        {
-          _id: '2',
-          email: 'jane.smith@example.com',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          phone: '+1-555-0456',
-          kyc: {
-            status: 'pending',
-            submittedAt: '2024-01-14T16:20:00Z'
-          },
-          totalInvested: 0,
-          isActive: true,
-          lastLogin: '2024-01-15T08:15:00Z',
-          createdAt: '2024-01-14T12:00:00Z'
-        },
-        {
-          _id: '3',
-          email: 'mike.johnson@example.com',
-          firstName: 'Mike',
-          lastName: 'Johnson',
-          kyc: {
-            status: 'rejected',
-            submittedAt: '2024-01-08T11:45:00Z',
-            reviewedAt: '2024-01-10T15:20:00Z'
-          },
-          totalInvested: 0,
-          isActive: false,
-          createdAt: '2024-01-08T10:30:00Z'
-        }
-      ];
+      const response = await getAllUsers({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchTerm || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        kycStatus: kycFilter !== 'all' ? kycFilter : undefined
+      });
 
-      setTimeout(() => {
-        setUsers(mockUsers);
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
+      if (response.success) {
+        setUsers(response.data.users);
+        setTotalUsers(response.data.total);
+        console.log('✅ Fetched users successfully:', {
+          count: response.data.users.length,
+          total: response.data.total,
+          page: currentPage
+        });
+      } else {
+        throw new Error(response.message || 'Failed to fetch users');
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to fetch users:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to fetch users');
+      setUsers([]);
+      setTotalUsers(0);
+    } finally {
       setLoading(false);
     }
   };
 
   const handleToggleUserStatus = async (userId: string) => {
     try {
-      setUsers(users.map(user =>
-        user._id === userId
-          ? { ...user, isActive: !user.isActive }
-          : user
-      ));
-    } catch (error) {
-      console.error('Failed to toggle user status:', error);
+      const response = await toggleUserStatus(userId);
+
+      if (response.success) {
+        // Update local state
+        setUsers(users.map(user =>
+          user._id === userId
+            ? { ...user, isActive: response.data.isActive }
+            : user
+        ));
+
+        console.log(`✅ User ${userId} status toggled to ${response.data.isActive ? 'active' : 'inactive'}`);
+      } else {
+        throw new Error(response.message || 'Failed to toggle user status');
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to toggle user status:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to toggle user status');
     }
   };
 
   const handleKycStatusUpdate = async (userId: string, newStatus: 'approved' | 'rejected') => {
     try {
-      setUsers(users.map(user =>
-        user._id === userId
-          ? {
-            ...user,
-            kyc: {
-              ...user.kyc,
-              status: newStatus,
-              reviewedAt: new Date().toISOString()
+      const response = await updateKycStatus(userId, newStatus);
+
+      if (response.success) {
+        // Update local state
+        setUsers(users.map(user =>
+          user._id === userId
+            ? {
+              ...user,
+              kyc: {
+                ...(user.kyc || { status: 'pending' }),
+                status: newStatus,
+                reviewedAt: response.data.reviewedAt,
+                reviewedBy: response.data.reviewedBy
+              }
             }
-          }
-          : user
-      ));
-      setSelectedUser(null);
-    } catch (error) {
-      console.error('Failed to update KYC status:', error);
+            : user
+        ));
+
+        console.log(`✅ User ${userId} KYC status updated to ${newStatus}`);
+
+        // Close the modal/details view if this user was selected
+        if (selectedUser && selectedUser._id === userId) {
+          setSelectedUser(null);
+        }
+      } else {
+        throw new Error(response.message || 'Failed to update KYC status');
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to update KYC status:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to update KYC status');
     }
   };
 
@@ -184,24 +158,8 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  // Filter users
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' ||
-      (statusFilter === 'active' && user.isActive) ||
-      (statusFilter === 'inactive' && !user.isActive);
-    const matchesKyc = kycFilter === 'all' || user.kyc.status === kycFilter;
-
-    return matchesSearch && matchesStatus && matchesKyc;
-  });
-
-  // Pagination
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  // Use server-side pagination for better performance
+  const totalPages = Math.ceil(totalUsers / itemsPerPage);
 
   if (loading) {
     return (
@@ -220,6 +178,29 @@ const AdminUsers: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <XCircle className="h-5 w-5 text-red-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{error}</p>
+              </div>
+              <div className="mt-4">
+                <button
+                  onClick={fetchUsers}
+                  className="text-sm bg-red-100 text-red-800 rounded-md px-3 py-1 hover:bg-red-200"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -229,7 +210,7 @@ const AdminUsers: React.FC = () => {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 text-sm text-gray-500">
-          Total Users: {users.length}
+          Total Users: {totalUsers.toLocaleString()}
         </div>
       </div>
 
@@ -316,7 +297,7 @@ const AdminUsers: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {currentUsers.map((user) => (
+              {users.map((user) => (
                 <tr key={user._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -327,18 +308,21 @@ const AdminUsers: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {user.firstName} {user.lastName}
+                          {user.firstName && user.lastName
+                            ? `${user.firstName} ${user.lastName}`
+                            : user.firstName || user.lastName || 'Unnamed User'
+                          }
                         </div>
                         <div className="text-sm text-gray-500">{user.email}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getKycStatusColor(user.kyc.status)}`}>
-                      {user.kyc.status === 'pending' && <Calendar className="h-3 w-3 mr-1" />}
-                      {user.kyc.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
-                      {user.kyc.status === 'rejected' && <XCircle className="h-3 w-3 mr-1" />}
-                      {user.kyc.status}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getKycStatusColor(user.kyc?.status || 'pending')}`}>
+                      {(user.kyc?.status === 'pending' || !user.kyc) && <Calendar className="h-3 w-3 mr-1" />}
+                      {user.kyc?.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
+                      {user.kyc?.status === 'rejected' && <XCircle className="h-3 w-3 mr-1" />}
+                      {user.kyc?.status || 'pending'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -408,9 +392,9 @@ const AdminUsers: React.FC = () => {
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{' '}
-                  <span className="font-medium">{Math.min(indexOfLastItem, filteredUsers.length)}</span> of{' '}
-                  <span className="font-medium">{filteredUsers.length}</span> results
+                  Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
+                  <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalUsers)}</span> of{' '}
+                  <span className="font-medium">{totalUsers}</span> results
                 </p>
               </div>
               <div>
@@ -427,8 +411,8 @@ const AdminUsers: React.FC = () => {
                       key={i + 1}
                       onClick={() => setCurrentPage(i + 1)}
                       className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === i + 1
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                         }`}
                     >
                       {i + 1}
@@ -534,10 +518,10 @@ const AdminUsers: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">KYC Status</label>
                   <div className="bg-gray-50 p-3 rounded-md">
                     <div className="flex items-center justify-between mb-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getKycStatusColor(selectedUser.kyc.status)}`}>
-                        {selectedUser.kyc.status}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getKycStatusColor(selectedUser.kyc?.status || 'pending')}`}>
+                        {selectedUser.kyc?.status || 'pending'}
                       </span>
-                      {selectedUser.kyc.status === 'pending' && (
+                      {(selectedUser.kyc?.status === 'pending' || !selectedUser.kyc) && (
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleKycStatusUpdate(selectedUser._id, 'approved')}
@@ -554,12 +538,12 @@ const AdminUsers: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    {selectedUser.kyc.submittedAt && (
+                    {selectedUser.kyc?.submittedAt && (
                       <p className="text-xs text-gray-500">
                         Submitted: {formatDate(selectedUser.kyc.submittedAt)}
                       </p>
                     )}
-                    {selectedUser.kyc.reviewedAt && (
+                    {selectedUser.kyc?.reviewedAt && (
                       <p className="text-xs text-gray-500">
                         Reviewed: {formatDate(selectedUser.kyc.reviewedAt)}
                       </p>

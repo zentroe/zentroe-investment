@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   TrendingUp,
   Wallet,
+  ArrowDownLeft,
   RefreshCw,
   Users,
   Settings,
@@ -11,6 +12,8 @@ import {
   X
 } from "lucide-react";
 import Logo from "@/components/ui/Logo";
+import logo from "@/assets/zenLogo.png";
+
 
 interface NavigationItem {
   name: string;
@@ -22,6 +25,7 @@ const navigationItems: NavigationItem[] = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { name: "Portfolio", path: "/dashboard/portfolio", icon: TrendingUp },
   { name: "Earnings", path: "/dashboard/earnings", icon: Wallet },
+  { name: "Withdrawals", path: "/dashboard/withdrawals", icon: ArrowDownLeft },
   { name: "Recurring", path: "/dashboard/recurring", icon: RefreshCw },
   { name: "Referrals", path: "/dashboard/referrals", icon: Users },
   { name: "Settings", path: "/dashboard/settings", icon: Settings },
@@ -56,12 +60,12 @@ export default function DashboardSidebar() {
       `}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-primary to-orange-600">
-            <Logo variant="icon" size="sm" className="text-white" />
-            <div className="text-white">
-              <h2 className="font-bold text-lg">Zentroe</h2>
-              <p className="text-xs text-orange-100">Investment Platform</p>
-            </div>
+          <div className="flex items-center justify-start gap-4 p-6 border-b border-gray-200 bg-white">
+            {/* Logo */}
+            <Link to="/dashboard" className="flex items-center gap-2">
+              <Logo variant="icon" size="sm" />
+              <img src={logo} alt="Zentroe Logo" className="h-5" />
+            </Link>
             <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="lg:hidden p-1 text-white hover:bg-white/20 rounded"
@@ -86,8 +90,8 @@ export default function DashboardSidebar() {
                     className={`
                       flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200
                       ${isActive
-                        ? 'bg-gradient-to-r from-primary to-orange-600 text-white shadow-md transform scale-105'
-                        : 'text-gray-700 hover:bg-orange-50 hover:text-primary'
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                       }
                     `}
                   >
@@ -100,7 +104,7 @@ export default function DashboardSidebar() {
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-4 mt-8">
                 Investments
               </p>
-              {navigationItems.slice(1, 4).map((item) => {
+              {navigationItems.slice(1, 5).map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
                   <Link
@@ -124,7 +128,7 @@ export default function DashboardSidebar() {
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-4 mt-8">
                 Account
               </p>
-              {navigationItems.slice(4).map((item) => {
+              {navigationItems.slice(5).map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
                   <Link
@@ -134,8 +138,8 @@ export default function DashboardSidebar() {
                     className={`
                       flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200
                       ${isActive
-                        ? 'bg-gradient-to-r from-primary to-orange-600 text-white shadow-md transform scale-105'
-                        : 'text-gray-700 hover:bg-orange-50 hover:text-primary'
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                       }
                     `}
                   >

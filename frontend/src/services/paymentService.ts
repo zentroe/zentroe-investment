@@ -273,3 +273,78 @@ export interface PaymentResponse {
     status: string;
   };
 }
+
+// ===== PAYMENT HISTORY =====
+
+interface PaymentHistoryItem {
+  _id: string;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'approved' | 'rejected';
+  paymentMethod: string;
+  createdAt: string;
+  type: 'deposit' | 'card_payment';
+}
+
+interface PaymentHistoryResponse {
+  payments: PaymentHistoryItem[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+/**
+ * Get user's payment history including deposits and card payments
+ */
+export const getUserPaymentHistory = async (page = 1, limit = 10): Promise<PaymentHistoryResponse> => {
+  try {
+    const response = await axios.get(`/payments/history?page=${page}&limit=${limit}`);
+
+    // Transform the response to match the expected format
+    const payments: PaymentHistoryItem[] = [];
+
+    // Add deposits
+    if (response.data.deposits) {
+      response.data.deposits.forEach((deposit: any) => {
+        payments.push({
+          _id: deposit._id,
+          amount: deposit.amount,
+          currency: deposit.currency || 'USD',
+          status: deposit.status,
+          paymentMethod: deposit.paymentMethod || 'bank_transfer',
+          createdAt: deposit.createdAt,
+          type: 'deposit'
+        });
+      });
+    }
+
+    // Add card payments if they exist
+    if (response.data.cardPayments) {
+      response.data.cardPayments.forEach((cardPayment: any) => {
+        payments.push({
+          _id: cardPayment._id,
+          amount: cardPayment.amount,
+          currency: cardPayment.currency || 'USD',
+          status: cardPayment.status,
+          paymentMethod: 'card',
+          createdAt: cardPayment.createdAt,
+          type: 'card_payment'
+        });
+      });
+    }
+
+    // Sort by creation date (newest first)
+    payments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return {
+      payments,
+      pagination: response.data.pagination
+    };
+  } catch (error) {
+    console.error('Failed to fetch payment history:', error);
+    throw error;
+  }
+};

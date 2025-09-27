@@ -190,7 +190,7 @@ export default function Login() {
 
         <div className="text-sm text-center text-darkPrimary">
           Not an investor yet?{" "}
-          <a href="/onboarding/email" className="text-primary underline">
+          <a href="/signup" className="text-primary underline">
             Sign up now
           </a>
         </div>

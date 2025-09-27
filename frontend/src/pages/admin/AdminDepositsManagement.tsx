@@ -11,9 +11,10 @@ import {
   CreditCard,
   User,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Play
 } from 'lucide-react';
-import { getAllDeposits, updateDepositStatus } from '@/services/adminService';
+import { getAllDeposits, updateDepositStatus, startInvestmentFromDeposit } from '@/services/adminService';
 
 interface Deposit {
   _id: string;
@@ -112,6 +113,23 @@ const AdminDepositsManagement: React.FC = () => {
       setSelectedDeposit(null);
     } catch (error) {
       console.error('Failed to update deposit status:', error);
+    }
+  };
+
+  const handleStartInvestment = async (depositId: string) => {
+    try {
+      const confirmed = window.confirm('Are you sure you want to start an investment for this approved deposit?');
+      if (!confirmed) return;
+
+      await startInvestmentFromDeposit(depositId);
+      alert('Investment started successfully!');
+
+      // Refresh the deposits list to see any updates
+      fetchDeposits();
+    } catch (error: any) {
+      console.error('Failed to start investment:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to start investment';
+      alert(`Error: ${errorMessage}`);
     }
   };
 
@@ -530,6 +548,19 @@ const AdminDepositsManagement: React.FC = () => {
                     >
                       <X className="h-4 w-4 mr-2" />
                       Reject
+                    </button>
+                  </div>
+                )}
+
+                {/* Start Investment for Approved Deposits */}
+                {selectedDeposit.status === 'approved' && (
+                  <div className="pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => handleStartInvestment(selectedDeposit._id)}
+                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center justify-center"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Start Investment
                     </button>
                   </div>
                 )}

@@ -48,7 +48,7 @@ export default function IncomeFund() {
 
           {/* CTA */}
           <div className="pt-8">
-            <Link to="/onboarding/email" className="text-primary font-semibold hover:border-b hover:border-primary inline-flex items-center gap-1">
+            <Link to="/signup" className="text-primary font-semibold hover:border-b hover:border-primary inline-flex items-center gap-1">
               Get started with the Income Real Estate Fund
               <span className="text-xl">&#8594;</span>
             </Link>

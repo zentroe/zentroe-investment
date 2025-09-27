@@ -34,7 +34,7 @@ export const ProtectedRoute = ({
     if (user?.onboardingStatus === "completed") {
       return <Navigate to="/dashboard" replace />;
     } else {
-      return <Navigate to="/onboarding/email" replace />;
+      return <Navigate to="/signup" replace />;
     }
   }
 

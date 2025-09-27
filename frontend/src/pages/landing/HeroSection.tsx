@@ -25,7 +25,7 @@ export default function HeroSection() {
 
         <div className="flex justify-start">
           <Link
-            to="/onboarding/email"
+            to="/signup"
             className="px-6 py-3 bg-primary hover:bg-[#8c391e] text-white rounded-md text-sm md:text-base transition"
           >
             Sign up

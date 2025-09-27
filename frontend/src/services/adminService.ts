@@ -502,3 +502,111 @@ export interface InvestmentPlan {
   createdAt: string;
   updatedAt: string;
 }
+
+// ===== USER MANAGEMENT =====
+
+export interface AdminUserData {
+  _id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  kyc: {
+    status: 'pending' | 'approved' | 'rejected';
+    submittedAt?: string;
+    reviewedAt?: string;
+    reviewedBy?: string;
+  };
+  totalInvested: number;
+  isActive: boolean;
+  lastLogin?: string;
+  createdAt: string;
+  updatedAt: string;
+  onboardingStatus: string;
+  role: string;
+  referralStats?: {
+    totalReferred: number;
+    qualifiedReferrals: number;
+    totalPointsEarned: number;
+    currentTier: string;
+  };
+}
+
+export const getAllUsers = async (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  kycStatus?: string;
+}) => {
+  try {
+    const response = await axios.get('/admin/users', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all users:', error);
+    throw error;
+  }
+};
+
+export const getUserById = async (userId: string) => {
+  try {
+    const response = await axios.get(`/admin/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user by ID:', error);
+    throw error;
+  }
+};
+
+export const toggleUserStatus = async (userId: string) => {
+  try {
+    const response = await axios.patch(`/admin/users/${userId}/toggle-status`);
+    return response.data;
+  } catch (error) {
+    console.error('Error toggling user status:', error);
+    throw error;
+  }
+};
+
+export const updateKycStatus = async (userId: string, status: 'approved' | 'rejected', notes?: string) => {
+  try {
+    const response = await axios.patch(`/admin/users/${userId}/kyc-status`, {
+      status,
+      notes
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating KYC status:', error);
+    throw error;
+  }
+};
+
+export const getUserInvestments = async (userId: string) => {
+  try {
+    const response = await axios.get(`/admin/users/${userId}/investments`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user investments:', error);
+    throw error;
+  }
+};
+
+// ===== MANUAL INVESTMENT CREATION =====
+
+export const startInvestmentFromDeposit = async (depositId: string) => {
+  try {
+    const response = await axios.post(`/admin/payments/deposits/${depositId}/start-investment`);
+    return response.data;
+  } catch (error) {
+    console.error('Error starting investment from deposit:', error);
+    throw error;
+  }
+};

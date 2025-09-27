@@ -22,7 +22,7 @@ export default function CallToAction() {
           transition={{ duration: 0.9 }}
         >
           <Link
-            to="/onboarding/email"
+            to="/signup"
             className="px-8 py-3 bg-primary text-white rounded-md text-sm md:text-base hover:bg-[#8c391e] transition-colors duration-300"
           >
             Get started

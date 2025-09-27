@@ -51,9 +51,12 @@ import AdminCryptoWallets from "@/pages/admin/AdminCryptoWallets";
 import AdminBankAccounts from "@/pages/admin/AdminBankAccounts";
 import AdminCardPayments from "@/pages/admin/AdminCardPayments";
 import AdminUsers from "@/pages/admin/AdminUsers";
+import AdminInvestmentManagement from "@/pages/admin/AdminInvestmentManagement";
 import AdminReports from "@/pages/admin/AdminReports";
 import AdminActivityLogs from "@/pages/admin/AdminActivityLogs";
 import AdminInvestmentPlans from "@/pages/admin/AdminInvestmentPlans";
+import WithdrawalsPage from "@/pages/withdrawals/WithdrawalsPage";
+import AdminWithdrawalsPage from "@/pages/admin/AdminWithdrawalsPage";
 
 
 
@@ -68,7 +71,7 @@ export default function AppRoutes() {
 
       <Route path="/about" element={<AboutPage />} />
 
-      <Route path="/onboarding/email" element={<EmailSetup />} />
+      <Route path="/signup" element={<EmailSetup />} />
       <Route path="/onboarding/password" element={<PasswordSetup />} />
       <Route path="/onboarding/success" element={<Success />} />
       <Route path="/onboarding/account-type" element={<AccountType />} />
@@ -103,11 +106,13 @@ export default function AppRoutes() {
       <Route path="/x-admin/dashboard" element={<AdminLayout />}>
         <Route index element={<AdminDashboardOverview />} />
         <Route path="deposits" element={<AdminDepositsManagement />} />
+        <Route path="withdrawals" element={<AdminWithdrawalsPage />} />
         <Route path="payments-config" element={<AdminPaymentConfiguration />} />
         <Route path="crypto-wallets" element={<AdminCryptoWallets />} />
         <Route path="bank-accounts" element={<AdminBankAccounts />} />
         <Route path="card-payments" element={<AdminCardPayments />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="investments" element={<AdminInvestmentManagement />} />
         <Route path="investment-plans" element={<AdminInvestmentPlans />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="activity-logs" element={<AdminActivityLogs />} />
@@ -117,6 +122,7 @@ export default function AppRoutes() {
         <Route index element={<DashboardHome />} />
         <Route path="portfolio" element={<PortfolioPage />} />
         <Route path="earnings" element={<EarningsPage />} />
+        <Route path="withdrawals" element={<WithdrawalsPage />} />
         <Route path="recurring" element={<RecurringPage />} />
         <Route path="referrals" element={<ReferralsPage />} />
         <Route path="settings" element={<SettingsPage />} />

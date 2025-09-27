@@ -62,14 +62,35 @@ export interface IUser extends Document {
   employer?: string;
   politicallyExposed?: boolean;
 
+  // KYC (Know Your Customer) Status
+  kyc?: {
+    status: "pending" | "approved" | "rejected";
+    submittedAt?: Date;
+    reviewedAt?: Date;
+    reviewedBy?: mongoose.Types.ObjectId;
+    notes?: string;
+  };
+
+  // Account Status
+  isActive?: boolean;
+
   // Onboarding Progress
   onboardingStatus?: "started" | "basicInfo" | "investmentProfile" | "verification" | "bankConnected" | "completed";
-  // onboardingStep?: number;
 
   // Platform Activity
   lastLogin?: Date;
   emailNotifications?: boolean;
   smsNotifications?: boolean;
+
+  // Referral System
+  referralCode?: string; // Unique referral code for this user
+  referredBy?: mongoose.Types.ObjectId; // Who referred this user
+  referralStats?: {
+    totalReferred: number;
+    qualifiedReferrals: number;
+    totalPointsEarned: number;
+    currentTier: string;
+  };
 
   // Timestamps
   createdAt?: Date;
@@ -155,7 +176,7 @@ const UserSchema = new Schema<IUser>(
     recurringAmount: { type: Number, min: 0 },
 
     // Compliance & Verification
-    isAccreditedInvestor: Boolean,
+    isAccreditedInvestor: { type: Boolean, default: false },
     employmentStatus: {
       type: String,
       enum: ["employed", "self-employed", "unemployed", "retired", "student"]
@@ -163,18 +184,62 @@ const UserSchema = new Schema<IUser>(
     employer: String,
     politicallyExposed: { type: Boolean, default: false },
 
+    // KYC (Know Your Customer) Status
+    kyc: {
+      type: {
+        status: {
+          type: String,
+          enum: ["pending", "approved", "rejected"],
+          default: "pending"
+        },
+        submittedAt: Date,
+        reviewedAt: Date,
+        reviewedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Admin'
+        },
+        notes: String
+      },
+      default: function () {
+        return { status: "pending" };
+      }
+    },
+
+    // Account Status
+    isActive: { type: Boolean, default: true },
+
     // Onboarding Progress
     onboardingStatus: {
       type: String,
-      enum: ["started", "basicInfo", "investmentProfile", "bankConnected", "completed"],
+      enum: ["started", "basicInfo", "investmentProfile", "verification", "bankConnected", "completed"],
       default: "started",
     },
-    // onboardingStep: { type: Number, default: 0, min: 0, max: 12 },
 
     // Platform Activity
     lastLogin: Date,
     emailNotifications: { type: Boolean, default: true },
     smsNotifications: { type: Boolean, default: false },
+
+    // Referral System
+    referralCode: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow null values but ensure uniqueness when present
+    },
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    referralStats: {
+      totalReferred: { type: Number, default: 0 },
+      qualifiedReferrals: { type: Number, default: 0 },
+      totalPointsEarned: { type: Number, default: 0 },
+      currentTier: {
+        type: String,
+        enum: ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'shareholder'],
+        default: 'bronze'
+      }
+    },
   },
   {
     timestamps: true,
@@ -191,5 +256,8 @@ const UserSchema = new Schema<IUser>(
 UserSchema.index({ onboardingStatus: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ createdAt: 1 });
+UserSchema.index({ referredBy: 1 });
+UserSchema.index({ 'kyc.status': 1 });
+UserSchema.index({ isActive: 1 });
 
 export const User = mongoose.model<IUser>("User", UserSchema);

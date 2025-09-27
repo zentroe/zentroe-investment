@@ -6,7 +6,7 @@ export default function FinalCallToAction() {
     <section className="bg-[#f9f9f7] py-20">
       <div className="max-w-6xl mx-auto px-6">
         <div className="bg-white rounded-xl shadow-xs p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
-          
+
           {/* Left Content */}
           <div className="flex-1 space-y-4">
             <h3 className="text-3xl md:text-4xl font-atlantix text-darkPrimary">Ready to get started?</h3>
@@ -16,7 +16,7 @@ export default function FinalCallToAction() {
 
             <div className="flex flex-wrap items-center gap-4 mt-6">
               <Link
-                to="/onboarding/email"
+                to="/signup"
                 className="px-6 py-2 bg-primary text-white rounded-md hover:bg-[#8c391e] transition"
               >
                 Get Started

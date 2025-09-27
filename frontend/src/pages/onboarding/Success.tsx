@@ -37,7 +37,7 @@ export default function Success() {
         <title>Account Created | Zentroe</title>
       </Helmet>
 
-      <div className="flex flex-col items-center justify-center mt-30 text-center min-h-[80vh]">
+      <div className="flex flex-col items-center justify-center text-center min-h-[80vh]">
         <div className="w-45 h-45">
           <Lottie animationData={animationData} loop={false} />
         </div>

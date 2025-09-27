@@ -53,7 +53,7 @@ export default function AgricultureHero() {
           transition={{ duration: 1 }}
         >
           <Link
-            to="/onboarding/email"
+            to="/signup"
             className="px-8 py-3 bg-primary text-white rounded-md hover:bg-[#8c391e] transition-all duration-300 text-sm md:text-base"
           >
             Get Started

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin';
 import { User } from '../models/User';
+import { UserInvestment } from '../models/UserInvestment';
 import Deposit from '../models/Deposit';
 import { SimpleCardPayment } from '../models/SimpleCardPayment';
 import InvestmentPlan from '../models/InvestmentPlan';
@@ -339,5 +340,267 @@ export const toggleInvestmentPlanStatus = async (req: Request, res: Response): P
   } catch (error) {
     console.error('Toggle investment plan status error:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// ===== USER MANAGEMENT =====
+
+export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      status,
+      kycStatus
+    } = req.query;
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build query
+    const query: any = {};
+
+    // Search filter
+    if (search) {
+      const searchRegex = new RegExp(search as string, 'i');
+      query.$or = [
+        { firstName: { $regex: searchRegex } },
+        { lastName: { $regex: searchRegex } },
+        { email: { $regex: searchRegex } }
+      ];
+    }
+
+    // Status filter
+    if (status && status !== 'all') {
+      query.isActive = status === 'active';
+    }
+
+    // KYC status filter
+    if (kycStatus && kycStatus !== 'all') {
+      query['kyc.status'] = kycStatus;
+    }
+
+    // Fetch users with aggregation to include investment totals
+    const users = await User.aggregate([
+      { $match: query },
+      {
+        $lookup: {
+          from: 'userinvestments', // Make sure this matches your collection name
+          localField: '_id',
+          foreignField: 'user',
+          as: 'investments'
+        }
+      },
+      {
+        $addFields: {
+          kyc: {
+            $ifNull: ["$kyc", { status: "pending" }]
+          },
+          totalInvested: {
+            $sum: {
+              $map: {
+                input: { $filter: { input: '$investments', cond: { $eq: ['$$this.status', 'active'] } } },
+                as: 'investment',
+                in: '$$investment.amount'
+              }
+            }
+          }
+        }
+      },
+      { $project: { investments: 0, password: 0 } }, // Exclude sensitive data
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limitNum }
+    ]);
+
+    // Get total count
+    const total = await User.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: {
+        users,
+        total,
+        currentPage: pageNum,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users'
+    });
+  }
+};
+
+export const getUserById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId)
+      .select('-password') // Exclude password
+      .lean();
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+      return;
+    }
+
+    // Get user's investment total
+    const investments = await UserInvestment.find({ user: userId, status: 'active' });
+    const totalInvested = investments.reduce((sum: number, inv: any) => sum + inv.amount, 0);
+
+    res.json({
+      success: true,
+      data: {
+        ...user,
+        totalInvested
+      }
+    });
+  } catch (error) {
+    console.error('Get user by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user'
+    });
+  }
+};
+
+export const toggleUserStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const adminId = (req as any).admin.adminId;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+      return;
+    }
+
+    user.isActive = !user.isActive;
+    await user.save();
+
+    console.log(`Admin ${adminId} ${user.isActive ? 'activated' : 'deactivated'} user ${userId}`);
+
+    res.json({
+      success: true,
+      message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully`,
+      data: {
+        userId: user._id,
+        isActive: user.isActive
+      }
+    });
+  } catch (error) {
+    console.error('Toggle user status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to toggle user status'
+    });
+  }
+};
+
+export const updateUserKycStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const { status, notes } = req.body;
+    const adminId = (req as any).admin.adminId;
+
+    if (!['approved', 'rejected'].includes(status)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid KYC status. Must be approved or rejected'
+      });
+      return;
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+      return;
+    }
+
+    // Update KYC status
+    if (!user.kyc) {
+      user.kyc = {
+        status: status as "pending" | "approved" | "rejected",
+        submittedAt: new Date(),
+        reviewedAt: new Date(),
+        reviewedBy: adminId,
+        notes
+      };
+    } else {
+      user.kyc.status = status as "pending" | "approved" | "rejected";
+      user.kyc.reviewedAt = new Date();
+      user.kyc.reviewedBy = adminId;
+      if (notes) {
+        user.kyc.notes = notes;
+      }
+    }
+
+    await user.save();
+
+    console.log(`Admin ${adminId} ${status} KYC for user ${userId}`);
+
+    res.json({
+      success: true,
+      message: `KYC status updated to ${status} successfully`,
+      data: {
+        userId: user._id,
+        kycStatus: status,
+        reviewedAt: user.kyc!.reviewedAt,
+        reviewedBy: adminId
+      }
+    });
+  } catch (error) {
+    console.error('Update user KYC status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update KYC status'
+    });
+  }
+};
+
+export const getUserInvestments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+
+    // Verify user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+      return;
+    }
+
+    const investments = await UserInvestment.find({ user: userId })
+      .populate('investmentPlan', 'name category profitPercentage duration')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: investments
+    });
+  } catch (error) {
+    console.error('Get user investments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user investments'
+    });
   }
 };
