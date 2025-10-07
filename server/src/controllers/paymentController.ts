@@ -38,15 +38,34 @@ export const getPaymentOptions = async (req: Request, res: Response): Promise<vo
       console.log('Default PaymentConfig created:', config);
     }
 
-    let cryptoWallets = [];
-    let bankAccounts = [];
+    let cryptoWallets: any[] = [];
+    let bankAccounts: any[] = [];
 
     if (config?.cryptoEnabled) {
-      cryptoWallets = await CryptoWallet.find({ isActive: true }).select('name icon');
+      console.log('🔍 Fetching crypto wallets...');
+
+      // Get active wallets with ALL fields to ensure address is included
+      cryptoWallets = await CryptoWallet.find({ isActive: true });
+      console.log('� Found', cryptoWallets.length, 'active crypto wallets');
+
+      if (cryptoWallets.length > 0) {
+        console.log('🏦 First wallet details:', {
+          name: cryptoWallets[0].name,
+          hasAddress: !!cryptoWallets[0].address,
+          addressLength: cryptoWallets[0].address?.length || 0
+        });
+
+        // Log full details only if address is missing
+        if (!cryptoWallets[0].address) {
+          console.log('⚠️ MISSING ADDRESS - Full wallet data:', JSON.stringify(cryptoWallets[0], null, 2));
+        }
+      } else {
+        console.log('⚠️ No active crypto wallets found in database');
+      }
     }
 
     if (config?.bankTransferEnabled) {
-      bankAccounts = await BankAccount.find({ isActive: true }).select('bankName accountName');
+      bankAccounts = await BankAccount.find({ isActive: true }).select('bankName accountName accountNumber routingNumber swiftCode iban country currency');
     }
 
     const response = {
@@ -124,91 +143,250 @@ export const getBankAccountDetails = async (req: Request, res: Response): Promis
   }
 };
 
-// Submit crypto payment
+// Submit crypto payment - Creates proper payment records for admin tracking
 export const submitCryptoPayment = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { walletId, amount, proofOfPayment } = req.body;
-    const userId = (req as any).user.id;
+    const {
+      walletId,
+      amount,
+      transactionHash,
+      userWalletAddress,
+      proofOfPayment
+    } = req.body;
+    const userId = (req as any).user.userId;
 
-    if (!walletId || !amount || !proofOfPayment) {
-      res.status(400).json({ message: 'Missing required fields' });
-      return;
-    }
-
-    // Upload proof of payment to Cloudinary
-    const uploadResult = await uploadFile(proofOfPayment, 'payment-proofs', {
-      resourceType: 'auto'
+    console.log('🚀 Processing crypto payment submission:', {
+      userId,
+      walletId,
+      amount,
+      transactionHash,
+      userWalletAddress,
+      hasProof: !!proofOfPayment
     });
 
-    if (!uploadResult.success || !uploadResult.data) {
-      res.status(500).json({ message: 'Failed to upload proof of payment' });
+    if (!walletId || !amount) {
+      res.status(400).json({ message: 'Wallet ID and amount are required' });
       return;
     }
 
-    // Create deposit record
+    // Get wallet details
+    const wallet = await CryptoWallet.findById(walletId);
+    if (!wallet || !wallet.isActive) {
+      res.status(404).json({ message: 'Wallet not found or inactive' });
+      return;
+    }
+
+    // Import payment models
+    const { CryptoPayment } = require('../models/PaymentModels');
+
+    // Handle proof of payment upload if provided
+    let proofFile = null;
+    if (proofOfPayment) {
+      try {
+        const uploadResult = await uploadFile(proofOfPayment, 'payment-proofs/crypto', {
+          resourceType: 'auto',
+          publicId: `crypto-proof-${userId}-${Date.now()}`
+        });
+
+        if (uploadResult.success && uploadResult.data) {
+          proofFile = {
+            filename: `crypto-proof-${userId}-${Date.now()}`,
+            originalName: 'payment-proof',
+            mimetype: 'image/jpeg', // Default, could be detected
+            size: 0, // Size not available from base64
+            path: uploadResult.data.secure_url
+          };
+        }
+      } catch (uploadError) {
+        console.error('⚠️ Failed to upload proof, continuing without it:', uploadError);
+      }
+    }
+
+    // Map wallet name to valid cryptocurrency enum value
+    const getCryptocurrencyFromWalletName = (walletName: string): string => {
+      const name = walletName.toLowerCase();
+      if (name.includes('btc') || name.includes('bitcoin')) return 'bitcoin';
+      if (name.includes('eth') || name.includes('ethereum')) return 'ethereum';
+      if (name.includes('usdt') || name.includes('tether')) return 'usdt';
+      if (name.includes('usdc') || name.includes('usd coin')) return 'usdc';
+      // Default fallback
+      return 'bitcoin';
+    };
+
+    // Create single crypto payment record (no more dual collection approach)
+    const cryptoPayment = new CryptoPayment({
+      userId,
+      cryptocurrency: getCryptocurrencyFromWalletName(wallet.name),
+      amount: 0, // Will be calculated based on exchange rate
+      fiatAmount: parseFloat(amount),
+      fiatCurrency: 'USD',
+      exchangeRate: 1, // Would be fetched from API in production
+      companyWalletAddress: wallet.address,
+      userWalletAddress: userWalletAddress || 'Not provided',
+      network: wallet.network || 'mainnet',
+      transactionHash: transactionHash || `pending-${Date.now()}`,
+      confirmations: 0,
+      minimumConfirmations: 3,
+      blockchainVerified: false,
+      proofFile,
+      status: 'pending'
+    });
+
+    await cryptoPayment.save();
+    console.log('✅ Crypto payment record created:', cryptoPayment._id);
+
+    // Create corresponding deposit record for consistency
     const deposit = new Deposit({
       userId,
       paymentMethod: 'crypto',
-      cryptoWallet: walletId,
+      cryptoWalletId: walletId,
       amount: parseFloat(amount),
-      proofOfPayment: uploadResult.data.secure_url,
+      proofOfPayment: proofFile?.path,
       status: 'pending'
     });
 
     await deposit.save();
+    console.log('✅ Corresponding deposit record created:', deposit._id);
 
     res.status(201).json({
-      message: 'Crypto payment submitted successfully',
+      success: true,
+      message: 'Crypto payment submitted successfully and recorded for admin review',
+      paymentId: cryptoPayment._id,
+      cryptoPaymentId: cryptoPayment._id,
       depositId: deposit._id,
-      status: deposit.status
+      status: cryptoPayment.status,
+      estimatedProcessingTime: '1-3 hours for manual verification'
     });
   } catch (error) {
-    console.error('Submit crypto payment error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('❌ Submit crypto payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 };
 
-// Submit bank transfer payment
+// Submit bank transfer payment - Creates proper payment records for admin tracking
 export const submitBankTransferPayment = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { accountId, amount, proofOfPayment } = req.body;
-    const userId = (req as any).user.id;
+    const {
+      accountId,
+      amount,
+      userBankDetails,
+      referenceNumber,
+      proofOfPayment
+    } = req.body;
+    const userId = (req as any).user.userId;
 
-    if (!accountId || !amount || !proofOfPayment) {
-      res.status(400).json({ message: 'Missing required fields' });
-      return;
-    }
-
-    // Upload proof of payment to Cloudinary
-    const uploadResult = await uploadFile(proofOfPayment, 'payment-proofs', {
-      resourceType: 'auto'
+    console.log('🏦 Processing bank transfer submission:', {
+      userId,
+      accountId,
+      amount,
+      userBankDetails,
+      referenceNumber,
+      hasProof: !!proofOfPayment
     });
 
-    if (!uploadResult.success || !uploadResult.data) {
-      res.status(500).json({ message: 'Failed to upload proof of payment' });
+    if (!accountId || !amount) {
+      res.status(400).json({ message: 'Bank account ID and amount are required' });
       return;
     }
 
-    // Create deposit record
-    const deposit = new Deposit({
+    // Get bank account details
+    const bankAccount = await BankAccount.findById(accountId);
+    if (!bankAccount || !bankAccount.isActive) {
+      res.status(404).json({ message: 'Bank account not found or inactive' });
+      return;
+    }
+
+    // Import payment models
+    const { Payment, BankTransferPayment } = require('../models/PaymentModels');
+
+    // Create base payment record
+    const basePayment = new Payment({
       userId,
-      paymentMethod: 'bank_transfer',
-      bankAccount: accountId,
       amount: parseFloat(amount),
-      proofOfPayment: uploadResult.data.secure_url,
+      currency: 'USD',
+      paymentMethod: 'bank_transfer',
+      status: 'pending',
+      metadata: {
+        accountId,
+        bankName: bankAccount.bankName,
+        referenceNumber: referenceNumber || `REF-${Date.now()}`,
+        submittedAt: new Date()
+      }
+    });
+
+    await basePayment.save();
+    console.log('✅ Base payment record created:', basePayment._id);
+
+    // Handle proof of payment upload if provided
+    let receiptFile = null;
+    if (proofOfPayment) {
+      try {
+        const uploadResult = await uploadFile(proofOfPayment, 'payment-proofs/bank', {
+          resourceType: 'auto',
+          publicId: `bank-proof-${userId}-${Date.now()}`
+        });
+
+        if (uploadResult.success && uploadResult.data) {
+          receiptFile = {
+            filename: `bank-proof-${userId}-${Date.now()}`,
+            originalName: 'bank-receipt',
+            mimetype: 'image/jpeg', // Default, could be detected
+            size: 0, // Size not available from base64
+            path: uploadResult.data.secure_url
+          };
+        }
+      } catch (uploadError) {
+        console.error('⚠️ Failed to upload receipt, continuing without it:', uploadError);
+      }
+    }
+
+    // Create bank transfer payment record
+    const bankTransferPayment = new BankTransferPayment({
+      paymentId: basePayment._id,
+      userId,
+      amount: parseFloat(amount),
+      currency: 'USD',
+      referenceCode: referenceNumber || `REF-${Date.now()}`,
+
+      // User bank details (if provided)
+      userBankName: userBankDetails?.bankName || 'Not provided',
+      userAccountNumber: userBankDetails?.accountNumber || 'Not provided',
+      userRoutingNumber: userBankDetails?.routingNumber || 'Not provided',
+      userAccountHolderName: userBankDetails?.accountHolderName || 'Not provided',
+      userSwiftCode: userBankDetails?.swiftCode,
+
+      // Company bank details used
+      companyBankName: bankAccount.bankName,
+      companyAccountNumber: bankAccount.accountNumber,
+      companyRoutingNumber: bankAccount.routingNumber || 'N/A',
+
+      receiptFile,
       status: 'pending'
     });
 
-    await deposit.save();
+    await bankTransferPayment.save();
+    console.log('✅ Bank transfer payment record created:', bankTransferPayment._id);
 
     res.status(201).json({
-      message: 'Bank transfer payment submitted successfully',
-      depositId: deposit._id,
-      status: deposit.status
+      success: true,
+      message: 'Bank transfer payment submitted successfully and recorded for admin review',
+      paymentId: basePayment._id,
+      bankTransferPaymentId: bankTransferPayment._id,
+      status: basePayment.status,
+      referenceCode: bankTransferPayment.referenceCode,
+      estimatedProcessingTime: '1-3 business days for verification'
     });
   } catch (error) {
-    console.error('Submit bank transfer payment error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('❌ Submit bank transfer payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 };
 

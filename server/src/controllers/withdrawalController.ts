@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { WithdrawalService } from '../services/withdrawalService';
 import { AuthenticatedRequest } from '../types/CustomRequest';
+import { AuthenticatedAdminRequest } from '../middleware/adminAuth';
 
 /**
  * Get user's investments with withdrawal eligibility
@@ -232,7 +233,7 @@ export const cancelWithdrawalRequest = async (req: AuthenticatedRequest, res: Re
 /**
  * Get all withdrawal requests (Admin)
  */
-export const getAllWithdrawalRequests = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getAllWithdrawalRequests = async (req: AuthenticatedAdminRequest, res: Response): Promise<void> => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
@@ -258,9 +259,9 @@ export const getAllWithdrawalRequests = async (req: AuthenticatedRequest, res: R
 /**
  * Review withdrawal request (Admin)
  */
-export const reviewWithdrawalRequest = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const reviewWithdrawalRequest = async (req: AuthenticatedAdminRequest, res: Response): Promise<void> => {
   try {
-    const adminId = req.user!.userId;
+    const adminId = req.admin.adminId;
     const { withdrawalId } = req.params;
     const { action, adminNotes, rejectionReason } = req.body;
 
@@ -306,9 +307,9 @@ export const reviewWithdrawalRequest = async (req: AuthenticatedRequest, res: Re
 /**
  * Process approved withdrawal (Admin)
  */
-export const processWithdrawal = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const processWithdrawal = async (req: AuthenticatedAdminRequest, res: Response): Promise<void> => {
   try {
-    const adminId = req.user!.userId;
+    const adminId = req.admin.adminId;
     const { withdrawalId } = req.params;
     const { transactionId } = req.body;
 
@@ -344,7 +345,7 @@ export const processWithdrawal = async (req: AuthenticatedRequest, res: Response
 /**
  * Get withdrawal statistics (Admin)
  */
-export const getWithdrawalStatistics = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getWithdrawalStatistics = async (req: AuthenticatedAdminRequest, res: Response): Promise<void> => {
   try {
     const { Withdrawal } = await import('../models/Withdrawal');
 

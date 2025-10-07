@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import OnboardingLayout from "@/components/OnboardingLayout";
@@ -15,7 +15,20 @@ const emailSchema = z.object({
 export default function EmailSetup() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Extract referral code from URL parameters
+  useEffect(() => {
+    const refParam = searchParams.get('ref');
+    if (refParam) {
+      setReferralCode(refParam);
+      // Store referral code in localStorage for the signup process
+      localStorage.setItem('referralCode', refParam);
+      toast.success('Referral code detected!');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,8 +44,16 @@ export default function EmailSetup() {
       // Store email temporarily in localStorage for password setup
       localStorage.setItem('tempEmail', validatedData.email);
 
+      // Keep referral code stored for the complete signup process
+      if (referralCode) {
+        localStorage.setItem('referralCode', referralCode);
+      }
+
       navigate("/onboarding/password");
-      toast.success("Email verified! Please set up your password.");
+      const successMessage = referralCode
+        ? "Email verified! Please set up your password. Your referral bonus is ready!"
+        : "Email verified! Please set up your password.";
+      toast.success(successMessage);
     } catch (error: any) {
       if (error.response?.status === 409) {
         toast.error("This email is already registered. Please use a different email or sign in.");
@@ -59,6 +80,22 @@ export default function EmailSetup() {
           <p className="mt-2 text-sm text-normal text-gray-600">
             Tell us a bit about yourself -- we'll create your account and suggest the strategy that best fits your goals.
           </p>
+          {referralCode && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-green-800">
+                    Referral Code Applied: <span className="font-bold">{referralCode}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

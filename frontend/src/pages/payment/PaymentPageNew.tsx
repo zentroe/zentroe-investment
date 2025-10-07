@@ -3,10 +3,11 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
 import { ArrowLeft, Wallet, Building2, CreditCard, Copy, Mail, AlertTriangle } from 'lucide-react';
+import CryptoQRCode from '@/components/payment/CryptoQRCode';
 import OnboardingLayout from '@/pages/onboarding/OnboardingLayout';
 import SimpleCardPaymentForm from '@/components/payment/SimpleCardPaymentForm';
 import { Button } from '@/components/ui/button';
-import { getPaymentOptions } from '@/services/paymentService';
+import { getPaymentOptions, confirmCryptoPayment, confirmBankTransferPayment } from '@/services/paymentService';
 import { resendEmailVerification } from '@/services/auth';
 import { useOnboarding } from '@/context/OnboardingContext';
 import { useAuth } from '@/context/AuthContext';
@@ -58,6 +59,9 @@ const PaymentPageNew: React.FC = () => {
   const [selectedBankAccount, setSelectedBankAccount] = useState<BankAccount | null>(null);
   const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [transactionScreenshot, setTransactionScreenshot] = useState<string>('');
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
 
   // Get amount from context (preferred) or URL params (fallback)
   // Using context ensures data integrity since the amount is fetched from the database
@@ -84,17 +88,27 @@ const PaymentPageNew: React.FC = () => {
       setLoading(true);
       setError(null);
       const data = await getPaymentOptions();
+      // console.log('🔍 Frontend: Received payment options data:', JSON.stringify(data, null, 2));
+
       setPaymentOptions(data);
 
       // Auto-select the first available payment method (prioritize card first)
       if (data.config.cardPaymentEnabled) {
         setSelectedMethod('card');
+        // console.log('💳 Frontend: Selected card payment method');
       } else if (data.config.cryptoEnabled && data.cryptoWallets.length > 0) {
         setSelectedMethod('crypto');
         setSelectedWallet(data.cryptoWallets[0]);
+        // console.log('🏦 Frontend: Selected crypto wallet:', {
+        //   name: data.cryptoWallets[0].name,
+        //   address: data.cryptoWallets[0].address,
+        //   hasAddress: !!data.cryptoWallets[0].address,
+        //   addressType: typeof data.cryptoWallets[0].address
+        // });
       } else if (data.config.bankTransferEnabled && data.bankAccounts.length > 0) {
         setSelectedMethod('bank');
         setSelectedBankAccount(data.bankAccounts[0]);
+        // console.log('🏧 Frontend: Selected bank account');
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to load payment options';
@@ -146,9 +160,120 @@ const PaymentPageNew: React.FC = () => {
     navigate(-1);
   };
 
+  const handleManualPaymentConfirmation = async () => {
+    if (confirmingPayment) return; // Prevent double clicks
+
+    setConfirmingPayment(true);
+    try {
+      let paymentResult = null;
+
+      // Create payment record based on selected method
+      if (selectedMethod === 'crypto' && selectedWallet) {
+        if (!transactionScreenshot) {
+          toast.error('Please upload a screenshot of your transaction');
+          setConfirmingPayment(false);
+          return;
+        }
+        console.log('💰 Creating crypto payment record with screenshot');
+        paymentResult = await confirmCryptoPayment({
+          walletId: selectedWallet._id,
+          amount: amount,
+          transactionHash: '', // User can provide this later to admin
+          userWalletAddress: '', // User can provide this later to admin
+          proofOfPayment: transactionScreenshot
+        });
+        toast.success('Crypto payment recorded! Admin will verify your transaction.');
+      } else if (selectedMethod === 'bank' && selectedBankAccount) {
+        console.log('🏦 Creating bank transfer payment record');
+        paymentResult = await confirmBankTransferPayment({
+          accountId: selectedBankAccount._id,
+          amount: amount,
+          referenceNumber: `REF-${Date.now()}`, // Generate a reference number
+          userBankDetails: {
+            bankName: '', // User can provide this later to admin
+            accountHolderName: user?.firstName + ' ' + user?.lastName || ''
+          }
+        });
+        toast.success('Bank transfer recorded! Admin will verify your payment.');
+      }
+
+      if (paymentResult) {
+        console.log('✅ Payment record created:', paymentResult);
+      }
+
+      // Update onboarding status to completed
+      console.log('🎯 Updating onboarding status to completed after payment confirmation');
+      await updateStatus('completed');
+      console.log('✅ Onboarding status successfully updated to completed');
+
+      // Navigate to success page
+      navigate('/payment/success', {
+        state: {
+          amount: amount,
+          currency: 'USD',
+          method: selectedMethod,
+          paymentId: paymentResult?.paymentId,
+          instructions: true
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error processing payment confirmation:', error);
+
+      // Still try to update onboarding status even if payment record fails
+      try {
+        await updateStatus('completed');
+        toast.success('Payment instructions noted. Please contact admin if needed.');
+        navigate('/dashboard');
+      } catch (statusError) {
+        console.error('❌ Error updating onboarding status:', statusError);
+        toast.error('Error processing confirmation. Please try again or contact support.');
+      }
+    } finally {
+      setConfirmingPayment(false);
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard');
+  };
+
+  const handleScreenshotUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    setUploadingScreenshot(true);
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        setTransactionScreenshot(base64);
+        toast.success('Screenshot uploaded successfully');
+        setUploadingScreenshot(false);
+      };
+      reader.onerror = () => {
+        toast.error('Failed to read file');
+        setUploadingScreenshot(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading screenshot:', error);
+      toast.error('Failed to upload screenshot');
+      setUploadingScreenshot(false);
+    }
   };
 
   const availableMethods = [];
@@ -169,7 +294,7 @@ const PaymentPageNew: React.FC = () => {
         <div className="mt-24 px-4 max-w-xl mx-auto">
 
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         </div>
       </OnboardingLayout>
@@ -387,28 +512,105 @@ const PaymentPageNew: React.FC = () => {
                         </label>
                         <div className="flex items-center space-x-2">
                           <code className="flex-1 text-xs bg-white px-3 py-2 rounded border font-mono break-all">
-                            {selectedWallet.address}
+                            {selectedWallet.address || 'Address not available'}
                           </code>
                           <button
-                            onClick={() => copyToClipboard(selectedWallet.address)}
-                            className="p-2 text-gray-400 hover:text-gray-600"
+                            onClick={() => copyToClipboard(selectedWallet.address || '')}
+                            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Copy address"
+                            disabled={!selectedWallet.address}
                           >
                             <Copy className="h-4 w-4" />
                           </button>
                         </div>
+                        {!selectedWallet.address && (
+                          <p className="text-sm text-red-600">
+                            ⚠️ Wallet address is not configured. Please contact support.
+                          </p>
+                        )}
                       </div>
+
+                      {/* QR Code Section */}
+                      {selectedWallet.address && (
+                        <div className="space-y-3">
+                          <label className="block text-sm font-medium text-gray-700 text-center">
+                            QR Code Payment
+                          </label>
+                          <div className="flex justify-center">
+                            <CryptoQRCode
+                              address={selectedWallet.address}
+                              amount={amount}
+                              currency={selectedWallet.name}
+                              size={180}
+                              className=""
+                            />
+                          </div>
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <p className="text-sm text-green-800 text-center">
+                              💡 <strong>Quick Payment:</strong> Scan this QR code with your {selectedWallet.name} wallet app to auto-fill the payment details.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Payment Instructions */}
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <h4 className="font-medium text-blue-800 mb-2">Payment Instructions</h4>
-                      <ol className="text-sm text-blue-700 space-y-1">
-                        <li>1. Send exactly <strong>${amount.toLocaleString()}</strong> worth of {selectedWallet.name} to the address above</li>
-                        <li>2. Include your transaction hash/ID when submitting</li>
-                        <li>3. Wait for blockchain confirmation (usually 10-30 minutes)</li>
-                        <li>4. Your investment will be processed once confirmed</li>
-                      </ol>
+                      <div className="text-sm text-blue-700 space-y-2">
+                        <div className="font-medium text-blue-800">Option 1: QR Code (Recommended)</div>
+                        <ul className="space-y-1 ml-4">
+                          <li>• Scan the QR code above with your crypto wallet</li>
+                          <li>• Verify the amount shows as ${amount.toLocaleString()}</li>
+                          <li>• Confirm and send the transaction</li>
+                        </ul>
+
+                        <div className="font-medium text-blue-800 mt-3">Option 2: Manual Entry</div>
+                        <ol className="space-y-1 ml-4">
+                          <li>1. Copy the wallet address above</li>
+                          <li>2. Send exactly <strong>${amount.toLocaleString()}</strong> worth of {selectedWallet.name}</li>
+                          <li>3. Include your transaction hash/ID when submitting</li>
+                          <li>4. Wait for blockchain confirmation (usually 10-30 minutes)</li>
+                        </ol>
+                      </div>
+                    </div>
+
+                    {/* Screenshot Upload Section */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
+                      <h4 className="font-medium text-gray-800 mb-3 flex items-center">
+                        Upload Transaction Screenshot
+                        <span className="text-red-500 ml-1">*</span>
+                      </h4>
+                      <div className="space-y-3">
+                        <p className="text-sm text-gray-700">
+                          After completing your crypto transaction, please upload a screenshot as proof of payment.
+                        </p>
+
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleScreenshotUpload}
+                            disabled={uploadingScreenshot}
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 disabled:opacity-50"
+                          />
+                          {uploadingScreenshot && (
+                            <div className="text-sm text-gray-600">Uploading...</div>
+                          )}
+                        </div>
+
+                        {transactionScreenshot && (
+                          <div className="flex items-center text-sm text-green-600">
+                            ✅ Screenshot uploaded successfully
+                          </div>
+                        )}
+
+                        <div className="text-xs text-gray-600">
+                          • Supported formats: JPG, PNG, GIF
+                          • Maximum file size: 5MB
+                          • Make sure transaction details are clearly visible
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -617,20 +819,53 @@ const PaymentPageNew: React.FC = () => {
 
               {(selectedMethod === 'crypto' || selectedMethod === 'bank') && (
                 <button
-                  onClick={() => {
-                    toast.success('Payment instructions noted. Please complete the transfer.');
-                    navigate('/payment/success', {
-                      state: {
-                        amount: amount,
-                        currency: 'USD',
-                        method: selectedMethod,
-                        instructions: true
-                      }
-                    });
-                  }}
-                  className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90"
+                  title={
+                    selectedMethod === 'crypto' && !transactionScreenshot
+                      ? 'Please upload a transaction screenshot first'
+                      : confirmingPayment
+                        ? 'Processing payment...'
+                        : uploadingScreenshot
+                          ? 'Uploading screenshot...'
+                          : 'Confirm your payment'
+                  }
+                  onClick={handleManualPaymentConfirmation}
+                  disabled={
+                    confirmingPayment ||
+                    uploadingScreenshot ||
+                    (selectedMethod === 'crypto' && !transactionScreenshot)
+                  }
+                  className={`px-6 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 ${confirmingPayment ||
+                      uploadingScreenshot ||
+                      (selectedMethod === 'crypto' && !transactionScreenshot)
+                      ? 'bg-gray-400 cursor-not-allowed text-white'
+                      : 'bg-primary hover:bg-primary/90 text-white'
+                    }`}
                 >
-                  I've Noted the Instructions
+                  {confirmingPayment ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Processing...</span>
+                    </>
+                  ) : uploadingScreenshot ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Uploading...</span>
+                    </>
+                  ) : selectedMethod === 'crypto' && !transactionScreenshot ? (
+                    <>
+                      <span>Upload Screenshot First</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <span>Confirm Payment</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </>
+                  )}
                 </button>
               )}
             </div>

@@ -605,3 +605,393 @@ export const startInvestmentFromDeposit = async (req: Request, res: Response): P
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+// ===== NEW PAYMENT SYSTEM ADMIN FUNCTIONS =====
+
+// Get all payments (new payment system)
+export const getAllPayments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { status, paymentMethod, page = 1, limit = 50 } = req.query;
+
+    // Import payment models
+    const { Payment } = await import('../models/PaymentModels');
+
+    // Build filter
+    const filter: any = {};
+    if (status) filter.status = status;
+    if (paymentMethod) filter.paymentMethod = paymentMethod;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const payments = await Payment.find(filter)
+      .populate('userId', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    const total = await Payment.countDocuments(filter);
+
+    console.log(`📋 Admin fetched ${payments.length} payments (total: ${total})`);
+
+    res.json({
+      success: true,
+      payments,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / Number(limit))
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get all payments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+// Get all crypto payments
+export const getAllCryptoPayments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { status, page = 1, limit = 50 } = req.query;
+
+    // Import payment models
+    const { CryptoPayment } = await import('../models/PaymentModels');
+
+    // Build filter for crypto payments
+    const filter: any = {};
+    if (status) filter.status = status;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    // Get crypto payments directly with user data populated
+    const cryptoPayments = await CryptoPayment.find(filter)
+      .populate('userId', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    // Format the data to match frontend expectations
+    const paymentDetails = cryptoPayments.map((cryptoPayment) => {
+      return {
+        _id: cryptoPayment._id,
+        paymentId: cryptoPayment._id,
+        userId: cryptoPayment.userId,
+        cryptocurrency: cryptoPayment.cryptocurrency,
+        fiatAmount: cryptoPayment.fiatAmount,
+        fiatCurrency: cryptoPayment.fiatCurrency,
+        companyWalletAddress: cryptoPayment.companyWalletAddress,
+        userWalletAddress: cryptoPayment.userWalletAddress,
+        network: cryptoPayment.network,
+        transactionHash: cryptoPayment.transactionHash,
+        confirmations: cryptoPayment.confirmations,
+        blockchainVerified: cryptoPayment.blockchainVerified,
+        proofFile: cryptoPayment.proofFile,
+        status: cryptoPayment.status,
+        verificationNotes: cryptoPayment.verificationNotes,
+        createdAt: cryptoPayment.createdAt,
+        updatedAt: cryptoPayment.updatedAt
+      };
+    });
+
+    const total = await CryptoPayment.countDocuments(filter);    console.log(`💰 Admin fetched ${paymentDetails.length} crypto payments (total: ${total})`);
+
+    res.json({
+      success: true,
+      payments: paymentDetails,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / Number(limit))
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get all crypto payments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+// Get all bank transfer payments
+export const getAllBankTransferPayments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { status, page = 1, limit = 50 } = req.query;
+
+    // Import payment models
+    const { Payment, BankTransferPayment } = await import('../models/PaymentModels');
+
+    // Build filter for base payments
+    const baseFilter: any = { paymentMethod: 'bank_transfer' };
+    if (status) baseFilter.status = status;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    // Get base payments first
+    const basePayments = await Payment.find(baseFilter)
+      .populate('userId', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    // Get detailed bank transfer payment data
+    const paymentDetails = await Promise.all(
+      basePayments.map(async (payment) => {
+        const bankTransferPayment = await BankTransferPayment.findOne({ paymentId: payment._id });
+        return {
+          basePayment: payment,
+          bankTransferDetails: bankTransferPayment
+        };
+      })
+    );
+
+    const total = await Payment.countDocuments(baseFilter);
+
+    console.log(`🏦 Admin fetched ${paymentDetails.length} bank transfer payments (total: ${total})`);
+
+    res.json({
+      success: true,
+      payments: paymentDetails,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / Number(limit))
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get all bank transfer payments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+// Update payment status
+export const updatePaymentStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { status, adminNotes } = req.body;
+    const adminId = (req as any).admin.adminId;
+
+    console.log(`🔄 Admin updating payment ${id} to status: ${status}`);
+
+    // Import payment models
+    const { Payment } = await import('../models/PaymentModels');
+
+    // Find and update the base payment
+    const payment = await Payment.findById(id);
+    if (!payment) {
+      res.status(404).json({
+        success: false,
+        message: 'Payment not found'
+      });
+      return;
+    }
+
+    // Update payment status
+    payment.status = status;
+    if (adminNotes) payment.adminNotes = adminNotes;
+    payment.processedBy = adminId;
+    await payment.save();
+
+    console.log(`✅ Payment ${id} status updated to: ${status}`);
+
+    res.json({
+      success: true,
+      message: 'Payment status updated successfully',
+      payment: {
+        _id: payment._id,
+        status: payment.status,
+        adminNotes: payment.adminNotes,
+        processedBy: payment.processedBy,
+        updatedAt: payment.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ Update payment status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+// ===== NEW PAYMENT SYSTEM MANAGEMENT =====
+
+// Get all crypto payments
+export const getCryptoPayments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { status, cryptocurrency, limit = 50, offset = 0 } = req.query;
+
+    console.log('🔍 Fetching crypto payments with filters:', { status, cryptocurrency, limit, offset });
+
+    // Import models dynamically
+    const { Payment, CryptoPayment } = await import('../models/PaymentModels');
+
+    // Build filter query
+    const paymentFilter: any = { paymentMethod: 'crypto' };
+    if (status && status !== 'all') {
+      paymentFilter.status = status;
+    }
+
+    const cryptoFilter: any = {};
+    if (cryptocurrency) {
+      cryptoFilter.cryptocurrency = cryptocurrency;
+    }
+
+    // Get base payments with crypto method
+    const basePayments = await Payment.find(paymentFilter)
+      .populate('userId', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip(Number(offset));
+
+    console.log(`📊 Found ${basePayments.length} base crypto payments`);
+
+    // Get corresponding crypto payment details
+    const cryptoPayments = await Promise.all(
+      basePayments.map(async (basePayment) => {
+        const cryptoDetail = await CryptoPayment.findOne({
+          paymentId: basePayment._id,
+          ...cryptoFilter
+        });
+
+        if (!cryptoDetail) {
+          console.log(`⚠️ No crypto details found for payment ${basePayment._id}`);
+          return null;
+        }
+
+        return {
+          _id: cryptoDetail._id,
+          paymentId: basePayment._id,
+          userId: basePayment.userId,
+          cryptocurrency: cryptoDetail.cryptocurrency,
+          fiatAmount: cryptoDetail.fiatAmount,
+          fiatCurrency: cryptoDetail.fiatCurrency,
+          companyWalletAddress: cryptoDetail.companyWalletAddress,
+          userWalletAddress: cryptoDetail.userWalletAddress,
+          network: cryptoDetail.network,
+          transactionHash: cryptoDetail.transactionHash,
+          confirmations: cryptoDetail.confirmations,
+          blockchainVerified: cryptoDetail.blockchainVerified,
+          proofFile: cryptoDetail.proofFile,
+          status: cryptoDetail.status,
+          verificationNotes: cryptoDetail.verificationNotes,
+          createdAt: cryptoDetail.createdAt,
+          updatedAt: cryptoDetail.updatedAt
+        };
+      })
+    );
+
+    // Filter out null results
+    const validCryptoPayments = cryptoPayments.filter(payment => payment !== null);
+
+    console.log(`✅ Returning ${validCryptoPayments.length} crypto payments`);
+
+    res.json({
+      success: true,
+      data: validCryptoPayments,
+      pagination: {
+        total: validCryptoPayments.length,
+        limit: Number(limit),
+        offset: Number(offset)
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get crypto payments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+// Update crypto payment status
+export const updateCryptoPaymentStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { paymentId } = req.params;
+    const { status, notes } = req.body;
+
+    console.log('🔄 Updating crypto payment status:', { paymentId, status, notes });
+
+    // Import models dynamically
+    const { CryptoPayment } = await import('../models/PaymentModels');
+    const mongoose = await import('mongoose');
+
+    // Convert paymentId to ObjectId
+    const paymentObjectId = new mongoose.Types.ObjectId(paymentId);
+
+    // Update crypto payment directly (no more paymentId reference)
+    const cryptoPayment = await CryptoPayment.findByIdAndUpdate(
+      paymentObjectId,
+      {
+        status,
+        verificationNotes: notes,
+        verifiedBy: (req as any).admin.adminId,
+        ...(status === 'verified' && { verificationDate: new Date() })
+      },
+      { new: true }
+    );
+
+    if (!cryptoPayment) {
+      res.status(404).json({
+        success: false,
+        message: 'Crypto payment not found'
+      });
+      return;
+    }
+
+    // Update corresponding deposit status
+    const Deposit = (await import('../models/Deposit')).default;
+    const depositStatus = status === 'verified' ? 'approved' : status === 'rejected' ? 'rejected' : 'pending';
+
+    const deposit = await Deposit.findOneAndUpdate(
+      {
+        userId: cryptoPayment.userId,
+        paymentMethod: 'crypto',
+        status: 'pending'
+      },
+      {
+        status: depositStatus,
+        adminNotes: notes || cryptoPayment.verificationNotes,
+        processedAt: new Date()
+      },
+      { new: true, sort: { createdAt: -1 } } // Get the most recent pending deposit
+    );
+
+    if (deposit) {
+      console.log('✅ Corresponding deposit status updated:', deposit._id);
+    }
+
+    console.log('✅ Crypto payment status updated successfully');
+
+    res.json({
+      success: true,
+      message: 'Crypto payment status updated successfully',
+      data: {
+        cryptoPaymentId: cryptoPayment._id,
+        status: cryptoPayment.status,
+        verificationNotes: cryptoPayment.verificationNotes,
+        updatedAt: cryptoPayment.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ Update crypto payment status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};

@@ -10,7 +10,7 @@ export const login = async (email: string, password: string) => {
   }
 };
 
-export const signup = async (data: { email: string; password: string }) => {
+export const signup = async (data: { email: string; password: string; referralCode?: string }) => {
   try {
     const response = await axios.post('/auth/register', data);
     return response.data;

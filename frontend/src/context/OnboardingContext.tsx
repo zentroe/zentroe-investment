@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getUserOnboardingData, updateOnboardingStatus } from '@/services/onboardingService';
+import { useAuth } from '@/context/AuthContext';
 
 // Define the shape of user onboarding data
 export interface OnboardingData {
@@ -77,6 +78,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
   const [data, setData] = useState<OnboardingData>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { updateUser } = useAuth();
 
   // Fetch user onboarding data
   const fetchData = async () => {
@@ -112,6 +114,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       await updateOnboardingStatus(status);
       // Update local data after successful API call
       updateLocalData({ onboardingStatus: status });
+      // Also update the AuthContext so the user object has the latest status
+      updateUser({ onboardingStatus: status });
+      console.log('✅ Updated both OnboardingContext and AuthContext with status:', status);
     } catch (error) {
       console.error('Error updating onboarding status:', error);
       // Don't throw error - just log it so app continues working

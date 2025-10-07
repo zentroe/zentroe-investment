@@ -14,7 +14,13 @@ import {
   updateDepositStatus,
   startInvestmentFromDeposit,
   getAllCardPayments,
-  updateCardPaymentStatus
+  updateCardPaymentStatus,
+  getAllPayments,
+  getAllCryptoPayments,
+  getAllBankTransferPayments,
+  updatePaymentStatus,
+  getCryptoPayments,
+  updateCryptoPaymentStatus
 } from '../controllers/adminPaymentController';
 import { adminRequestCardPaymentOtp } from '../controllers/simpleCardPaymentController';
 import { authenticateAdmin } from '../middleware/adminAuth';
@@ -48,6 +54,14 @@ router.post('/deposits/:id/start-investment', startInvestmentFromDeposit);
 // Card payment management routes
 router.get('/card-payments', getAllCardPayments);
 router.put('/card-payments/:id/status', updateCardPaymentStatus);
+
+// New payment system routes
+router.get('/payments', getAllPayments);
+router.get('/crypto', getAllCryptoPayments);
+router.get('/bank-transfers', getAllBankTransferPayments);
+// Specific routes must come before generic ones
+router.put('/crypto/:paymentId/status', updateCryptoPaymentStatus);
+router.put('/:id/status', updatePaymentStatus);
 router.post('/card-payments/:paymentId/request-otp', adminRequestCardPaymentOtp);
 
 export default router;

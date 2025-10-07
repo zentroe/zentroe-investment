@@ -216,7 +216,7 @@ export const getAllWithdrawalRequests = async (
     if (status) params.status = status;
     if (userId) params.userId = userId;
 
-    const response = await axios.get('/withdrawals/admin/all', { params });
+    const response = await axios.get('/admin/withdrawals/all', { params });
     return response.data.data;
   } catch (error) {
     console.error('Error fetching all withdrawal requests:', error);
@@ -234,7 +234,7 @@ export const reviewWithdrawalRequest = async (
   rejectionReason?: string
 ): Promise<Withdrawal> => {
   try {
-    const response = await axios.patch(`/withdrawals/admin/review/${withdrawalId}`, {
+    const response = await axios.patch(`/admin/withdrawals/review/${withdrawalId}`, {
       action,
       adminNotes,
       rejectionReason
@@ -254,7 +254,7 @@ export const processWithdrawal = async (
   transactionId: string
 ): Promise<Withdrawal> => {
   try {
-    const response = await axios.patch(`/withdrawals/admin/process/${withdrawalId}`, {
+    const response = await axios.patch(`/admin/withdrawals/process/${withdrawalId}`, {
       transactionId
     });
     return response.data.data;
@@ -269,7 +269,7 @@ export const processWithdrawal = async (
  */
 export const getWithdrawalStatistics = async (): Promise<WithdrawalStatistics> => {
   try {
-    const response = await axios.get('/withdrawals/admin/statistics');
+    const response = await axios.get('/admin/withdrawals/statistics');
     return response.data.data;
   } catch (error) {
     console.error('Error fetching withdrawal statistics:', error);

@@ -220,6 +220,49 @@ export const createPayment = async (paymentData: {
   }
 };
 
+// ===== MANUAL PAYMENT CONFIRMATION =====
+
+export const confirmCryptoPayment = async (paymentData: {
+  walletId: string;
+  amount: number;
+  transactionHash?: string;
+  userWalletAddress?: string;
+  proofOfPayment?: string;
+}) => {
+  try {
+    console.log('🚀 Confirming crypto payment via API:', paymentData);
+    const response = await axios.post('/payments/crypto/confirm', paymentData);
+    console.log('✅ Crypto payment confirmation response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error confirming crypto payment:', error);
+    throw error;
+  }
+};
+
+export const confirmBankTransferPayment = async (paymentData: {
+  accountId: string;
+  amount: number;
+  userBankDetails?: {
+    bankName?: string;
+    accountNumber?: string;
+    routingNumber?: string;
+    accountHolderName?: string;
+    swiftCode?: string;
+  };
+  referenceNumber?: string;
+}) => {
+  try {
+    console.log('🏦 Confirming bank transfer payment via API:', paymentData);
+    const response = await axios.post('/payments/bank/confirm', paymentData);
+    console.log('✅ Bank transfer confirmation response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error confirming bank transfer payment:', error);
+    throw error;
+  }
+};
+
 // ===== TYPE DEFINITIONS =====
 
 export interface PaymentConfig {

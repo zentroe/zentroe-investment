@@ -16,7 +16,8 @@ import {
   User,
   Bell,
   Target,
-  ArrowDownLeft
+  ArrowDownLeft,
+  Shield
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminLogout, getAdminProfile, getAllDeposits, type AdminProfile } from '@/services/adminService';
@@ -82,10 +83,22 @@ const AdminLayout: React.FC = () => {
       path: '/x-admin/dashboard/card-payments'
     },
     {
+      id: 'crypto-payments',
+      label: 'Crypto Payments',
+      icon: Wallet,
+      path: '/x-admin/dashboard/crypto-payments'
+    },
+    {
       id: 'users',
       label: 'Users',
       icon: Users,
       path: '/x-admin/dashboard/users'
+    },
+    {
+      id: 'kyc',
+      label: 'KYC Reviews',
+      icon: Shield,
+      path: '/x-admin/dashboard/kyc'
     },
     {
       id: 'investments',

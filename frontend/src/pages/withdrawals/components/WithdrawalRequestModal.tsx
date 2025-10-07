@@ -363,7 +363,7 @@ const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
                 checked={paymentMethod === 'bank_transfer'}
                 onChange={(e) => setPaymentMethod(e.target.value as any)}
               />
-              <CreditCard className="w-5 h-5 text-blue-600" />
+              <CreditCard className="w-5 h-5 text-primary" />
               <div>
                 <div className="font-medium">Bank Transfer</div>
                 <div className="text-sm text-gray-600">0.5% processing fee</div>
@@ -477,10 +477,10 @@ const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCryptoDetails({ ...cryptoDetails, network: e.target.value })}
                   className="w-full p-2 border rounded-md"
                 >
-                  <option value="ethereum">Ethereum (ERC-20)</option>
-                  <option value="bsc">Binance Smart Chain (BEP-20)</option>
-                  <option value="polygon">Polygon (MATIC)</option>
-                  <option value="tron">Tron (TRC-20)</option>
+                  <option value="ERC-20">Ethereum (ERC-20)</option>
+                  <option value="BEP-20">Binance Smart Chain (BEP-20)</option>
+                  <option value="MATIC">Polygon (MATIC)</option>
+                  <option value="TRC-20">Tron (TRC-20)</option>
                 </select>
               </div>
               <div>
@@ -577,7 +577,7 @@ const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           {/* Header */}
@@ -595,12 +595,12 @@ const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
 
           {/* Progress Indicator */}
           <div className="flex items-center mb-6">
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step === 'details' ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white'
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step === 'details' ? 'bg-primary text-white' : 'bg-primary text-white'
               }`}>
               1
             </div>
-            <div className={`flex-1 h-1 mx-2 ${step === 'payment' ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step === 'payment' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+            <div className={`flex-1 h-1 mx-2 ${step === 'payment' ? 'bg-primary' : 'bg-gray-200'}`}></div>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step === 'payment' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600'
               }`}>
               2
             </div>

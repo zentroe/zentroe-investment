@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Shield, Bell, CreditCard, Plus, Eye, EyeOff, Save, AlertCircle, CheckCircle } from "lucide-react";
+import { User, Shield, Bell, Eye, EyeOff, Save, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,6 @@ import {
   updateNotificationSettings,
   changePassword,
   updatePrivacySettings,
-  requestDataDownload,
-  deleteAccount,
   type UserSettings,
   type UpdateProfileRequest,
   type ChangePasswordRequest
@@ -54,7 +52,6 @@ export default function SettingsPage() {
     { id: "profile", label: "Profile", icon: User },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "privacy", label: "Privacy & Security", icon: Shield },
-    { id: "payment", label: "Payment Methods", icon: CreditCard }
   ];
 
   useEffect(() => {
@@ -154,34 +151,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDataDownload = async () => {
-    try {
-      const result = await requestDataDownload();
-      toast.success(result.message);
-    } catch (error: any) {
-      console.error('Error requesting data download:', error);
-      toast.error('Failed to request data download');
-    }
-  };
 
-  const handleAccountDeletion = async () => {
-    const password = prompt('Please enter your password to confirm account deletion:');
-    if (!password) return;
-
-    if (!confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      await deleteAccount(password);
-      toast.success('Account deleted successfully');
-      // Redirect to login or home page
-      window.location.href = '/';
-    } catch (error: any) {
-      console.error('Error deleting account:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete account');
-    }
-  };
 
   const formatMemberSince = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -230,8 +200,8 @@ export default function SettingsPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
-                    ? "border-primary text-primary"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
               >
                 <tab.icon size={16} className="mr-2" />
@@ -306,10 +276,10 @@ export default function SettingsPage() {
                   <Label className="text-sm font-medium text-gray-700">KYC Status</Label>
                   <div className="flex items-center mt-1">
                     <span className={`px-3 py-1 text-sm rounded-full ${settings.profile.kycStatus === 'approved'
-                        ? 'bg-green-100 text-green-800'
-                        : settings.profile.kycStatus === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
+                      ? 'bg-green-100 text-green-800'
+                      : settings.profile.kycStatus === 'pending'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
                       }`}>
                       {settings.profile.kycStatus}
                     </span>
@@ -457,22 +427,7 @@ export default function SettingsPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Privacy & Security</h3>
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">Two-Factor Authentication</p>
-                      <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
-                    </div>
-                    <button
-                      onClick={() => handlePrivacyToggle('twoFactorAuth', !privacy.twoFactorAuth)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${privacy.twoFactorAuth ? 'bg-gradient-to-r from-primary to-orange-600' : 'bg-gray-200'
-                        }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${privacy.twoFactorAuth ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                      />
-                    </button>
-                  </div>
+
 
                   <div>
                     <Label htmlFor="sessionTimeout" className="text-sm font-medium text-gray-700">Session Timeout</Label>
@@ -560,87 +515,11 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-gray-200">
-                <h4 className="font-medium text-gray-900 mb-4">Account Actions</h4>
-                <div className="space-y-3">
-                  <Button
-                    variant="outline"
-                    onClick={handleDataDownload}
-                    className="w-full justify-start px-4 py-3 h-auto"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-3" />
-                    Download Account Data
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleAccountDeletion}
-                    className="w-full justify-start px-4 py-3 h-auto border-red-300 text-red-600 hover:bg-red-50"
-                  >
-                    <AlertCircle className="w-4 h-4 mr-3" />
-                    Delete Account
-                  </Button>
-                </div>
-              </div>
+
             </div>
           )}
 
-          {/* Payment Tab */}
-          {activeTab === "payment" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h3>
-                <div className="space-y-4">
-                  {/* Placeholder for payment methods - would be populated from real data */}
-                  <Card className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-6 bg-gradient-to-r from-primary to-orange-600 rounded flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">CARD</span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">•••• •••• •••• 4242</p>
-                          <p className="text-sm text-gray-500">Expires 12/26</p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" className="text-primary hover:bg-primary/5">
-                          Edit
-                        </Button>
-                        <Button variant="outline" className="text-red-600 hover:bg-red-50">
-                          Remove
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
 
-                  <Button
-                    variant="outline"
-                    className="w-full border-2 border-dashed border-gray-300 p-6 text-center hover:border-primary"
-                  >
-                    <Plus size={24} className="mx-auto text-gray-400 mb-2" />
-                    <span className="text-gray-600">Add New Payment Method</span>
-                  </Button>
-                </div>
-              </div>
-
-              <div className="pt-6 border-t border-gray-200">
-                <h4 className="font-medium text-gray-900 mb-4">Bank Accounts</h4>
-                <div className="space-y-4">
-                  <Card className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900">Chase Bank •••• 1234</p>
-                        <p className="text-sm text-gray-500">Checking Account</p>
-                      </div>
-                      <span className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                        Verified
-                      </span>
-                    </div>
-                  </Card>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </Card>
     </div>

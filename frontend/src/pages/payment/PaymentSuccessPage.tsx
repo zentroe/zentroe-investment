@@ -79,7 +79,7 @@ const PaymentSuccessPage: React.FC = () => {
           <div className="space-y-3">
             <Link
               to="/dashboard"
-              className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center"
+              className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center"
             >
               Go to Dashboard
               <ArrowRight className="w-4 h-4 ml-2" />

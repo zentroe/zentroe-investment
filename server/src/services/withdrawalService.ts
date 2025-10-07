@@ -53,6 +53,33 @@ export class WithdrawalService {
     userId: string,
     userInvestmentId: string
   ): Promise<WithdrawalEligibility> {
+    // Check user's KYC status first
+    const user = await User.findById(userId);
+    if (!user) {
+      return {
+        canWithdraw: false,
+        availableAmount: 0,
+        maxProfitsWithdraw: 0,
+        maxPrincipalWithdraw: 0,
+        errors: ['User not found'],
+        investmentStatus: 'not_found',
+        daysUntilFullWithdrawal: 0
+      };
+    }
+
+    // Check KYC verification status
+    if (!user.kyc || user.kyc.status !== 'approved') {
+      return {
+        canWithdraw: false,
+        availableAmount: 0,
+        maxProfitsWithdraw: 0,
+        maxPrincipalWithdraw: 0,
+        errors: ['KYC verification required. Please complete identity verification before withdrawing funds.'],
+        investmentStatus: 'kyc_required',
+        daysUntilFullWithdrawal: 0
+      };
+    }
+
     const userInvestment = await UserInvestment.findOne({
       _id: userInvestmentId,
       user: userId

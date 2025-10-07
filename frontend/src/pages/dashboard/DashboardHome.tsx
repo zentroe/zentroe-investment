@@ -1,8 +1,8 @@
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import SalesChart from "@/components/dashboard/SalesChart";
-import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
+// import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import TotalSales from "@/components/dashboard/TotalSales";
-import PaymentHistory from "@/components/dashboard/PaymentHistory";
+// import PaymentHistory from "@/components/dashboard/PaymentHistory";
 import UserInvestmentOverview from "@/components/dashboard/UserInvestmentOverview";
 import InvestmentGrowthChart from "@/components/dashboard/InvestmentGrowthChart";
 import WithdrawalWidget from "@/components/dashboard/WithdrawalWidget";
@@ -89,10 +89,10 @@ export default function DashboardHome() {
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UpcomingEvents />
         <PaymentHistory />
-      </div>
+      </div> */}
 
       {/* Additional Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

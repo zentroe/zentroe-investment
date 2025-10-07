@@ -18,6 +18,9 @@ import simpleCardPaymentRoutes from "./routes/simpleCardPaymentRoutes";
 import referralRoutes from "./routes/referrals";
 import withdrawalRoutes from "./routes/withdrawalRoutes";
 import userSettingsRoutes from "./routes/userSettingsRoutes";
+import kycRoutes from "./routes/kycRoutes";
+import adminKycRoutes from "./routes/adminKycRoutes";
+import adminWithdrawalRoutes from "./routes/adminWithdrawalRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 import helmet from "helmet";
 // import rateLimit from "express-rate-limit";
@@ -43,7 +46,8 @@ app.use(cors({
   origin: FRONTEND_URL,
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
 
 app.use(helmet());
@@ -62,12 +66,15 @@ app.use("/onboarding", onboardingRoutes);
 app.use("/admin", adminRoutes);
 app.use("/admin/payments", adminPaymentRoutes);
 app.use("/admin", adminInvestmentRoutes);
+app.use("/admin/kyc", adminKycRoutes);
+app.use("/admin/withdrawals", adminWithdrawalRoutes);
 app.use("/api/user", userInvestmentRoutes);
 app.use("/api", uploadRoutes);
 app.use("/payments/card", simpleCardPaymentRoutes);
 app.use("/referrals", referralRoutes);
 app.use("/withdrawals", withdrawalRoutes);
 app.use("/user/settings", userSettingsRoutes);
+app.use("/kyc", kycRoutes);
 
 
 app.use(errorHandler);

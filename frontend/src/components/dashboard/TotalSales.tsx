@@ -127,9 +127,9 @@ export default function TotalSales() {
                   </span>
                 </div>
               </div>
-              <span className="text-2xl font-bold text-gray-900">
+              {/* <span className="text-2xl font-bold text-gray-900">
                 ${(summary.totalInvested + summary.totalProfits).toLocaleString()}
-              </span>
+              </span> */}
             </div>
           </div>
         )}

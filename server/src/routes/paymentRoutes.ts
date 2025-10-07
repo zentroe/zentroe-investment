@@ -244,4 +244,281 @@ router.get('/:paymentId/status', protectRoute, async (req, res) => {
   }
 });
 
+// =====================
+// MANUAL PAYMENT CONFIRMATION ROUTES
+// =====================
+
+// Confirm crypto payment (no proof required - user confirms they sent it)
+router.post('/crypto/confirm', protectRoute, async (req, res) => {
+  try {
+    const {
+      walletId,
+      amount,
+      transactionHash,
+      userWalletAddress,
+      proofOfPayment
+    } = req.body;
+    const userId = (req as any).user.userId;
+
+    console.log('🚀 Confirming crypto payment:', {
+      userId,
+      walletId,
+      amount,
+      transactionHash,
+      userWalletAddress
+    });
+
+    if (!walletId || !amount) {
+      res.status(400).json({
+        success: false,
+        message: 'Wallet ID and amount are required'
+      });
+      return;
+    }
+
+    // Get wallet details
+    const CryptoWallet = (await import('../models/CryptoWallet')).default;
+    const wallet = await CryptoWallet.findById(walletId);
+
+    if (!wallet || !wallet.isActive) {
+      res.status(404).json({
+        success: false,
+        message: 'Wallet not found or inactive'
+      });
+      return;
+    }
+
+    // Import payment models
+    const { Payment, CryptoPayment } = await import('../models/PaymentModels');
+
+    // Create base payment record
+    const basePayment = new Payment({
+      userId,
+      amount: parseFloat(amount),
+      currency: 'USD',
+      paymentMethod: 'crypto',
+      status: 'pending',
+      metadata: {
+        walletId,
+        walletName: wallet.name,
+        network: wallet.network,
+        confirmedAt: new Date(),
+        confirmationType: 'manual'
+      }
+    });
+
+    await basePayment.save();
+
+    // Handle proof of payment upload if provided
+    let proofFile = null;
+    if (proofOfPayment) {
+      try {
+        const { uploadFile } = await import('../config/cloudinary');
+        const uploadResult = await uploadFile(proofOfPayment, 'payment-proofs/crypto', {
+          resourceType: 'auto',
+          publicId: `crypto-proof-${userId}-${Date.now()}`
+        });
+
+        if (uploadResult.success && uploadResult.data) {
+          proofFile = {
+            filename: `crypto-proof-${userId}-${Date.now()}`,
+            originalName: 'transaction-screenshot',
+            mimetype: 'image/jpeg',
+            size: 0,
+            path: uploadResult.data.secure_url
+          };
+        }
+      } catch (uploadError) {
+        console.error('⚠️ Failed to upload proof, continuing without it:', uploadError);
+      }
+    }
+
+    // Map wallet name to valid cryptocurrency enum value
+    const getCryptocurrencyFromWalletName = (walletName: string): string => {
+      const name = walletName.toLowerCase();
+      if (name.includes('btc') || name.includes('bitcoin')) return 'bitcoin';
+      if (name.includes('eth') || name.includes('ethereum')) return 'ethereum';
+      if (name.includes('usdt') || name.includes('tether')) return 'usdt';
+      if (name.includes('usdc') || name.includes('usd coin')) return 'usdc';
+      // Default fallback
+      return 'bitcoin';
+    };
+
+    // Create crypto payment record
+    const cryptoPayment = new CryptoPayment({
+      paymentId: basePayment._id,
+      userId,
+      cryptocurrency: getCryptocurrencyFromWalletName(wallet.name),
+      amount: 0, // Will be calculated based on exchange rate
+      fiatAmount: parseFloat(amount),
+      fiatCurrency: 'USD',
+      exchangeRate: 1, // Would be fetched from API in production
+      companyWalletAddress: wallet.address,
+      userWalletAddress: userWalletAddress || 'Not provided',
+      network: wallet.network || 'mainnet',
+      transactionHash: transactionHash || `pending-${Date.now()}`,
+      confirmations: 0,
+      minimumConfirmations: 3,
+      blockchainVerified: false,
+      proofFile,
+      status: 'pending'
+    });
+
+    await cryptoPayment.save();
+
+    // Create deposit record for admin tracking
+    const Deposit = (await import('../models/Deposit')).default;
+    const deposit = new Deposit({
+      userId,
+      amount: parseFloat(amount),
+      paymentMethod: 'crypto',
+      status: 'pending',
+      cryptoWalletId: walletId,
+      cryptoTransactionHash: transactionHash || `pending-${Date.now()}`,
+      proofOfPayment: proofFile?.path,
+      adminNotes: `Crypto Payment - ${wallet.name} - ${cryptoPayment._id}`
+    });
+
+    await deposit.save();
+    console.log('✅ Deposit record created:', deposit._id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Crypto payment confirmed and recorded for admin review',
+      paymentId: basePayment._id,
+      cryptoPaymentId: cryptoPayment._id,
+      depositId: deposit._id,
+      status: basePayment.status
+    });
+
+  } catch (error: any) {
+    console.error('❌ Confirm crypto payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+// Confirm bank transfer payment (no proof required - user confirms they sent it)
+router.post('/bank/confirm', protectRoute, async (req, res) => {
+  try {
+    const {
+      accountId,
+      amount,
+      userBankDetails,
+      referenceNumber
+    } = req.body;
+    const userId = (req as any).user.userId;
+
+    console.log('🏦 Confirming bank transfer:', {
+      userId,
+      accountId,
+      amount,
+      userBankDetails,
+      referenceNumber
+    });
+
+    if (!accountId || !amount) {
+      res.status(400).json({
+        success: false,
+        message: 'Bank account ID and amount are required'
+      });
+      return;
+    }
+
+    // Get bank account details
+    const BankAccount = (await import('../models/BankAccount')).default;
+    const bankAccount = await BankAccount.findById(accountId);
+
+    if (!bankAccount || !bankAccount.isActive) {
+      res.status(404).json({
+        success: false,
+        message: 'Bank account not found or inactive'
+      });
+      return;
+    }
+
+    // Import payment models
+    const { Payment, BankTransferPayment } = await import('../models/PaymentModels');
+
+    // Create base payment record
+    const basePayment = new Payment({
+      userId,
+      amount: parseFloat(amount),
+      currency: 'USD',
+      paymentMethod: 'bank_transfer',
+      status: 'pending',
+      metadata: {
+        accountId,
+        bankName: bankAccount.bankName,
+        referenceNumber: referenceNumber || `REF-${Date.now()}`,
+        confirmedAt: new Date(),
+        confirmationType: 'manual'
+      }
+    });
+
+    await basePayment.save();
+
+    // Create bank transfer payment record
+    const bankTransferPayment = new BankTransferPayment({
+      paymentId: basePayment._id,
+      userId,
+      amount: parseFloat(amount),
+      currency: 'USD',
+      referenceCode: referenceNumber || `REF-${Date.now()}`,
+
+      // User bank details (if provided)
+      userBankName: userBankDetails?.bankName || 'Not provided',
+      userAccountNumber: userBankDetails?.accountNumber || 'Not provided',
+      userRoutingNumber: userBankDetails?.routingNumber || 'Not provided',
+      userAccountHolderName: userBankDetails?.accountHolderName || 'Not provided',
+      userSwiftCode: userBankDetails?.swiftCode,
+
+      // Company bank details used
+      companyBankName: bankAccount.bankName,
+      companyAccountNumber: bankAccount.accountNumber,
+      companyRoutingNumber: bankAccount.routingNumber || 'N/A',
+
+      status: 'pending'
+    });
+
+    await bankTransferPayment.save();
+
+    // Create deposit record for admin tracking
+    const Deposit = (await import('../models/Deposit')).default;
+    const deposit = new Deposit({
+      userId,
+      amount: parseFloat(amount),
+      paymentMethod: 'bank_transfer',
+      status: 'pending',
+      bankAccountId: accountId,
+      bankTransferReference: bankTransferPayment.referenceCode,
+      adminNotes: `Bank Transfer - ${bankAccount.bankName} - ${bankTransferPayment._id}`
+    });
+
+    await deposit.save();
+    console.log('✅ Deposit record created:', deposit._id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Bank transfer payment confirmed and recorded for admin review',
+      paymentId: basePayment._id,
+      bankTransferPaymentId: bankTransferPayment._id,
+      depositId: deposit._id,
+      status: basePayment.status,
+      referenceCode: bankTransferPayment.referenceCode
+    });
+
+  } catch (error: any) {
+    console.error('❌ Confirm bank transfer payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
 export default router;

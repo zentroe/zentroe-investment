@@ -229,6 +229,84 @@ export const updateDepositStatus = async (id: string, statusData: {
   }
 };
 
+// ===== CRYPTO PAYMENT MANAGEMENT =====
+
+export const getAllCryptoPayments = async (filters?: {
+  status?: 'pending' | 'confirming' | 'verified' | 'rejected' | 'completed';
+  cryptocurrency?: string;
+  limit?: number;
+  offset?: number;
+}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.cryptocurrency) params.append('cryptocurrency', filters.cryptocurrency);
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.offset) params.append('offset', filters.offset.toString());
+
+    const response = await axios.get(`/admin/payments/crypto`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching crypto payments:', error);
+    throw error;
+  }
+};
+
+export const getCryptoPaymentDetails = async (paymentId: string) => {
+  try {
+    const response = await axios.get(`/admin/payments/crypto/${paymentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching crypto payment details:', error);
+    throw error;
+  }
+};
+
+export const updateCryptoPaymentStatus = async (paymentId: string, status: string, notes?: string) => {
+  try {
+    const response = await axios.put(`/admin/payments/crypto/${paymentId}/status`, {
+      status,
+      notes
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating crypto payment status:', error);
+    throw error;
+  }
+};
+
+export const getAllBankTransferPayments = async (filters?: {
+  status?: 'pending' | 'verified' | 'rejected' | 'completed';
+  limit?: number;
+  offset?: number;
+}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.offset) params.append('offset', filters.offset.toString());
+
+    const response = await axios.get(`/admin/payments/bank-transfers?${params.toString()}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching bank transfer payments:', error);
+    throw error;
+  }
+};
+
+export const updateBankTransferPaymentStatus = async (paymentId: string, status: string, notes?: string) => {
+  try {
+    const response = await axios.put(`/admin/payments/${paymentId}/status`, {
+      status,
+      notes
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating bank transfer payment status:', error);
+    throw error;
+  }
+};
+
 // ===== CARD PAYMENT MANAGEMENT =====
 
 export const getAllCardPayments = async (filters?: {

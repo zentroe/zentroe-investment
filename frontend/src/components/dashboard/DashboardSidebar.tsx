@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   TrendingUp,
   Wallet,
   ArrowDownLeft,
+  Shield,
   RefreshCw,
   Users,
   Settings,
   Menu,
-  X
+  X,
+  LogOut
 } from "lucide-react";
+import { logout } from "@/services/auth";
+import { toast } from "sonner";
 import Logo from "@/components/ui/Logo";
 import logo from "@/assets/zenLogo.png";
 
@@ -26,6 +30,7 @@ const navigationItems: NavigationItem[] = [
   { name: "Portfolio", path: "/dashboard/portfolio", icon: TrendingUp },
   { name: "Earnings", path: "/dashboard/earnings", icon: Wallet },
   { name: "Withdrawals", path: "/dashboard/withdrawals", icon: ArrowDownLeft },
+  { name: "KYC Verification", path: "/dashboard/kyc", icon: Shield },
   { name: "Recurring", path: "/dashboard/recurring", icon: RefreshCw },
   { name: "Referrals", path: "/dashboard/referrals", icon: Users },
   { name: "Settings", path: "/dashboard/settings", icon: Settings },
@@ -33,7 +38,23 @@ const navigationItems: NavigationItem[] = [
 
 export default function DashboardSidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      toast.success('Successfully logged out');
+      navigate('/auth/login');
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout. Please try again.');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <>
@@ -55,10 +76,10 @@ export default function DashboardSidebar() {
 
       {/* Sidebar */}
       <div className={`
-        fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out shadow-lg lg:shadow-none
+        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out shadow-lg lg:shadow-sm
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-screen">
           {/* Header */}
           <div className="flex items-center justify-start gap-4 p-6 border-b border-gray-200 bg-white">
             {/* Logo */}
@@ -153,6 +174,14 @@ export default function DashboardSidebar() {
 
           {/* Footer */}
           <div className="p-4 border-t border-gray-200 bg-gray-50">
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-red-600 rounded-lg transition-all duration-200 mb-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <LogOut size={16} className="mr-2" />
+              {isLoggingOut ? 'Logging out...' : 'Logout'}
+            </button>
             <div className="text-center">
               <p className="text-xs text-gray-500">Zentroe Investment Platform</p>
               <p className="text-xs text-gray-400 mt-1">v2.1.0</p>

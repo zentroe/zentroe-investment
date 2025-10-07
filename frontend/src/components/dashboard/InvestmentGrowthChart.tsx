@@ -13,7 +13,7 @@ import {
 } from 'chart.js';
 import { getProfitDashboard } from '@/services/userInvestmentService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, DollarSign, Calendar, Activity } from 'lucide-react';
+import { TrendingUp} from 'lucide-react';
 
 // Register ChartJS components
 ChartJS.register(
@@ -232,7 +232,7 @@ export default function InvestmentGrowthChart() {
       {/* Summary Stats */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+          {/* <Card>
             <CardContent className="p-4">
               <div className="flex items-center space-x-2">
                 <DollarSign className="h-4 w-4 text-green-600" />
@@ -278,7 +278,7 @@ export default function InvestmentGrowthChart() {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
       )}
 

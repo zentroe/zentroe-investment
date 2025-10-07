@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,10 +71,26 @@ const WithdrawalsPage: React.FC = () => {
 
   const getWithdrawalStatusMessage = (eligibility: InvestmentWithWithdrawal['withdrawalEligibility']) => {
     if (!eligibility.canWithdraw) {
+      // Check if it's a KYC-related error
+      const isKYCError = eligibility.errors[0]?.toLowerCase().includes('kyc');
+
       return (
-        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg">
+        <div className={`flex items-center gap-2 p-3 rounded-lg ${isKYCError ? 'text-red-600 bg-red-50 border border-red-200' : 'text-amber-600 bg-amber-50'
+          }`}>
           <AlertCircle className="w-4 h-4" />
-          <span className="text-sm">{eligibility.errors[0]}</span>
+          <div className="flex-1">
+            <span className="text-sm">{eligibility.errors[0]}</span>
+            {isKYCError && (
+              <div className="mt-2">
+                <Link
+                  to="/dashboard/kyc"
+                  className="inline-flex items-center text-xs font-medium text-red-700 hover:text-red-800 underline"
+                >
+                  Complete KYC Verification →
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       );
     }
@@ -130,8 +147,8 @@ const WithdrawalsPage: React.FC = () => {
           <div className="flex border-b">
             <button
               className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === 'investments'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               onClick={() => setActiveTab('investments')}
             >
@@ -139,8 +156,8 @@ const WithdrawalsPage: React.FC = () => {
             </button>
             <button
               className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === 'history'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               onClick={() => setActiveTab('history')}
             >

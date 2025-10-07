@@ -39,14 +39,19 @@ export default function PasswordSetup() {
     setIsLoading(true);
 
     try {
+      // Get referral code from localStorage if available
+      const referralCode = localStorage.getItem('referralCode');
+
       // Create account using auth service
       await signup({
         email: email,
         password: password,
+        ...(referralCode && { referralCode })
       });
 
-      // Clear temporary email from localStorage
+      // Clear temporary data from localStorage
       localStorage.removeItem('tempEmail');
+      localStorage.removeItem('referralCode');
 
       toast.success("Account created! Please check your email to confirm your account.");
       navigate("/onboarding/success");

@@ -31,7 +31,7 @@ export const checkEmail = async (req: Request, res: Response): Promise<void> => 
 
 export const signup = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { email, password, referralCode } = req.body;
 
     // Validate input
     if (!email || !password) {
@@ -94,6 +94,45 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     sendConfirmationEmail(email, confirmationLink).catch((emailError) =>
       console.error("Error sending email confirmation:", emailError)
     );
+
+    // Process referral if referral code provided
+    if (referralCode) {
+      try {
+        // Find the referrer
+        const referrer = await User.findOne({ referralCode });
+        if (referrer) {
+          // Create referral record
+          const { Referral } = await import('../models/Referral');
+          await Referral.create({
+            referrer: referrer._id,
+            referred: user._id,
+            referralCode,
+            status: 'pending',
+            metadata: {
+              ipAddress: req.ip,
+              userAgent: req.get('User-Agent')
+            }
+          });
+
+          // Update referred user
+          await User.findByIdAndUpdate(user._id, {
+            referredBy: referrer._id
+          });
+
+          // Update referrer's stats
+          await User.findByIdAndUpdate(referrer._id, {
+            $inc: { 'referralStats.totalReferred': 1 }
+          });
+
+          console.log(`✅ Referral processed: ${email} referred by ${referrer.email}`);
+        } else {
+          console.log(`⚠️ Invalid referral code: ${referralCode}`);
+        }
+      } catch (referralError: any) {
+        console.error('Error processing referral:', referralError);
+        // Don't fail signup if referral processing fails
+      }
+    }
 
     res.status(201).json({ message: "User registered successfully" });
 
