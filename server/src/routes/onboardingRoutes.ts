@@ -1,7 +1,5 @@
 import { Router } from "express";
-import * as onboardingController from "../controllers/onboardingController";
-
-const {
+import {
   getUserOnboardingData,
   updateAccountType,
   updatePortfolioPriority,
@@ -19,7 +17,7 @@ const {
   saveIdentityInfo,
   getPublicInvestmentPlans,
   saveSelectedInvestmentPlan
-} = onboardingController;
+} from "../controllers/onboarding.controller";
 import { protectOnboardingRoute } from "../middleware/protectOnboardingRoute";
 
 const router = Router();
