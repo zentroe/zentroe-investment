@@ -3,14 +3,23 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
+// Import images so Vite includes them in the build
+import image1 from "@/assets/15192.jpg";
+import image2 from "@/assets/15996.jpg";
+import image3 from "@/assets/9296767.jpg";
+import image4 from "@/assets/8245275.jpg";
+import image5 from "@/assets/2802.jpg";
+import image6 from "@/assets/97.jpg";
+import image7 from "@/assets/23156329.jpg";
+
 const investments = [
-  { title: "Château Vineyards", location: "Bordeaux, France", irr: "14.9%", holdPeriod: "3 Years", image: "/src/assets/15192.jpg" },
-  { title: "Rowan Gardens", location: "Dublin, Ireland", irr: "23.3%", holdPeriod: "1.7 Years", image: "/src/assets/15996.jpg" },
-  { title: "Seaside Residences", location: "Amalfi Coast, Italy", irr: "9.4%", holdPeriod: "4.2 Years", image: "/src/assets/9296767.jpg" },
-  { title: "Emerald Estates", location: "Edinburgh, Scotland", irr: "18.2%", holdPeriod: "5 Years", image: "/src/assets/8245275.jpg" },
-  { title: "Sunnyhill Villas", location: "Lisbon, Portugal", irr: "20.1%", holdPeriod: "2.5 Years", image: "/src/assets/2802.jpg" },
-  { title: "Harborview Homes", location: "Copenhagen, Denmark", irr: "15.7%", holdPeriod: "4 Years", image: "/src/assets/97.jpg" },
-  { title: "Willowbrook Heights", location: "Zurich, Switzerland", irr: "12.5%", holdPeriod: "6 Years", image: "/src/assets/23156329.jpg" },
+  { title: "Château Vineyards", location: "Bordeaux, France", irr: "14.9%", holdPeriod: "3 Years", image: image1 },
+  { title: "Rowan Gardens", location: "Dublin, Ireland", irr: "23.3%", holdPeriod: "1.7 Years", image: image2 },
+  { title: "Seaside Residences", location: "Amalfi Coast, Italy", irr: "9.4%", holdPeriod: "4.2 Years", image: image3 },
+  { title: "Emerald Estates", location: "Edinburgh, Scotland", irr: "18.2%", holdPeriod: "5 Years", image: image4 },
+  { title: "Sunnyhill Villas", location: "Lisbon, Portugal", irr: "20.1%", holdPeriod: "2.5 Years", image: image5 },
+  { title: "Harborview Homes", location: "Copenhagen, Denmark", irr: "15.7%", holdPeriod: "4 Years", image: image6 },
+  { title: "Willowbrook Heights", location: "Zurich, Switzerland", irr: "12.5%", holdPeriod: "6 Years", image: image7 },
 ];
 
 export default function FeaturedInvestments() {
