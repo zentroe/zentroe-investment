@@ -12,7 +12,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ES2020"],
-    "types": ["node", "express", "cors", "cookie-parser", "jsonwebtoken", "node-cron"],
     "moduleDetection": "auto"
   },
   "include": [
