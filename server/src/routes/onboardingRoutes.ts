@@ -17,7 +17,7 @@ import {
   saveIdentityInfo,
   getPublicInvestmentPlans,
   saveSelectedInvestmentPlan
-} from "../controllers/onboardingController.js";
+} from "../controllers";
 import { protectOnboardingRoute } from "../middleware/protectOnboardingRoute";
 
 const router = Router();
