@@ -1,7 +1,6 @@
 // src/components/landing/HeroSection.tsx
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import Lottie from "lottie-react";
 import heroImage from "@/assets/hero-homescreen-desktop.png";
 // import LottieImage from "@/assets/hero2.json";
 

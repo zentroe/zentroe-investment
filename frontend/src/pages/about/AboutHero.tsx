@@ -1,5 +1,4 @@
 // src/components/about/AboutHero.tsx
-import videoSrc from "@/assets/Zentroe_About.mp4";
 
 export default function AboutHero() {
   return (
@@ -17,16 +16,20 @@ export default function AboutHero() {
         </p>
       </div>
 
-      {/* Video Section */}
+      {/* Video Section - Cloudinary Embedded Player */}
       <div className="relative w-full z-10">
-        <video
-          src={videoSrc}
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="w-full max-w-4xl mx-auto object-cover object-center"
-        />
+        <div className="w-full max-w-4xl mx-auto">
+          <iframe
+            src="https://player.cloudinary.com/embed/?cloud_name=dqxr2tw3j&public_id=Zentroe_About_wlj8lq&profile=cld-looping"
+            width="100%"
+            height="100%"
+            style={{ aspectRatio: '16/9' }}
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+            allowFullScreen
+            frameBorder="0"
+            className="w-full rounded-lg"
+          ></iframe>
+        </div>
       </div>
     </section>
   );

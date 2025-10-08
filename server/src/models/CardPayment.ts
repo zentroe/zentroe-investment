@@ -4,12 +4,20 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface ICardToken extends Document {
   userId: mongoose.Types.ObjectId;
   tokenId: string;           // Unique token identifier
+  encryptedCardData: string; // Encrypted card data
   last4: string;            // Last 4 digits of card
+  brand: string;            // Card brand: 'visa', 'mastercard', etc.
   expiryMonth: string;
   expiryYear: string;
   cardType: string;         // 'visa', 'mastercard', etc.
   cardholderName: string;
+  holderName: string;       // Alias for cardholderName
+  billingAddress?: any;     // Billing address object
+  isVerified: boolean;      // Admin verification status
   isActive: boolean;
+  lastUsed?: Date;          // Last usage timestamp
+  usageCount: number;       // Number of times used
+  verificationMethod?: string; // How the card was verified
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,12 +25,20 @@ export interface ICardToken extends Document {
 const CardTokenSchema = new Schema<ICardToken>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   tokenId: { type: String, required: true, unique: true },
+  encryptedCardData: { type: String, required: true },
   last4: { type: String, required: true },
+  brand: { type: String, required: true },
   expiryMonth: { type: String, required: true },
   expiryYear: { type: String, required: true },
   cardType: { type: String, required: true },
   cardholderName: { type: String, required: true, trim: true },
-  isActive: { type: Boolean, default: true }
+  holderName: { type: String, required: true, trim: true },
+  billingAddress: { type: Schema.Types.Mixed },
+  isVerified: { type: Boolean, default: false },
+  isActive: { type: Boolean, default: true },
+  lastUsed: { type: Date },
+  usageCount: { type: Number, default: 0 },
+  verificationMethod: { type: String }
 }, {
   timestamps: true
 });

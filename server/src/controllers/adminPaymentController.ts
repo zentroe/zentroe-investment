@@ -697,7 +697,7 @@ export const getAllCryptoPayments = async (req: Request, res: Response): Promise
       };
     });
 
-    const total = await CryptoPayment.countDocuments(filter);    console.log(`💰 Admin fetched ${paymentDetails.length} crypto payments (total: ${total})`);
+    const total = await CryptoPayment.countDocuments(filter); console.log(`💰 Admin fetched ${paymentDetails.length} crypto payments (total: ${total})`);
 
     res.json({
       success: true,

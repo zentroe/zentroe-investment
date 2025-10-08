@@ -27,9 +27,9 @@ export default function LandingFooter() {
         <div className="space-y-4">
           <h4 className="text-white font-semibold mb-4">Invest</h4>
           <ul className="space-y-2">
-            <li><a href="#">Real Estate</a></li>
-            <li><a href="#">Private Credit</a></li>
-            <li><a href="#">Venture</a></li>
+            <li><a href="/real-estate">Real Estate</a></li>
+            <li><a href="/private-credit">Private Credit</a></li>
+            <li><a href="/venture">Venture</a></li>
           </ul>
         </div>
 
@@ -48,7 +48,7 @@ export default function LandingFooter() {
         <div className="space-y-4">
           <h4 className="text-white font-semibold mb-4">Company</h4>
           <ul className="space-y-2">
-            <li><a href="#">About Us</a></li>
+            <li><a href="/about">About Us</a></li>
             <li><a href="#">Press</a></li>
             <li><a href="#">Careers</a></li>
           </ul>

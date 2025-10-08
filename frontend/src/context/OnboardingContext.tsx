@@ -58,6 +58,10 @@ interface OnboardingContextType {
   refreshData: () => Promise<void>;
   updateLocalData: (updates: Partial<OnboardingData>) => void;
   updateStatus: (status: OnboardingData['onboardingStatus']) => Promise<void>;
+
+  // Progress methods
+  getProgressPercentage: () => number;
+  getCurrentStepName: () => string;
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -123,6 +127,34 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     }
   };
 
+  // Get progress percentage based on onboarding status
+  const getProgressPercentage = (): number => {
+    const status = data.onboardingStatus;
+    switch (status) {
+      case 'started': return 10;
+      case 'basicInfo': return 25;
+      case 'investmentProfile': return 50;
+      case 'verification': return 75;
+      case 'bankConnected': return 90;
+      case 'completed': return 100;
+      default: return 0;
+    }
+  };
+
+  // Get current step name based on onboarding status
+  const getCurrentStepName = (): string => {
+    const status = data.onboardingStatus;
+    switch (status) {
+      case 'started': return 'Getting Started';
+      case 'basicInfo': return 'Basic Information';
+      case 'investmentProfile': return 'Investment Profile';
+      case 'verification': return 'Identity Verification';
+      case 'bankConnected': return 'Bank Connection';
+      case 'completed': return 'Complete';
+      default: return 'Not Started';
+    }
+  };
+
   // Fetch data on mount
   useEffect(() => {
     // We're using cookie-based auth, so we should always try to fetch data
@@ -137,6 +169,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     refreshData,
     updateLocalData,
     updateStatus,
+    getProgressPercentage,
+    getCurrentStepName,
   };
 
   return (
