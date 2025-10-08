@@ -10,14 +10,7 @@ export const connectDB = async (): Promise<void> => {
 
     console.log('Connecting to MongoDB...');
 
-    const conn = await mongoose.connect(process.env.MONGO_URI!, {
-      // Render-optimized connection options
-      maxPoolSize: 10, // Maintain up to 10 socket connections
-      serverSelectionTimeoutMS: 10000, // Keep trying to send operations for 10 seconds
-      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-      connectTimeoutMS: 10000, // Give up initial connection after 10 seconds
-      heartbeatFrequencyMS: 10000, // Check server connectivity every 10 seconds
-    });
+    const conn = await mongoose.connect(process.env.MONGO_URI!);
 
     console.log(`✅ MongoDB connected: ${conn.connection.host}`);
 
@@ -26,7 +19,7 @@ export const connectDB = async (): Promise<void> => {
       console.log('✅ Mongoose connected to MongoDB');
     });
 
-    mongoose.connection.on('error', (err) => {
+    mongoose.connection.on('error', (err: any) => {
       console.error('❌ Mongoose connection error:', err);
     });
 

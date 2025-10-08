@@ -1,2 +1,2 @@
 // src/controllers/index.ts
-export * from './onboardingController';
+export * from './onboarding.controller';
