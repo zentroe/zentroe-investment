@@ -1,16 +1,15 @@
 // src/pages/agriculture/AgricultureHero.tsx
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import agricultureVideo from "@/assets/agriculture-video.mp4";
 
 export default function AgricultureHero() {
   return (
     <section className="relative w-full h-[80vh] overflow-hidden bg-black">
 
-      {/* Background Local Video */}
+      {/* Background Cloudinary Video */}
       <div className="absolute inset-0 z-0">
         <video
-          src={agricultureVideo}
+          src="https://res.cloudinary.com/dqxr2tw3j/video/upload/v1759952746/agriculture-video_nk2lkz.mp4"
           autoPlay
           muted
           loop

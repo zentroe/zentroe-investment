@@ -1,6 +1,5 @@
 // src/pages/landing/WhyZentroe.tsx
 import { motion } from "framer-motion";
-import promoVideo from "@/assets/zentroe-promo-2.mp4";
 
 export default function WhyZentroe() {
   return (
@@ -77,7 +76,7 @@ export default function WhyZentroe() {
           >
             <div className="relative rounded-lg overflow-hidden group">
               <video
-                src={promoVideo}
+                src="https://res.cloudinary.com/dqxr2tw3j/video/upload/v1759950426/zentroe-promo-2-DxlqCXDW-compressed_uaxcmu.mov"
                 controls
                 muted
                 className="w-full h-full object-cover rounded-lg transition-transform duration-500 "
