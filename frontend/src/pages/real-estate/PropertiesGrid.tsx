@@ -1,54 +1,63 @@
 // src/pages/real-estate/PropertiesGrid.tsx
 import { motion } from "framer-motion";
 
+// Import images so Vite includes them in the build
+import image1 from "@/assets/15192.jpg";
+import image2 from "@/assets/15996.jpg";
+import image3 from "@/assets/9296767.jpg";
+import image4 from "@/assets/8245275.jpg";
+import image5 from "@/assets/2802.jpg";
+import image6 from "@/assets/97.jpg";
+import image7 from "@/assets/23156329.jpg";
+
 const properties = [
   {
     title: "Château Vineyards",
     location: "Bordeaux, France",
     category: "Vineyard",
-    image: "/src/assets/15192.jpg",
+    image: image1,
   },
   {
     title: "Rowan Gardens",
     location: "Dublin, Ireland",
     category: "Garden Estate",
-    image: "/src/assets/15996.jpg",
+    image: image2,
   },
   {
     title: "Seaside Residences",
     location: "Amalfi Coast, Italy",
     category: "Luxury Homes",
-    image: "/src/assets/9296767.jpg",
+    image: image3,
   },
   {
     title: "Emerald Estates",
     location: "Edinburgh, Scotland",
     category: "Residential",
-    image: "/src/assets/8245275.jpg",
+    image: image4,
   },
   {
     title: "Sunnyhill Villas",
     location: "Lisbon, Portugal",
     category: "Vacation Homes",
-    image: "/src/assets/2802.jpg",
+    image: image5,
   },
   {
     title: "Harborview Homes",
     location: "Copenhagen, Denmark",
     category: "Seaside Homes",
-    image: "/src/assets/97.jpg",
+    image: image6,
   },
   {
     title: "Willowbrook Heights",
     location: "Zurich, Switzerland",
     category: "Luxury Apartments",
-    image: "/src/assets/23156329.jpg",
+    image: image7,
   },
   {
     title: "Meadowcrest Manor",
     location: "Vienna, Austria",
     category: "Heritage Property",
-    image: "/src/assets/15996.jpg", // You can replace this
+    image: image2, // Reused image2 as noted in the comment
   },
 ];
 

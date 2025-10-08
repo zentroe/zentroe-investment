@@ -1,6 +1,11 @@
 // src/pages/real-estate/RealEstateStrategies.tsx
 import { motion } from "framer-motion";
 
+// Import images so Vite includes them in the build
+import strategy1Image from "@/assets/strategy-1.png";
+import strategy2Image from "@/assets/strategy-2.png";
+import strategy3Image from "@/assets/strategy-3.png";
+
 export default function RealEstateStrategies() {
   const strategies = [
     {
@@ -11,7 +16,7 @@ export default function RealEstateStrategies() {
         { label: "Single-family homes", value: "3,471" },
         { label: "U.S. Markets", value: "30" },
       ],
-      imageUrl: "/src/assets/strategy-1.png", // Replace with your actual image
+      imageUrl: strategy1Image,
       ctaText: "Read about our $500M funding by Goldman Sachs →",
       ctaLink: "#", // Optional, or remove if you don't want CTA
     },
@@ -23,7 +28,7 @@ export default function RealEstateStrategies() {
         { label: "Residential units", value: "8,962" },
         { label: "U.S. Markets", value: "10" },
       ],
-      imageUrl: "/src/assets/strategy-2.png",
+      imageUrl: strategy2Image,
       ctaText: "Read about our neighborhood renovation efforts in Bloomberg →",
       ctaLink: "#",
     },
@@ -35,7 +40,7 @@ export default function RealEstateStrategies() {
         { label: "Industrial properties", value: "145" },
         { label: "Square footage", value: "4.5M+" },
       ],
-      imageUrl: "/src/assets/strategy-3.png",
+      imageUrl: strategy3Image,
       ctaText: "Learn about industrial trends fueling our strategy →",
       ctaLink: "#",
     },

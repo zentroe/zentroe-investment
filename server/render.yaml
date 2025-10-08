@@ -1,0 +1,31 @@
+# Render deployment configuration
+# This file helps Render understand how to deploy your Node.js application
+
+# Build command (optional - Render auto-detects)
+# npm install && npm run build
+
+# Start command
+# npm start
+
+# Environment Variables needed:
+# - MONGO_URI
+# - JWT_SECRET
+# - CLIENT_URL
+# - CLOUDINARY_CLOUD_NAME
+# - CLOUDINARY_API_KEY  
+# - CLOUDINARY_API_SECRET
+# - MAILTRAP_TOKEN
+# - MAILTRAP_SENDER_EMAIL
+# - NODE_ENV=production
+
+# Health check endpoint: GET /
+# Your app should respond with 200 OK on the root path
+
+# Features enabled:
+# ✅ Persistent service (always running)
+# ✅ Background cron jobs
+# ✅ File uploads to /uploads directory
+# ✅ Database connection pooling
+# ✅ Automatic deployments from Git
+# ✅ HTTPS/SSL included
+# ✅ Custom domain support

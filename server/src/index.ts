@@ -21,9 +21,10 @@ import userSettingsRoutes from "./routes/userSettingsRoutes";
 import kycRoutes from "./routes/kycRoutes";
 import adminKycRoutes from "./routes/adminKycRoutes";
 import adminWithdrawalRoutes from "./routes/adminWithdrawalRoutes";
+
 import { errorHandler } from "./middleware/errorHandler";
 import helmet from "helmet";
-// import rateLimit from "express-rate-limit";
+
 import path from "path";
 
 
@@ -37,10 +38,6 @@ const PORT = process.env.PORT || 5000;
 
 const FRONTEND_URL = process.env.CLIENT_URL || "http://localhost:5173";
 
-// const limiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 100, // Limit each IP to 100 requests per windowMs
-// });
 
 app.use(cors({
   origin: FRONTEND_URL,
@@ -76,19 +73,41 @@ app.use("/withdrawals", withdrawalRoutes);
 app.use("/user/settings", userSettingsRoutes);
 app.use("/kyc", kycRoutes);
 
-
 app.use(errorHandler);
 
 app.get("/", (_req, res) => {
   res.send("Zentroe Backend is running ✅");
 });
 
-app.listen(PORT, async () => {
-  console.log(`✅ Server is running on port ${PORT}`);
-  await connectDB();
-});
+// Start server and connect to database
+const startServer = async () => {
+  try {
+    console.log('🚀 Starting Zentroe Investment Server...');
 
-import "./cron/returnsScheduler";
-import "./cron/dailyProfitCron";
+    // Connect to database first
+    await connectDB();
+    console.log('✅ Database connected successfully');
+
+    // Start the server
+    app.listen(PORT, () => {
+      console.log(`✅ Server is running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🔗 Frontend URL: ${FRONTEND_URL}`);
+    });
+
+    // Import and start cron jobs
+    console.log('📅 Initializing cron jobs...');
+    await import("./cron/returnsScheduler");
+    await import("./cron/dailyProfitCron");
+    console.log('✅ Cron jobs initialized');
+
+  } catch (error) {
+    console.error('❌ Server startup failed:', error);
+    process.exit(1);
+  }
+};
+
+// Start the server
+startServer();
 
 
