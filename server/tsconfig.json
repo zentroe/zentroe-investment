@@ -4,7 +4,7 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "./",
     "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -12,7 +12,8 @@
     "skipLibCheck": true
   },
   "include": [
-    "src"
+    "src",
+    "api"
   ],
   "exclude": [
     "node_modules",

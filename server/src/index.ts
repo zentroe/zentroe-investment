@@ -83,12 +83,37 @@ app.get("/", (_req, res) => {
   res.send("Zentroe Backend is running ✅");
 });
 
-app.listen(PORT, async () => {
-  console.log(`✅ Server is running on port ${PORT}`);
-  await connectDB();
-});
+const startServer = async () => {
+  try {
+    console.log('🚀 Starting server...');
+    
+    // Connect to database first
+    await connectDB();
+    console.log('✅ Database connected successfully');
+    
+    // Start the server
+    app.listen(PORT, () => {
+      console.log(`✅ Server is running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+    
+    // Import cron jobs only after successful startup
+    if (process.env.NODE_ENV === 'production') {
+      console.log('📅 Initializing cron jobs...');
+      await import("./cron/returnsScheduler");
+      await import("./cron/dailyProfitCron");
+      console.log('✅ Cron jobs initialized');
+    }
+    
+  } catch (error) {
+    console.error('❌ Server startup failed:', error);
+    process.exit(1);
+  }
+};
 
-import "./cron/returnsScheduler";
-import "./cron/dailyProfitCron";
+startServer();
+
+// For Vercel serverless functions, export the app
+export default app;
 
 
