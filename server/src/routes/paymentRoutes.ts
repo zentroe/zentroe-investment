@@ -310,7 +310,7 @@ router.post('/crypto/confirm', protectRoute, async (req, res) => {
     await basePayment.save();
 
     // Handle proof of payment upload if provided
-    let proofFile = null;
+    let proofFile: { filename: string; originalName: string; mimetype: string; size: number; path: string } | null = null;
     if (proofOfPayment) {
       try {
         const { uploadFile } = await import('../config/cloudinary');

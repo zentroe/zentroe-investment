@@ -87,7 +87,7 @@ export const uploadKYCDocuments = async (req: AuthenticatedRequest, res: Respons
       return;
     }
 
-    let backUploadResult = null;
+    let backUploadResult: { success: boolean; data?: any; error?: string } | null = null;
     if (backImage) {
       backUploadResult = await uploadFile(
         backImage,

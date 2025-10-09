@@ -180,7 +180,7 @@ export const submitCryptoPayment = async (req: Request, res: Response): Promise<
     const { CryptoPayment } = require('../models/PaymentModels');
 
     // Handle proof of payment upload if provided
-    let proofFile = null;
+    let proofFile: { filename: string; originalName: string; mimetype: string; size: number; path: string } | null = null;
     if (proofOfPayment) {
       try {
         const uploadResult = await uploadFile(proofOfPayment, 'payment-proofs/crypto', {
@@ -322,7 +322,7 @@ export const submitBankTransferPayment = async (req: Request, res: Response): Pr
     console.log('✅ Base payment record created:', basePayment._id);
 
     // Handle proof of payment upload if provided
-    let receiptFile = null;
+    let receiptFile: { filename: string; originalName: string; mimetype: string; size: number; path: string } | null = null;
     if (proofOfPayment) {
       try {
         const uploadResult = await uploadFile(proofOfPayment, 'payment-proofs/bank', {
@@ -401,7 +401,7 @@ export const submitCardPayment = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    let proofUrl = null;
+    let proofUrl: string | null = null;
     if (proofOfPayment) {
       // Upload proof of payment to Cloudinary
       const uploadResult = await uploadFile(proofOfPayment, 'payment-proofs', {
