@@ -39,10 +39,32 @@ const PORT = process.env.PORT || 5000;
 const FRONTEND_URL = process.env.CLIENT_URL || "http://localhost:5173";
 
 
-app.use(cors({
-  origin: FRONTEND_URL,
-  credentials: true
-}));
+// CORS configuration
+const corsOptions = {
+  origin: [
+    FRONTEND_URL,
+    'https://www.zentroe.com',
+    'https://zentroe.com',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ]
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight OPTIONS requests explicitly
+app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
