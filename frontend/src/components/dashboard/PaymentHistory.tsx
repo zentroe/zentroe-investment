@@ -107,7 +107,7 @@ const PaymentHistory: React.FC = () => {
                       <span className="font-medium text-gray-900">
                         ${payment.amount.toLocaleString()}
                       </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
+                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${getStatusColor(payment.status)}`}>
                         {payment.status}
                       </span>
                     </div>

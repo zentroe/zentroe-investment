@@ -137,7 +137,7 @@ export default function InvestmentAmount() {
             </p>
             <button
               onClick={() => setShowModal(true)}
-              className="text-xs text-primary cursor-pointer font-semibold mt-2 hover:underline"
+              className="text-sm text-primary cursor-pointer font-semibold mt-2 hover:underline"
             >
               Learn more
             </button>

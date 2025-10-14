@@ -40,7 +40,7 @@ export default function MarketOpportunitySection() {
 
         {/* Bullet List */}
         <div className="pt-4">
-          <p className="uppercase text-xs font-semibold text-gray-500 mb-3 tracking-widest">
+          <p className="uppercase text-sm font-semibold text-gray-500 mb-3 tracking-widest">
             Examples of this kind of activity include:
           </p>
           <ul className="list-disc list-inside text-darkPrimary space-y-2">
@@ -63,12 +63,12 @@ export default function MarketOpportunitySection() {
         </p>
 
         <div className="p-4">
-            <img
-              src={chartImg}
-              alt="Chart Image"
-              className="w-full h-auto rounded-sm "
-            />
-          </div>
+          <img
+            src={chartImg}
+            alt="Chart Image"
+            className="w-full h-auto rounded-sm "
+          />
+        </div>
 
 
 
@@ -114,7 +114,7 @@ export default function MarketOpportunitySection() {
 
     {/* Bullet List */}
     <div className="pt-4">
-      <p className="uppercase text-xs font-semibold text-gray-500 mb-3 tracking-widest">
+      <p className="uppercase text-sm font-semibold text-gray-500 mb-3 tracking-widest">
         Examples of this kind of activity include:
       </p>
       <ul className="list-disc list-inside text-darkPrimary space-y-2">

@@ -96,10 +96,10 @@ const CryptoQRCode: React.FC<CryptoQRCodeProps> = ({
         />
       </div>
       <div className="mt-2 text-center">
-        <p className="text-xs text-gray-500">
+        <p className="text-sm text-gray-500">
           Scan with your crypto wallet
         </p>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-sm text-gray-400 mt-1">
           Contains: {currency} • ${amount?.toLocaleString()}
         </p>
       </div>

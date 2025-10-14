@@ -260,7 +260,7 @@ export default function SettingsPage() {
                     disabled
                     className="mt-1 bg-gray-50 text-gray-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                  <p className="text-sm text-gray-500 mt-1">Email cannot be changed</p>
                 </div>
                 <div>
                   <Label htmlFor="phone" className="text-sm font-medium text-gray-700">Phone Number</Label>

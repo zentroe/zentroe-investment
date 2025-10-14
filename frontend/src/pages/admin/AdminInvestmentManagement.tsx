@@ -265,7 +265,7 @@ export default function AdminInvestmentManagement() {
                           {investment.user.firstName} {investment.user.lastName}
                         </h3>
                         <p className="text-sm text-gray-600">{investment.user.email}</p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-sm text-gray-500 mt-1">
                           Investment ID: {investment._id.slice(-8)}
                         </p>
                       </div>

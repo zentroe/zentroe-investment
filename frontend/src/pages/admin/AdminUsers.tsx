@@ -276,22 +276,22 @@ const AdminUsers: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   User
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   KYC Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Total Invested
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Account Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Joined
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -318,7 +318,7 @@ const AdminUsers: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getKycStatusColor(user.kyc?.status || 'pending')}`}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium border ${getKycStatusColor(user.kyc?.status || 'pending')}`}>
                       {(user.kyc?.status === 'pending' || !user.kyc) && <Calendar className="h-3 w-3 mr-1" />}
                       {user.kyc?.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
                       {user.kyc?.status === 'rejected' && <XCircle className="h-3 w-3 mr-1" />}
@@ -518,20 +518,20 @@ const AdminUsers: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">KYC Status</label>
                   <div className="bg-gray-50 p-3 rounded-md">
                     <div className="flex items-center justify-between mb-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getKycStatusColor(selectedUser.kyc?.status || 'pending')}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium border ${getKycStatusColor(selectedUser.kyc?.status || 'pending')}`}>
                         {selectedUser.kyc?.status || 'pending'}
                       </span>
                       {(selectedUser.kyc?.status === 'pending' || !selectedUser.kyc) && (
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleKycStatusUpdate(selectedUser._id, 'approved')}
-                            className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
                           >
                             Approve
                           </button>
                           <button
                             onClick={() => handleKycStatusUpdate(selectedUser._id, 'rejected')}
-                            className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
                           >
                             Reject
                           </button>
@@ -539,12 +539,12 @@ const AdminUsers: React.FC = () => {
                       )}
                     </div>
                     {selectedUser.kyc?.submittedAt && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm text-gray-500">
                         Submitted: {formatDate(selectedUser.kyc.submittedAt)}
                       </p>
                     )}
                     {selectedUser.kyc?.reviewedAt && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm text-gray-500">
                         Reviewed: {formatDate(selectedUser.kyc.reviewedAt)}
                       </p>
                     )}

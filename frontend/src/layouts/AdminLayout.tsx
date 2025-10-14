@@ -229,7 +229,7 @@ const AdminLayout: React.FC = () => {
                     <span>{item.label}</span>
                   </div>
                   {item.badge && item.badge > 0 && (
-                    <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                    <span className="inline-flex items-center justify-center px-2 py-1 text-sm font-bold leading-none text-white bg-red-500 rounded-full">
                       {item.badge}
                     </span>
                   )}
@@ -247,7 +247,7 @@ const AdminLayout: React.FC = () => {
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {adminProfile?.name || adminProfile?.email}
                   </p>
-                  <p className="text-xs text-gray-500 capitalize">
+                  <p className="text-sm text-gray-500 capitalize">
                     {adminProfile?.role?.replace('_', ' ')}
                   </p>
                 </div>

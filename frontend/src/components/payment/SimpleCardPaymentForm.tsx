@@ -328,7 +328,7 @@ export default function SimpleCardPaymentForm({
               <p className="text-sm text-gray-500">
                 Payment ID: <span className="font-mono">{paymentId}</span>
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-sm text-gray-400">
                 You will be prompted for OTP verification once admin approves your request.
               </p>
             </div>
@@ -355,7 +355,7 @@ export default function SimpleCardPaymentForm({
               <p className="text-sm text-gray-500">
                 Payment ID: <span className="font-mono">{paymentId}</span>
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-sm text-gray-400">
                 This usually takes a few minutes to complete.
               </p>
             </div>

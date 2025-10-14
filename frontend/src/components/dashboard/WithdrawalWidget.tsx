@@ -117,7 +117,7 @@ const WithdrawalWidget: React.FC = () => {
         <div className="text-center py-8">
           <DollarSign className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-600 text-sm">No investments available yet</p>
-          <p className="text-gray-500 text-xs">Start investing to enable withdrawals</p>
+          <p className="text-gray-500 text-sm">Start investing to enable withdrawals</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -126,7 +126,7 @@ const WithdrawalWidget: React.FC = () => {
             <div className="bg-green-50 p-3 rounded-lg">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-xs font-medium text-green-800">Available</span>
+                <span className="text-sm font-medium text-green-800">Available</span>
               </div>
               <div className="text-lg font-bold text-green-900 mt-1">
                 {formatCurrency(totalAvailable)}
@@ -136,7 +136,7 @@ const WithdrawalWidget: React.FC = () => {
             <div className="bg-blue-50 p-3 rounded-lg">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-blue-600" />
-                <span className="text-xs font-medium text-blue-800">Total Profits</span>
+                <span className="text-sm font-medium text-blue-800">Total Profits</span>
               </div>
               <div className="text-lg font-bold text-blue-900 mt-1">
                 {formatCurrency(totalProfits)}
@@ -146,7 +146,7 @@ const WithdrawalWidget: React.FC = () => {
             <div className="bg-purple-50 p-3 rounded-lg">
               <div className="flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-purple-600" />
-                <span className="text-xs font-medium text-purple-800">Eligible</span>
+                <span className="text-sm font-medium text-purple-800">Eligible</span>
               </div>
               <div className="text-lg font-bold text-purple-900 mt-1">
                 {eligibleCount} {eligibleCount === 1 ? 'Investment' : 'Investments'}

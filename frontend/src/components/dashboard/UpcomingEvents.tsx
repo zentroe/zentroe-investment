@@ -125,7 +125,7 @@ export default function UpcomingEvents() {
               <p className="text-sm font-medium text-gray-900 truncate group-hover:text-primary transition-colors">
                 {event.title}
               </p>
-              <div className="flex items-center mt-2 text-xs text-gray-500">
+              <div className="flex items-center mt-2 text-sm text-gray-500">
                 <Clock size={12} className="mr-1" />
                 <span>{event.time}</span>
                 <span className="mx-2">•</span>

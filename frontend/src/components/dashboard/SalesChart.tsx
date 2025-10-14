@@ -109,12 +109,12 @@ export default function SalesChart() {
                 dataKey="date"
                 axisLine={false}
                 tickLine={false}
-                className="text-xs"
+                className="text-sm"
               />
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                className="text-xs"
+                className="text-sm"
               />
               <Tooltip
                 contentStyle={{

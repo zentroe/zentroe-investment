@@ -152,7 +152,7 @@ export default function MorePersonalInfo() {
               className="w-full"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 mt-1">
               Your SSN is encrypted and stored securely
             </p>
           </div>
@@ -170,7 +170,7 @@ export default function MorePersonalInfo() {
               className="w-full"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 mt-1">
               You must be at least 18 years old to invest
             </p>
           </div>

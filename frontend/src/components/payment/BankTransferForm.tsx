@@ -325,7 +325,7 @@ export default function BankTransferForm({
                 <CheckCircle className="w-4 h-4 text-green-600" />
                 <div className="text-sm text-green-700">
                   <p className="font-medium">Reference Code: {bankDetails.referenceCode}</p>
-                  <p className="text-xs">Use this code in your transfer description</p>
+                  <p className="text-sm">Use this code in your transfer description</p>
                 </div>
               </div>
             </div>
@@ -452,7 +452,7 @@ export default function BankTransferForm({
                 <p className="text-sm text-gray-600">
                   {receiptFile ? receiptFile.name : 'Click to upload receipt'}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 mt-1">
                   JPEG, PNG, or PDF (max 5MB)
                 </p>
               </label>
@@ -465,7 +465,7 @@ export default function BankTransferForm({
                 <CheckCircle className="w-4 h-4 text-green-600" />
                 <div className="text-sm text-green-700">
                   <p className="font-medium">File uploaded: {receiptFile.name}</p>
-                  <p className="text-xs">Size: {(receiptFile.size / 1024).toFixed(1)} KB</p>
+                  <p className="text-sm">Size: {(receiptFile.size / 1024).toFixed(1)} KB</p>
                 </div>
               </div>
             </div>
@@ -474,7 +474,7 @@ export default function BankTransferForm({
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
             <div className="flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5" />
-              <div className="text-xs text-amber-700">
+              <div className="text-sm text-amber-700">
                 <p className="font-medium">Verification Required</p>
                 <p>Admin will verify your transfer before activating the investment.</p>
               </div>

@@ -102,7 +102,7 @@ export default function PropertiesGrid() {
                   {property.title}
                 </h3>
                 <p className="text-muted-foreground text-sm">{property.location}</p>
-                <span className="inline-block mt-2 px-3 py-1 text-xs bg-muted text-darkPrimary rounded-full">
+                <span className="inline-block mt-2 px-3 py-1 text-sm bg-muted text-darkPrimary rounded-full">
                   {property.category}
                 </span>
               </div>

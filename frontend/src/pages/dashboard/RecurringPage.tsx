@@ -223,9 +223,9 @@ export default function RecurringPage() {
 
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</p>
+                        <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Status</p>
                         <div className="flex items-center mt-1">
-                          <span className={`px-2 py-1 text-xs rounded-full ${investment.status === "Active"
+                          <span className={`px-2 py-1 text-sm rounded-full ${investment.status === "Active"
                             ? "bg-green-100 text-green-800"
                             : investment.status === "Setup Required"
                               ? "bg-yellow-100 text-yellow-800"
@@ -237,14 +237,14 @@ export default function RecurringPage() {
                       </div>
 
                       <div>
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Invested</p>
+                        <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Invested</p>
                         <p className="text-sm font-semibold text-gray-900 mt-1">
                           ${investment.totalInvested.toLocaleString()}
                         </p>
                       </div>
 
                       <div>
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Monthly Est.</p>
+                        <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Monthly Est.</p>
                         <p className="text-sm font-semibold text-gray-900 mt-1">
                           ${(investment.amount * (investment.frequency === "Monthly" ? 1 : investment.frequency === "Bi-weekly" ? 2 : investment.frequency === "Weekly" ? 4 : 1)).toLocaleString()}
                         </p>

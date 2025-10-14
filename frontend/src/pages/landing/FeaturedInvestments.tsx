@@ -109,7 +109,7 @@ export default function FeaturedInvestments() {
           </div>
         </div>
         {/* Disclaimer / Info Text */}
-        <div className="mt-12 text-xs text-gray-500 max-w-5xl mx-auto text-center leading-relaxed">
+        <div className="mt-12 text-sm text-gray-500 max-w-5xl mx-auto text-center leading-relaxed">
           The above investment opportunities represent curated real estate assets managed by Zentroe Investments as of April 2025.
           Please note that investment returns are not guaranteed and past performance does not indicate future results.
           All investments carry inherent risks, including the risk of total loss.

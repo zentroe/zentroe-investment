@@ -31,8 +31,8 @@ export default function HeroSection() {
           </Link>
         </div>
 
-        <p className="text-xs text-gray-500 mt-4">
-          Start investing in less than 5 minutes and with as little as $10.
+        <p className="text-sm text-gray-500 mt-4">
+          Start investing in less than 5 minutes.
         </p>
 
         {/* Trust badges */}
@@ -43,7 +43,7 @@ export default function HeroSection() {
           className="mt-8 flex mb-8 w-full flex-wrap items-center justify-center md:justify-start gap-6"
         >
           {["nerdwallet", "apple", "google", "investopedia"].map((item) => (
-            <div key={item} className="flex flex-col items-center gap-1 text-gray-600 text-sm">
+            <div key={item} className="flex flex-col items-center gap-1 text-gray-600 text-lg">
               <span className="font-semibold capitalize">{item}</span>
               <span className="text-[#D5BD90] text-md">★★★★★</span>
             </div>

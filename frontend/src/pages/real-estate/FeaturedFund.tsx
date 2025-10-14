@@ -34,7 +34,7 @@ export default function FeaturedFund() {
                 className="bg-[#222221] px-6 md:py-8 py-4 flex md:flex-col flex-row-reverse justify-between md:justify-center items-start text-left cursor-pointer transition"
               >
                 <div className="text-4xl font-atlantix tracking-wider font-bold">{item.value}</div>
-                <div className="text-xs text-orange-100 py-1 border-b-1 border-amber-100/30 mt-2 leading-tight">{item.label}</div>
+                <div className="text-sm text-orange-100 py-1 border-b-1 border-amber-100/30 mt-2 leading-tight">{item.label}</div>
               </motion.div>
             ))}
           </div>

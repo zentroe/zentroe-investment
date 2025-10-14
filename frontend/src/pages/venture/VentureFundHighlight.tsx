@@ -61,7 +61,7 @@ export default function VentureFundHighlight() {
               <p className="text-white text-lg font-medium mb-2">{sector}</p>
               <Link
                 to="#"
-                className="text-xs text-primary inline-flex items-center gap-1 font-semibold hover:underline"
+                className="text-sm text-primary inline-flex items-center gap-1 font-semibold hover:underline"
               >
                 Learn more <ArrowRight size={14} />
               </Link>
@@ -69,7 +69,7 @@ export default function VentureFundHighlight() {
           ))}
         </div>
 
-        <p className="text-xs text-gray-500 mt-6 text-right">
+        <p className="text-sm text-gray-500 mt-6 text-right">
           Figures as of 2/10/2025
         </p>
       </div>

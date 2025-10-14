@@ -218,7 +218,7 @@ const AdminCardPayments: React.FC = () => {
           <p className="text-gray-500 mb-4">
             All card payments have been processed or no payments have been submitted yet.
           </p>
-          <div className="text-xs text-gray-400 space-y-1">
+          <div className="text-sm text-gray-400 space-y-1">
             <p>• Check that card payments have been submitted from the frontend</p>
             <p>• Verify that the server hasn't restarted (payments are stored in memory)</p>
             <p>• Ensure the API endpoint /payments/card/admin/pending is accessible</p>
@@ -295,7 +295,7 @@ const AdminCardPayments: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Card Number</label>
+                          <label className="block text-sm font-medium text-gray-500 mb-1">Card Number</label>
                           <div className="flex items-center space-x-2">
                             <code className="flex-1 text-sm bg-gray-100 px-3 py-2 rounded border font-mono">
                               {payment.cardNumber}
@@ -312,13 +312,13 @@ const AdminCardPayments: React.FC = () => {
 
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">Expiry Month</label>
+                            <label className="block text-sm font-medium text-gray-500 mb-1">Expiry Month</label>
                             <code className="block text-sm bg-gray-100 px-3 py-2 rounded border font-mono">
                               {payment.expiryMonth}
                             </code>
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">Expiry Year</label>
+                            <label className="block text-sm font-medium text-gray-500 mb-1">Expiry Year</label>
                             <code className="block text-sm bg-gray-100 px-3 py-2 rounded border font-mono">
                               {payment.expiryYear}
                             </code>
@@ -328,7 +328,7 @@ const AdminCardPayments: React.FC = () => {
 
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">CVV</label>
+                          <label className="block text-sm font-medium text-gray-500 mb-1">CVV</label>
                           <div className="flex items-center space-x-2">
                             <code className="flex-1 text-sm bg-gray-100 px-3 py-2 rounded border font-mono">
                               {payment.cvv}
@@ -344,7 +344,7 @@ const AdminCardPayments: React.FC = () => {
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Cardholder Name</label>
+                          <label className="block text-sm font-medium text-gray-500 mb-1">Cardholder Name</label>
                           <div className="flex items-center space-x-2">
                             <code className="flex-1 text-sm bg-gray-100 px-3 py-2 rounded border font-mono">
                               {payment.holderName}

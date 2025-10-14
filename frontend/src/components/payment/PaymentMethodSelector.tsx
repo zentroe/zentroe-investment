@@ -145,7 +145,7 @@ export default function PaymentMethodSelector({
               onClick={() => setSelectedMethod(method.id)}
             >
               {method.recommended && (
-                <div className="absolute -top-2 left-4 bg-primary text-white text-xs px-2 py-1 rounded">
+                <div className="absolute -top-2 left-4 bg-primary text-white text-sm px-2 py-1 rounded">
                   Recommended
                 </div>
               )}
@@ -174,7 +174,7 @@ export default function PaymentMethodSelector({
 
                   <p className="text-sm text-gray-600 mb-3">{method.description}</p>
 
-                  <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="font-medium text-gray-700">Processing Time:</span>
                       <p className="text-gray-600">{method.processingTime}</p>

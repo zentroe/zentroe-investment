@@ -511,7 +511,7 @@ const PaymentPageNew: React.FC = () => {
                           Wallet Address
                         </label>
                         <div className="flex items-center space-x-2">
-                          <code className="flex-1 text-xs bg-white px-3 py-2 rounded border font-mono break-all">
+                          <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono break-all">
                             {selectedWallet.address || 'Address not available'}
                           </code>
                           <button
@@ -605,7 +605,7 @@ const PaymentPageNew: React.FC = () => {
                           </div>
                         )}
 
-                        <div className="text-xs text-gray-600">
+                        <div className="text-sm text-gray-600">
                           • Supported formats: JPG, PNG, GIF
                           • Maximum file size: 5MB
                           • Make sure transaction details are clearly visible
@@ -835,10 +835,10 @@ const PaymentPageNew: React.FC = () => {
                     (selectedMethod === 'crypto' && !transactionScreenshot)
                   }
                   className={`px-6 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 ${confirmingPayment ||
-                      uploadingScreenshot ||
-                      (selectedMethod === 'crypto' && !transactionScreenshot)
-                      ? 'bg-gray-400 cursor-not-allowed text-white'
-                      : 'bg-primary hover:bg-primary/90 text-white'
+                    uploadingScreenshot ||
+                    (selectedMethod === 'crypto' && !transactionScreenshot)
+                    ? 'bg-gray-400 cursor-not-allowed text-white'
+                    : 'bg-primary hover:bg-primary/90 text-white'
                     }`}
                 >
                   {confirmingPayment ? (
@@ -916,7 +916,7 @@ const PaymentPageNew: React.FC = () => {
                   Go to Dashboard
                 </Button>
 
-                <div className="text-center text-xs text-gray-500">
+                <div className="text-center text-sm text-gray-500">
                   <p>
                     Need help?{' '}
                     <Link

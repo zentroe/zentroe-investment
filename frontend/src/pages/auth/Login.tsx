@@ -170,7 +170,7 @@ export default function Login() {
             >
               {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
             </button>
-            <a href="#" className="text-xs text-primary hover:underline self-end mt-1">
+            <a href="#" className="text-sm text-primary hover:underline self-end mt-1">
               Forgot password?
             </a>
           </div>

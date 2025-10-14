@@ -175,7 +175,7 @@ const PaymentStatusPage: React.FC = () => {
                 <h2 className="text-lg font-semibold">
                   Payment {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
                 </h2>
-                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
+                <span className={`inline-block px-2 py-1 rounded-full text-sm font-medium ${getStatusColor(payment.status)}`}>
                   {payment.status.toUpperCase()}
                 </span>
               </div>

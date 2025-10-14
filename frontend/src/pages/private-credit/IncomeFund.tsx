@@ -41,7 +41,7 @@ export default function IncomeFund() {
                 className="bg-[#222221] px-6 md:py-8 py-4 flex md:flex-col flex-row-reverse justify-between md:justify-center items-start text-left transition"
               >
                 <div className="text-4xl font-atlantix font-bold">{item.value}</div>
-                <div className="text-xs text-orange-100 border-b border-amber-100/30 mt-2 leading-tight">{item.label}</div>
+                <div className="text-sm text-orange-100 border-b border-amber-100/30 mt-2 leading-tight">{item.label}</div>
               </motion.div>
             ))}
           </div>

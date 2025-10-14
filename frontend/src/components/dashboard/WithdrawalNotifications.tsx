@@ -102,7 +102,7 @@ const WithdrawalNotifications: React.FC = () => {
           <Button
             variant="outline"
             onClick={() => setShowAll(!showAll)}
-            className="text-xs px-3 py-1"
+            className="text-sm px-3 py-1"
           >
             {showAll ? 'Show Less' : `View All (${withdrawals.length})`}
           </Button>
@@ -124,11 +124,11 @@ const WithdrawalNotifications: React.FC = () => {
                   {formatCurrency(withdrawal.netAmount)} withdrawal {withdrawal.status} ({getTimeAgo(new Date(withdrawal.requestedAt))})
                 </p>
                 <div className="flex items-center gap-2 mt-2">
-                  <Badge className="bg-blue-100 text-blue-800 text-xs">
+                  <Badge className="bg-blue-100 text-blue-800 text-sm">
                     {withdrawal.status}
                   </Badge>
                   {withdrawal.transactionId && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-sm">
                       ID: {withdrawal.transactionId.slice(-6)}
                     </Badge>
                   )}

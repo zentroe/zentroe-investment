@@ -324,7 +324,7 @@ const AdminDashboardOverview: React.FC = () => {
                     {getStatusIcon(activity.status)}
                     <div>
                       <p className="text-sm font-medium text-gray-900">{activity.description}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm text-gray-500">
                         {activity.user.name} • {activity.user.email}
                       </p>
                     </div>
@@ -335,10 +335,10 @@ const AdminDashboardOverview: React.FC = () => {
                         {formatCurrency(activity.amount)}
                       </span>
                     )}
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(activity.status)}`}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getStatusColor(activity.status)}`}>
                       {activity.status}
                     </span>
-                    <span className="text-xs text-gray-500">{activity.timestamp}</span>
+                    <span className="text-sm text-gray-500">{activity.timestamp}</span>
                   </div>
                 </div>
               ))

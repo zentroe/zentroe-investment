@@ -98,7 +98,7 @@ export default function DashboardSidebar() {
           {/* Navigation */}
           <nav className="flex-1 p-4 overflow-y-auto">
             <div className="space-y-2">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-4">
+              <p className="text-sm font-medium text-gray-500 uppercase tracking-wider px-3 mb-4">
                 Main
               </p>
               {navigationItems.slice(0, 1).map((item) => {
@@ -122,7 +122,7 @@ export default function DashboardSidebar() {
                 );
               })}
 
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-4 mt-8">
+              <p className="text-sm font-medium text-gray-500 uppercase tracking-wider px-3 mb-4 mt-8">
                 Investments
               </p>
               {navigationItems.slice(1, 5).map((item) => {
@@ -146,7 +146,7 @@ export default function DashboardSidebar() {
                 );
               })}
 
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-4 mt-8">
+              <p className="text-sm font-medium text-gray-500 uppercase tracking-wider px-3 mb-4 mt-8">
                 Account
               </p>
               {navigationItems.slice(5).map((item) => {
@@ -183,8 +183,8 @@ export default function DashboardSidebar() {
               {isLoggingOut ? 'Logging out...' : 'Logout'}
             </button>
             <div className="text-center">
-              <p className="text-xs text-gray-500">Zentroe Investment Platform</p>
-              <p className="text-xs text-gray-400 mt-1">v2.1.0</p>
+              <p className="text-sm text-gray-500">Zentroe Investment Platform</p>
+              <p className="text-sm text-gray-400 mt-1">v2.1.0</p>
             </div>
           </div>
         </div>

@@ -267,7 +267,7 @@ export default function EarningsPage() {
                           <span className="font-medium text-gray-900">{earning.source}</span>
                         </td>
                         <td className="py-4 px-4">
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
                             {earning.type}
                           </span>
                         </td>
@@ -275,7 +275,7 @@ export default function EarningsPage() {
                           ${earning.amount.toFixed(2)}
                         </td>
                         <td className="py-4 px-4">
-                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                          <span className="px-2 py-1 bg-green-100 text-green-800 text-sm rounded-full">
                             {earning.status}
                           </span>
                         </td>

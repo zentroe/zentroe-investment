@@ -226,22 +226,22 @@ const AdminCryptoPayments: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   User & Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Cryptocurrency
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Transaction
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -274,22 +274,22 @@ const AdminCryptoPayments: React.FC = () => {
                         <div className="text-sm font-medium text-gray-900 capitalize">
                           {payment.cryptocurrency}
                         </div>
-                        <div className="text-xs text-gray-500">{payment.network}</div>
+                        <div className="text-sm text-gray-500">{payment.network}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
-                      <div className="font-mono text-xs">
+                      <div className="font-mono text-sm">
                         {payment.transactionHash.slice(0, 10)}...{payment.transactionHash.slice(-10)}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-sm text-gray-500 mt-1">
                         {payment.confirmations} confirmations
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getStatusColor(payment.status)}`}>
                       {getStatusIcon(payment.status)}
                       <span className="ml-1 capitalize">{payment.status}</span>
                     </span>
@@ -442,7 +442,7 @@ const AdminCryptoPayments: React.FC = () => {
                     <div>
                       <span className="text-sm font-medium text-gray-500">Transaction Hash:</span>
                       <div className="flex items-center mt-1">
-                        <code className="text-xs bg-white px-2 py-1 rounded border font-mono break-all flex-1">
+                        <code className="text-sm bg-white px-2 py-1 rounded border font-mono break-all flex-1">
                           {selectedPayment.transactionHash}
                         </code>
                         <button
@@ -458,7 +458,7 @@ const AdminCryptoPayments: React.FC = () => {
                       <div>
                         <span className="text-sm font-medium text-gray-500">Company Wallet:</span>
                         <div className="flex items-center mt-1">
-                          <code className="text-xs bg-white px-2 py-1 rounded border font-mono break-all flex-1">
+                          <code className="text-sm bg-white px-2 py-1 rounded border font-mono break-all flex-1">
                             {selectedPayment.companyWalletAddress}
                           </code>
                           <button
@@ -473,7 +473,7 @@ const AdminCryptoPayments: React.FC = () => {
                       <div>
                         <span className="text-sm font-medium text-gray-500">User Wallet:</span>
                         <div className="flex items-center mt-1">
-                          <code className="text-xs bg-white px-2 py-1 rounded border font-mono break-all flex-1">
+                          <code className="text-sm bg-white px-2 py-1 rounded border font-mono break-all flex-1">
                             {selectedPayment.userWalletAddress || 'Not provided'}
                           </code>
                           {selectedPayment.userWalletAddress && (

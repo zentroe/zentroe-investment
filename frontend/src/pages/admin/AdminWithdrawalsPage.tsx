@@ -306,7 +306,7 @@ const AdminWithdrawalsPage: React.FC = () => {
                         Investment: {formatCurrency(withdrawal.userInvestment.amount)}
                       </div>
 
-                      <div className="flex gap-4 text-xs text-gray-500">
+                      <div className="flex gap-4 text-sm text-gray-500">
                         <span>Principal: {formatCurrency(withdrawal.principalAmount)}</span>
                         <span>Profits: {formatCurrency(withdrawal.profitAmount)}</span>
                         <span>Fees: {formatCurrency(withdrawal.fees)}</span>

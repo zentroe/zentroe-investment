@@ -5,7 +5,7 @@ export default function AboutHero() {
     <section className="w-full max-w-6xl mx-auto bg-background text-center">
       {/* Text Content */}
       <div className="max-w-3xl mx-auto px-4 pt-26 pb-12 md:pb-20">
-        <h2 className="uppercase text-xs tracking-wide text-gray-500 mb-4">
+        <h2 className="uppercase text-sm tracking-wide text-gray-500 mb-4">
           About Us
         </h2>
         <h1 className="text-3xl md:text-5xl font-sectra font-medium leading-tight text-darkPrimary mb-4">

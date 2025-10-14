@@ -400,7 +400,7 @@ const AdminCryptoWallets: React.FC = () => {
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">Wallet Address</label>
               <div className="flex items-center space-x-2">
-                <code className="flex-1 text-xs bg-gray-50 px-2 py-1 rounded border text-gray-800 break-all">
+                <code className="flex-1 text-sm bg-gray-50 px-2 py-1 rounded border text-gray-800 break-all">
                   {wallet.address}
                 </code>
                 <button
@@ -565,7 +565,7 @@ const AdminCryptoWallets: React.FC = () => {
                         <div className="text-blue-600 text-sm">Uploading...</div>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-sm text-gray-500 mt-1">
                       Upload an image file (PNG, JPG, SVG). Max 5MB.
                       {!editingWallet && !selectedFile && (!formData.icon || formData.icon.trim() === '') && (
                         <span className="text-red-500 ml-1">This field is required.</span>

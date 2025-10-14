@@ -304,13 +304,13 @@ const AdminBankAccounts: React.FC = () => {
 
             <div className="space-y-3 mb-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Account Name</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">Account Name</label>
                 <p className="text-sm text-gray-900">{account.accountName}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Account Number</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Account Number</label>
                   <div className="flex items-center space-x-2">
                     <code className="text-sm bg-gray-50 px-2 py-1 rounded border text-gray-800">
                       {maskAccountNumber(account.accountNumber)}
@@ -326,7 +326,7 @@ const AdminBankAccounts: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Routing Number</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Routing Number</label>
                   <div className="flex items-center space-x-2">
                     <code className="text-sm bg-gray-50 px-2 py-1 rounded border text-gray-800">
                       {account.routingNumber}
@@ -346,7 +346,7 @@ const AdminBankAccounts: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   {account.swiftCode && (
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">SWIFT Code</label>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">SWIFT Code</label>
                       <div className="flex items-center space-x-2">
                         <code className="text-sm bg-gray-50 px-2 py-1 rounded border text-gray-800">
                           {account.swiftCode}
@@ -364,7 +364,7 @@ const AdminBankAccounts: React.FC = () => {
 
                   {account.iban && (
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">IBAN</label>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">IBAN</label>
                       <div className="flex items-center space-x-2">
                         <code className="text-sm bg-gray-50 px-2 py-1 rounded border text-gray-800 break-all">
                           {account.iban}

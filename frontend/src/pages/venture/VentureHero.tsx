@@ -43,7 +43,7 @@ export default function VentureHero() {
 
       {/* Featured companies section */}
       <div className="max-w-6xl mx-auto mt-16 border-t border-gray-800 pt-10 text-center">
-        <p className="text-xs text-gray-400 uppercase tracking-wide mb-6">
+        <p className="text-sm text-gray-400 uppercase tracking-wide mb-6">
           Featured Companies
         </p>
         <div className="flex flex-wrap justify-center items-center gap-14">

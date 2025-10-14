@@ -84,7 +84,7 @@ const WithdrawalsPage: React.FC = () => {
               <div className="mt-2">
                 <Link
                   to="/dashboard/kyc"
-                  className="inline-flex items-center text-xs font-medium text-red-700 hover:text-red-800 underline"
+                  className="inline-flex items-center text-sm font-medium text-red-700 hover:text-red-800 underline"
                 >
                   Complete KYC Verification →
                 </Link>

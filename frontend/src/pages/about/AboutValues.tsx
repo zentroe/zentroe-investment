@@ -37,7 +37,7 @@ export default function AboutValues() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-xs uppercase tracking-wide text-gray-500 mb-4">
+          <h2 className="text-sm uppercase tracking-wide text-gray-500 mb-4">
             Our Values
           </h2>
           <h3 className="text-3xl md:text-4xl font-sectra font-medium text-darkPrimary leading-tight mb-6">

@@ -42,7 +42,7 @@ export default function OtherPlans({ investmentPlans, recommendedPlanId, onPlanP
             <div className="pr-4">
               <div className="flex items-center gap-3 mb-1">
                 <p className="font-medium text-darkPrimary">{plan.name}</p>
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 text-sm">
                   <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full">
                     {plan.profitPercentage}% profit
                   </span>

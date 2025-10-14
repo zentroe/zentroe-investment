@@ -37,7 +37,7 @@ export default function FinalCallToAction() {
               alt="Farmland Preview"
               className="w-full h-full object-cover"
             />
-            <div className="absolute top-3 left-3 bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium shadow">
+            <div className="absolute top-3 left-3 bg-amber-100 text-amber-800 text-sm px-3 py-1 rounded-full font-medium shadow">
               Open
             </div>
           </div>

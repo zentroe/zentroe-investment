@@ -308,7 +308,7 @@ export default function CryptoPaymentForm({
               <div className="flex justify-between items-center">
                 <span className="text-blue-700">Wallet Address:</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-medium text-xs bg-white px-2 py-1 rounded">
+                  <span className="font-mono font-medium text-sm bg-white px-2 py-1 rounded">
                     {walletInfo.address}
                   </span>
                   <Button
@@ -350,7 +350,7 @@ export default function CryptoPaymentForm({
           <div className="bg-center bg-white border-2 border-gray-200 rounded-lg p-6 text-center">
             <QrCode className="w-16 h-16 mx-auto mb-4 text-gray-400" />
             <p className="text-sm text-gray-600 mb-2">QR Code for wallet address</p>
-            <div className="font-mono text-xs bg-gray-50 p-2 rounded break-all">
+            <div className="font-mono text-sm bg-gray-50 p-2 rounded break-all">
               {walletInfo.address}
             </div>
           </div>
@@ -421,7 +421,7 @@ export default function CryptoPaymentForm({
                 <p className="font-medium">
                   {cryptoOptions.find(c => c.value === selectedCrypto)?.label}
                 </p>
-                <p className="text-xs">Amount: {calculateCryptoAmount(selectedCrypto)} {selectedCrypto.toUpperCase()}</p>
+                <p className="text-sm">Amount: {calculateCryptoAmount(selectedCrypto)} {selectedCrypto.toUpperCase()}</p>
               </div>
             </div>
 
@@ -434,10 +434,10 @@ export default function CryptoPaymentForm({
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setCryptoDetails(prev => ({ ...prev, transactionHash: e.target.value }))
                 }
-                className="font-mono text-xs"
+                className="font-mono text-sm"
                 required
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-sm text-gray-500">
                 The transaction ID from your wallet or exchange
               </p>
             </div>
@@ -451,10 +451,10 @@ export default function CryptoPaymentForm({
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setCryptoDetails(prev => ({ ...prev, userWalletAddress: e.target.value }))
                 }
-                className="font-mono text-xs"
+                className="font-mono text-sm"
                 required
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-sm text-gray-500">
                 The wallet address you sent from
               </p>
             </div>
@@ -471,7 +471,7 @@ export default function CryptoPaymentForm({
                 type="number"
                 step="0.00000001"
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-sm text-gray-500">
                 Transaction fee paid (for verification)
               </p>
             </div>
@@ -534,7 +534,7 @@ export default function CryptoPaymentForm({
                 <p className="text-sm text-gray-600">
                   {receiptFile ? receiptFile.name : 'Click to upload proof'}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 mt-1">
                   JPEG, PNG, or PDF (max 5MB)
                 </p>
               </label>
@@ -547,7 +547,7 @@ export default function CryptoPaymentForm({
                 <CheckCircle className="w-4 h-4 text-green-600" />
                 <div className="text-sm text-green-700">
                   <p className="font-medium">File uploaded: {receiptFile.name}</p>
-                  <p className="text-xs">Size: {(receiptFile.size / 1024).toFixed(1)} KB</p>
+                  <p className="text-sm">Size: {(receiptFile.size / 1024).toFixed(1)} KB</p>
                 </div>
               </div>
             </div>
@@ -556,7 +556,7 @@ export default function CryptoPaymentForm({
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
             <div className="flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5" />
-              <div className="text-xs text-amber-700">
+              <div className="text-sm text-amber-700">
                 <p className="font-medium">Blockchain Verification</p>
                 <p>Admin will verify the transaction on the blockchain before activating your investment.</p>
               </div>

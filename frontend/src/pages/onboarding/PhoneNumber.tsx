@@ -85,7 +85,7 @@ export default function PhoneNumber() {
               className="w-full"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 mt-1">
               Please include your country code if outside the US
             </p>
           </div>

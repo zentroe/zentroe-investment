@@ -257,7 +257,7 @@ export default function CardPaymentForm({
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <div className="flex items-start gap-2">
               <Shield className="w-4 h-4 text-blue-600 mt-0.5" />
-              <div className="text-xs text-blue-700">
+              <div className="text-sm text-blue-700">
                 <p className="font-medium">Secure Payment</p>
                 <p>Your card details are encrypted and never stored on our servers.</p>
               </div>
@@ -279,7 +279,7 @@ export default function CardPaymentForm({
               />
               {cardBrand !== 'Unknown' && (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <span className="text-xs font-medium text-gray-500">{cardBrand}</span>
+                  <span className="text-sm font-medium text-gray-500">{cardBrand}</span>
                 </div>
               )}
             </div>
@@ -395,7 +395,7 @@ export default function CardPaymentForm({
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
             <div className="flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5" />
-              <div className="text-xs text-amber-700">
+              <div className="text-sm text-amber-700">
                 <p className="font-medium">Manual Verification Required</p>
                 <p>Card payments require admin verification before investment activation.</p>
               </div>

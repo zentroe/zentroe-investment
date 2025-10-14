@@ -315,19 +315,19 @@ const AdminKYCPage: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   User
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Documents
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Submitted
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -454,7 +454,7 @@ const AdminKYCPage: React.FC = () => {
                           <span className="font-medium text-sm">
                             {doc.type === 'drivers_license' ? 'Driver\'s License' : 'International Passport'}
                           </span>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-sm text-gray-500">
                             {formatDate(doc.uploadedAt)}
                           </span>
                         </div>
@@ -462,7 +462,7 @@ const AdminKYCPage: React.FC = () => {
                         <div className="space-y-2">
                           {doc.frontImageUrl && (
                             <div>
-                              <p className="text-xs text-gray-500 mb-1">Front:</p>
+                              <p className="text-sm text-gray-500 mb-1">Front:</p>
                               <img
                                 src={doc.frontImageUrl}
                                 alt="Document front"
@@ -474,7 +474,7 @@ const AdminKYCPage: React.FC = () => {
 
                           {doc.backImageUrl && (
                             <div>
-                              <p className="text-xs text-gray-500 mb-1">Back:</p>
+                              <p className="text-sm text-gray-500 mb-1">Back:</p>
                               <img
                                 src={doc.backImageUrl}
                                 alt="Document back"

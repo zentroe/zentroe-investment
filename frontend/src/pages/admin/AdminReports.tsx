@@ -278,7 +278,7 @@ const AdminReports: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">Cryptocurrency</p>
-                  <p className="text-xs text-gray-500">{paymentStats.crypto.count} transactions</p>
+                  <p className="text-sm text-gray-500">{paymentStats.crypto.count} transactions</p>
                 </div>
               </div>
               <div className="text-right">
@@ -296,7 +296,7 @@ const AdminReports: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">Bank Transfer</p>
-                  <p className="text-xs text-gray-500">{paymentStats.bank.count} transactions</p>
+                  <p className="text-sm text-gray-500">{paymentStats.bank.count} transactions</p>
                 </div>
               </div>
               <div className="text-right">
@@ -314,7 +314,7 @@ const AdminReports: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">Card Payment</p>
-                  <p className="text-xs text-gray-500">{paymentStats.card.count} transactions</p>
+                  <p className="text-sm text-gray-500">{paymentStats.card.count} transactions</p>
                 </div>
               </div>
               <div className="text-right">
@@ -340,7 +340,7 @@ const AdminReports: React.FC = () => {
                 <Users className="h-5 w-5 text-blue-600" />
                 <div className="text-left">
                   <p className="text-sm font-medium text-gray-900">User Activity Report</p>
-                  <p className="text-xs text-gray-500">Registration and engagement metrics</p>
+                  <p className="text-sm text-gray-500">Registration and engagement metrics</p>
                 </div>
               </div>
               <Eye className="h-4 w-4 text-gray-400" />
@@ -351,7 +351,7 @@ const AdminReports: React.FC = () => {
                 <DollarSign className="h-5 w-5 text-green-600" />
                 <div className="text-left">
                   <p className="text-sm font-medium text-gray-900">Financial Report</p>
-                  <p className="text-xs text-gray-500">Revenue and transaction analysis</p>
+                  <p className="text-sm text-gray-500">Revenue and transaction analysis</p>
                 </div>
               </div>
               <Eye className="h-4 w-4 text-gray-400" />
@@ -362,7 +362,7 @@ const AdminReports: React.FC = () => {
                 <BarChart3 className="h-5 w-5 text-purple-600" />
                 <div className="text-left">
                   <p className="text-sm font-medium text-gray-900">Performance Report</p>
-                  <p className="text-xs text-gray-500">KPIs and growth metrics</p>
+                  <p className="text-sm text-gray-500">KPIs and growth metrics</p>
                 </div>
               </div>
               <Eye className="h-4 w-4 text-gray-400" />

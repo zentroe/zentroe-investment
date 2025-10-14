@@ -96,7 +96,7 @@ export default function TotalSales() {
                     <span className="text-sm text-gray-600">{investment.investmentPlan.name}</span>
                     <div className="flex items-center mt-1">
                       <ArrowUpRight size={14} className="text-green-600 mr-1" />
-                      <span className="text-xs text-green-600 font-medium">+{profitPercentage}%</span>
+                      <span className="text-sm text-green-600 font-medium">+{profitPercentage}%</span>
                     </div>
                   </div>
                   <span className="text-lg font-bold text-gray-900">

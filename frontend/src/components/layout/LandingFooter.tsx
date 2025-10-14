@@ -1,7 +1,7 @@
 // src/components/LandingFooter.tsx
 // import { motion } from "framer-motion";
 import zenLogoDark from "@/assets/zenLogoDark.png";
-import { FaLinkedin, FaInstagram, FaXTwitter } from "react-icons/fa6";
+import { FaInstagram, FaXTwitter } from "react-icons/fa6";
 
 export default function LandingFooter() {
   return (
@@ -17,9 +17,8 @@ export default function LandingFooter() {
           </div>
           <p>Contact us</p>
           <div className="flex gap-4 text-white">
-            <a href="#"><FaLinkedin size={20} /></a>
-            <a href="#"><FaInstagram size={20} /></a>
-            <a href="#"><FaXTwitter size={20} /></a>
+            <a href="https://www.instagram.com/joinzentroe/"><FaInstagram size={20} /></a>
+            <a href="https://x.com/joinzentroe"><FaXTwitter size={20} /></a>
           </div>
         </div>
 
@@ -34,7 +33,7 @@ export default function LandingFooter() {
         </div>
 
         {/* Column 3: Resources */}
-        <div className="space-y-4">
+        {/* <div className="space-y-4">
           <h4 className="text-white font-semibold mb-4">Resources</h4>
           <ul className="space-y-2">
             <li><a href="#">Why Zentroe</a></li>
@@ -42,15 +41,15 @@ export default function LandingFooter() {
             <li><a href="#">Help Center</a></li>
             <li><a href="#">Articles</a></li>
           </ul>
-        </div>
+        </div> */}
 
         {/* Column 4: Company */}
         <div className="space-y-4">
           <h4 className="text-white font-semibold mb-4">Company</h4>
           <ul className="space-y-2">
             <li><a href="/about">About Us</a></li>
-            <li><a href="#">Press</a></li>
-            <li><a href="#">Careers</a></li>
+            {/* <li><a href="#">Press</a></li>
+            <li><a href="#">Careers</a></li> */}
           </ul>
         </div>
 

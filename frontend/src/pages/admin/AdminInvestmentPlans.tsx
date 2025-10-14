@@ -325,25 +325,25 @@ const AdminInvestmentPlans: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Plan
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Category
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Returns & Duration
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Investment Range
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Priority
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -358,7 +358,7 @@ const AdminInvestmentPlans: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${plan.category === 'retirement' ? 'bg-blue-100 text-blue-800' :
+                        <span className={`inline-flex px-2 py-1 text-sm font-semibold rounded-full ${plan.category === 'retirement' ? 'bg-blue-100 text-blue-800' :
                           plan.category === 'starter' ? 'bg-green-100 text-green-800' :
                             plan.category === 'highGrowth' ? 'bg-purple-100 text-purple-800' :
                               'bg-gray-100 text-gray-800'
@@ -382,7 +382,7 @@ const AdminInvestmentPlans: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${plan.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        <span className={`inline-flex px-2 py-1 text-sm font-semibold rounded-full ${plan.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                           }`}>
                           {plan.isActive ? 'Active' : 'Inactive'}
                         </span>
@@ -501,7 +501,7 @@ const AdminInvestmentPlans: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="8.5"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Profit percentage after duration completes</p>
+                  <p className="text-sm text-gray-500 mt-1">Profit percentage after duration completes</p>
                 </div>
 
                 <div>
@@ -517,7 +517,7 @@ const AdminInvestmentPlans: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="365"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 mt-1">
                     Duration in days (365 = 1 year, 30 = 1 month, 7 = 1 week)
                   </p>
                 </div>
@@ -533,7 +533,7 @@ const AdminInvestmentPlans: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="0"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Higher numbers appear first in recommendations</p>
+                  <p className="text-sm text-gray-500 mt-1">Higher numbers appear first in recommendations</p>
                 </div>
 
                 <div>
@@ -666,7 +666,7 @@ const AdminInvestmentPlans: React.FC = () => {
                             </button>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Use color picker or enter hex code</p>
+                        <p className="text-sm text-gray-500 mt-1">Use color picker or enter hex code</p>
                       </div>
                     </div>
                   ))}

@@ -283,13 +283,13 @@ function getRecommendedPlan(userData: any, investmentPlans: InvestmentPlan[]): I
           <div className="flex flex-col md:flex-row justify-between py-6 gap-6">
             <Tabs value={tab} onValueChange={setTab} className="w-full md:w-2/3">
               <TabsList className="bg-muted border rounded-full overflow-hidden">
-                <TabsTrigger value="best" className="px-4 py-1.5 text-xs md:text-sm cursor-pointer">
+                <TabsTrigger value="best" className="px-4 py-1.5 text-sm md:text-sm cursor-pointer">
                   Best for
                 </TabsTrigger>
-                <TabsTrigger value="strategy" className="px-4 py-1.5 text-xs md:text-sm cursor-pointer">
+                <TabsTrigger value="strategy" className="px-4 py-1.5 text-sm md:text-sm cursor-pointer">
                   Strategy
                 </TabsTrigger>
-                <TabsTrigger value="assets" className="px-4 py-1.5 text-xs md:text-sm cursor-pointer">
+                <TabsTrigger value="assets" className="px-4 py-1.5 text-sm md:text-sm cursor-pointer">
                   Asset classes
                 </TabsTrigger>
               </TabsList>

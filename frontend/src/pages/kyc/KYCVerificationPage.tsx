@@ -440,8 +440,8 @@ const KYCVerificationPage: React.FC = () => {
                 </label>
                 <div
                   className={`border-2 border-dashed rounded-lg p-6 transition-colors ${dragOver.front
-                      ? 'border-primary bg-primary/10'
-                      : 'border-gray-300 hover:border-gray-400'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-gray-300 hover:border-gray-400'
                     }`}
                   onDragOver={(e) => handleDragOver(e, 'front')}
                   onDragLeave={(e) => handleDragLeave(e, 'front')}
@@ -453,7 +453,7 @@ const KYCVerificationPage: React.FC = () => {
                         <FileText className="w-6 h-6 text-primary" />
                         <div>
                           <p className="text-sm font-medium text-gray-900">{documents.frontImage.name}</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-sm text-gray-500">
                             {(documents.frontImage.size / 1024 / 1024).toFixed(2)} MB
                           </p>
                         </div>
@@ -483,7 +483,7 @@ const KYCVerificationPage: React.FC = () => {
                             if (file) await handleFileUpload(file, 'front');
                           }}
                         />
-                        <p className="text-xs text-gray-500 mt-1">PNG, JPG, WebP up to 10MB (auto-compressed)</p>
+                        <p className="text-sm text-gray-500 mt-1">PNG, JPG, WebP up to 10MB (auto-compressed)</p>
                       </div>
                     </div>
                   )}
@@ -498,8 +498,8 @@ const KYCVerificationPage: React.FC = () => {
                   </label>
                   <div
                     className={`border-2 border-dashed rounded-lg p-6 transition-colors ${dragOver.back
-                        ? 'border-primary bg-primary/10'
-                        : 'border-gray-300 hover:border-gray-400'
+                      ? 'border-primary bg-primary/10'
+                      : 'border-gray-300 hover:border-gray-400'
                       }`}
                     onDragOver={(e) => handleDragOver(e, 'back')}
                     onDragLeave={(e) => handleDragLeave(e, 'back')}
@@ -511,7 +511,7 @@ const KYCVerificationPage: React.FC = () => {
                           <FileText className="w-6 h-6 text-primary" />
                           <div>
                             <p className="text-sm font-medium text-gray-900">{documents.backImage.name}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-sm text-gray-500">
                               {(documents.backImage.size / 1024 / 1024).toFixed(2)} MB
                             </p>
                           </div>
@@ -541,7 +541,7 @@ const KYCVerificationPage: React.FC = () => {
                               if (file) await handleFileUpload(file, 'back');
                             }}
                           />
-                          <p className="text-xs text-gray-500 mt-1">PNG, JPG, WebP up to 10MB (auto-compressed)</p>
+                          <p className="text-sm text-gray-500 mt-1">PNG, JPG, WebP up to 10MB (auto-compressed)</p>
                         </div>
                       </div>
                     )}

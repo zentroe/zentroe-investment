@@ -34,7 +34,7 @@ const OnboardingProgress: React.FC<OnboardingProgressProps> = ({
 
       {!showStepName && (
         <div className="text-center mt-2">
-          <span className="text-xs text-gray-500">{percentage}% complete</span>
+          <span className="text-sm text-gray-500">{percentage}% complete</span>
         </div>
       )}
     </div>

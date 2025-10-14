@@ -175,8 +175,8 @@ export default function ReferralsPage() {
           <button
             onClick={handleCopyLink}
             className={`px-6 py-3 rounded-lg whitespace-nowrap transition-colors ${copySuccess
-                ? 'bg-green-600 text-white'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+              ? 'bg-green-600 text-white'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
           >
             {copySuccess ? (
@@ -348,7 +348,7 @@ export default function ReferralsPage() {
                       {new Date(referral.signupDate).toLocaleDateString()}
                     </td>
                     <td className="py-4 px-4">
-                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(referral.status)}`}>
+                      <span className={`px-2 py-1 text-sm rounded-full ${getStatusColor(referral.status)}`}>
                         {referral.status.charAt(0).toUpperCase() + referral.status.slice(1)}
                       </span>
                     </td>

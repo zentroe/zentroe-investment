@@ -339,23 +339,23 @@ const AdminActivityLogs: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <h4 className="text-sm font-medium text-gray-900">{log.action}</h4>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.category === 'auth' ? 'bg-blue-100 text-blue-800' :
-                          log.category === 'user' ? 'bg-green-100 text-green-800' :
-                            log.category === 'payment' ? 'bg-purple-100 text-purple-800' :
-                              log.category === 'system' ? 'bg-gray-100 text-gray-800' :
-                                'bg-red-100 text-red-800'
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${log.category === 'auth' ? 'bg-blue-100 text-blue-800' :
+                        log.category === 'user' ? 'bg-green-100 text-green-800' :
+                          log.category === 'payment' ? 'bg-purple-100 text-purple-800' :
+                            log.category === 'system' ? 'bg-gray-100 text-gray-800' :
+                              'bg-red-100 text-red-800'
                         }`}>
                         {log.category}
                       </span>
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-sm text-gray-500">
                       {formatTimestamp(log.timestamp)}
                     </div>
                   </div>
 
                   <p className="mt-1 text-sm text-gray-600">{log.description}</p>
 
-                  <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                  <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-500">
                     <span>IP: {log.ipAddress}</span>
                     {log.userId && <span>User ID: {log.userId}</span>}
                     {log.adminId && <span>Admin ID: {log.adminId}</span>}

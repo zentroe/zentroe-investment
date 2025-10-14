@@ -13,7 +13,7 @@ import {
 } from 'chart.js';
 import { getProfitDashboard } from '@/services/userInvestmentService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp} from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 
 // Register ChartJS components
 ChartJS.register(
@@ -298,9 +298,9 @@ export default function InvestmentGrowthChart() {
                 <button
                   key={days}
                   onClick={() => setTimeframe(days)}
-                  className={`px-3 py-1 text-xs rounded-md transition-colors ${timeframe === days
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${timeframe === days
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                     }`}
                 >
                   {days}d

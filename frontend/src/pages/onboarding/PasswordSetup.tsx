@@ -145,7 +145,7 @@ export default function PasswordSetup() {
 
         </form>
 
-        <p className="text-xs text-gray-500 mt-6 text-center">
+        <p className="text-sm text-gray-500 mt-6 text-center">
           By continuing you indicate you have reviewed and agree to the {" "}
           <a href="#" className="underline">Terms of Service</a> and {" "}
           <a href="#" className="underline">Privacy Policy</a>.

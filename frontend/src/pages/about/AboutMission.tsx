@@ -14,7 +14,7 @@ export default function AboutMission() {
             viewport={{ once: true }}
             className="space-y-6"
           >
-            <h2 className="text-xs uppercase tracking-wide text-gray-500 mb-4">
+            <h2 className="text-sm uppercase tracking-wide text-gray-500 mb-4">
               Our Mission
             </h2>
             <h3 className="text-3xl md:text-4xl font-sectra font-medium text-darkPrimary leading-tight">

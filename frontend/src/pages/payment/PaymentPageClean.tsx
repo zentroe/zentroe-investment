@@ -180,8 +180,8 @@ const PaymentPageNew: React.FC = () => {
                       setSelectedWallet(paymentOptions?.cryptoWallets[0] || null);
                     }}
                     className={`p-4 border rounded-lg text-center ${selectedMethod === 'crypto'
-                        ? 'border-primary bg-primary/5 text-primary'
-                        : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
                     <Wallet className="h-6 w-6 mx-auto mb-2" />
@@ -199,8 +199,8 @@ const PaymentPageNew: React.FC = () => {
                       setSelectedBankAccount(paymentOptions?.bankAccounts[0] || null);
                     }}
                     className={`p-4 border rounded-lg text-center ${selectedMethod === 'bank'
-                        ? 'border-primary bg-primary/5 text-primary'
-                        : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
                     <Building2 className="h-6 w-6 mx-auto mb-2" />
@@ -215,8 +215,8 @@ const PaymentPageNew: React.FC = () => {
                   <button
                     onClick={() => setSelectedMethod('card')}
                     className={`p-4 border rounded-lg text-center ${selectedMethod === 'card'
-                        ? 'border-primary bg-primary/5 text-primary'
-                        : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
                     <CreditCard className="h-6 w-6 mx-auto mb-2" />
@@ -284,7 +284,7 @@ const PaymentPageNew: React.FC = () => {
                       Wallet Address
                     </label>
                     <div className="flex items-center space-x-2">
-                      <code className="flex-1 text-xs bg-white px-3 py-2 rounded border font-mono break-all">
+                      <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono break-all">
                         {selectedWallet.address}
                       </code>
                       <button
