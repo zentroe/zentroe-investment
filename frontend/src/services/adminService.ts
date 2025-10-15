@@ -153,6 +153,10 @@ export const createBankAccount = async (bankData: {
   routingNumber?: string;
   swiftCode?: string;
   iban?: string;
+  bankAddress?: string;
+  businessAddress?: string;
+  country: string;
+  currency: string;
   instructions?: string;
 }) => {
   try {
@@ -171,8 +175,13 @@ export const updateBankAccount = async (id: string, bankData: {
   routingNumber?: string;
   swiftCode?: string;
   iban?: string;
+  bankAddress?: string;
+  businessAddress?: string;
+  country?: string;
+  currency?: string;
   instructions?: string;
   active?: boolean;
+  isActive?: boolean;
 }) => {
   try {
     const response = await axios.put(`/admin/payments/bank-accounts/${id}`, bankData);
@@ -487,8 +496,13 @@ export interface BankAccount {
   routingNumber?: string;
   swiftCode?: string;
   iban?: string;
+  bankAddress?: string;
+  businessAddress?: string;
+  currency: string;
+  country: string;
   instructions?: string;
-  active: boolean;
+  isActive: boolean;
+  active?: boolean; // Legacy support - maps to isActive
   createdAt: string;
   updatedAt: string;
 }

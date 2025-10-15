@@ -19,12 +19,15 @@ interface BankAccount {
   bankName: string;
   accountName: string;
   accountNumber: string;
-  routingNumber: string;
+  routingNumber?: string;
   swiftCode?: string;
   iban?: string;
+  bankAddress?: string;
+  businessAddress?: string;
   country: string;
   currency: string;
-  active: boolean;
+  isActive: boolean;
+  active?: boolean; // Legacy support
   createdAt: string;
   updatedAt: string;
 }
@@ -44,6 +47,8 @@ const AdminBankAccounts: React.FC = () => {
     routingNumber: '',
     swiftCode: '',
     iban: '',
+    bankAddress: '',
+    businessAddress: '',
     country: '',
     currency: 'USD'
   });
@@ -139,7 +144,8 @@ const AdminBankAccounts: React.FC = () => {
 
   const handleToggleActive = async (account: BankAccount) => {
     try {
-      const response = await updateBankAccount(account._id, { active: !account.active });
+      const currentActive = account.isActive ?? account.active;
+      const response = await updateBankAccount(account._id, { isActive: !currentActive });
       console.log('Toggle account response:', response);
 
       // Extract the updated account from the response
@@ -148,7 +154,7 @@ const AdminBankAccounts: React.FC = () => {
         setAccounts(accounts.map(a => a._id === account._id ? updatedAccount : a));
       } else {
         // Fallback: use the original approach
-        const localUpdatedAccount = { ...account, active: !account.active };
+        const localUpdatedAccount = { ...account, isActive: !currentActive };
         setAccounts(accounts.map(a => a._id === account._id ? localUpdatedAccount : a));
       }
     } catch (error) {
@@ -165,6 +171,8 @@ const AdminBankAccounts: React.FC = () => {
       routingNumber: '',
       swiftCode: '',
       iban: '',
+      bankAddress: '',
+      businessAddress: '',
       country: '',
       currency: 'USD'
     });
@@ -293,7 +301,7 @@ const AdminBankAccounts: React.FC = () => {
                   onClick={() => handleToggleActive(account)}
                   className="flex items-center"
                 >
-                  {account.active ? (
+                  {(account.isActive ?? account.active) ? (
                     <ToggleRight className="h-6 w-6 text-green-500" />
                   ) : (
                     <ToggleLeft className="h-6 w-6 text-gray-400" />
@@ -332,7 +340,7 @@ const AdminBankAccounts: React.FC = () => {
                       {account.routingNumber}
                     </code>
                     <button
-                      onClick={() => copyToClipboard(account.routingNumber)}
+                      onClick={() => copyToClipboard(account.routingNumber || '')}
                       className="p-1 text-gray-400 hover:text-gray-600"
                       title="Copy routing number"
                     >
@@ -381,17 +389,40 @@ const AdminBankAccounts: React.FC = () => {
                   )}
                 </div>
               )}
+
+              {/* Address Information */}
+              {(account.bankAddress || account.businessAddress) && (
+                <div className="space-y-3">
+                  {account.bankAddress && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Bank Address</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
+                        {account.bankAddress}
+                      </p>
+                    </div>
+                  )}
+
+                  {account.businessAddress && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Business Address</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
+                        {account.businessAddress}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-gray-100">
               <div className="flex items-center space-x-2">
-                {account.active ? (
+                {(account.isActive ?? account.active) ? (
                   <CheckCircle className="h-4 w-4 text-green-500" />
                 ) : (
                   <XCircle className="h-4 w-4 text-gray-400" />
                 )}
-                <span className={`text-sm ${account.active ? 'text-green-600' : 'text-gray-500'}`}>
-                  {account.active ? 'Active' : 'Inactive'}
+                <span className={`text-sm ${(account.isActive ?? account.active) ? 'text-green-600' : 'text-gray-500'}`}>
+                  {(account.isActive ?? account.active) ? 'Active' : 'Inactive'}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
@@ -402,11 +433,13 @@ const AdminBankAccounts: React.FC = () => {
                       bankName: account.bankName,
                       accountName: account.accountName,
                       accountNumber: account.accountNumber,
-                      routingNumber: account.routingNumber,
+                      routingNumber: account.routingNumber || '',
                       swiftCode: account.swiftCode || '',
                       iban: account.iban || '',
-                      country: account.country,
-                      currency: account.currency
+                      bankAddress: account.bankAddress || '',
+                      businessAddress: account.businessAddress || '',
+                      country: account.country || '',
+                      currency: account.currency || 'USD'
                     });
                     setShowCreateModal(true);
                   }}
@@ -580,6 +613,38 @@ const AdminBankAccounts: React.FC = () => {
                       className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       placeholder="e.g., GB82WEST12345698765432"
                     />
+                  </div>
+                </div>
+
+                {/* Address Fields */}
+                <div className="mt-4">
+                  <h4 className="text-md font-medium text-gray-900 mb-3">Address Information</h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Bank Address
+                      </label>
+                      <textarea
+                        value={formData.bankAddress}
+                        onChange={(e) => setFormData({ ...formData, bankAddress: e.target.value })}
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        rows={3}
+                        placeholder="Enter the physical address of the bank branch"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Business Address
+                      </label>
+                      <textarea
+                        value={formData.businessAddress}
+                        onChange={(e) => setFormData({ ...formData, businessAddress: e.target.value })}
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        rows={3}
+                        placeholder="Enter the registered business address for this account"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

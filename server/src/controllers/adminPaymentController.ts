@@ -242,10 +242,13 @@ export const getBankAccounts = async (req: Request, res: Response): Promise<void
       accountNumber: account.accountNumber,
       routingNumber: account.routingNumber || '',
       swiftCode: account.swiftCode || '',
-      iban: '', // Not available in current model, set as empty
-      country: 'United States', // Default value since not in current model
-      currency: 'USD', // Default value since not in current model
+      bankAddress: account.bankAddress || '',
+      businessAddress: account.businessAddress || '',
+      iban: account.iban || '',
+      country: account.country,
+      currency: account.currency,
       active: account.isActive, // Map isActive to active for frontend consistency
+      isActive: account.isActive, // Also include isActive for new code
       createdAt: account.createdAt,
       updatedAt: account.updatedAt
     }));
@@ -259,10 +262,15 @@ export const getBankAccounts = async (req: Request, res: Response): Promise<void
 
 export const createBankAccount = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { bankName, accountName, accountNumber, routingNumber, swiftCode, bankAddress, iban, country, currency } = req.body;
+    const { bankName, accountName, accountNumber, routingNumber, swiftCode, bankAddress, businessAddress, iban, country, currency } = req.body;
 
     if (!bankName || !accountName || !accountNumber) {
       res.status(400).json({ message: 'Bank name, account name, and account number are required' });
+      return;
+    }
+
+    if (!country || !currency) {
+      res.status(400).json({ message: 'Country and currency are required' });
       return;
     }
 
@@ -272,7 +280,11 @@ export const createBankAccount = async (req: Request, res: Response): Promise<vo
       accountNumber,
       routingNumber,
       swiftCode,
-      bankAddress
+      iban,
+      bankAddress,
+      businessAddress,
+      country,
+      currency
     });
 
     await account.save();
@@ -285,10 +297,13 @@ export const createBankAccount = async (req: Request, res: Response): Promise<vo
       accountNumber: account.accountNumber,
       routingNumber: account.routingNumber || '',
       swiftCode: account.swiftCode || '',
-      iban: iban || '', // Frontend sends this but we don't store it yet
-      country: country || 'United States', // Frontend sends this but we don't store it yet
-      currency: currency || 'USD', // Frontend sends this but we don't store it yet
+      bankAddress: account.bankAddress || '',
+      businessAddress: account.businessAddress || '',
+      iban: account.iban || '',
+      country: account.country,
+      currency: account.currency,
       active: account.isActive,
+      isActive: account.isActive,
       createdAt: account.createdAt,
       updatedAt: account.updatedAt
     };
@@ -303,11 +318,11 @@ export const createBankAccount = async (req: Request, res: Response): Promise<vo
 export const updateBankAccount = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { bankName, accountName, accountNumber, routingNumber, swiftCode, bankAddress, isActive, active, iban, country, currency } = req.body;
+    const { bankName, accountName, accountNumber, routingNumber, swiftCode, bankAddress, businessAddress, isActive, active, iban, country, currency } = req.body;
 
     // Handle both 'active' and 'isActive' for frontend compatibility
     const activeStatus = active !== undefined ? active : isActive;
-    let updateData: any = { bankName, accountName, accountNumber, routingNumber, swiftCode, bankAddress };
+    let updateData: any = { bankName, accountName, accountNumber, routingNumber, swiftCode, iban, bankAddress, businessAddress, country, currency };
 
     if (activeStatus !== undefined) {
       updateData.isActive = activeStatus;
@@ -328,10 +343,13 @@ export const updateBankAccount = async (req: Request, res: Response): Promise<vo
       accountNumber: account.accountNumber,
       routingNumber: account.routingNumber || '',
       swiftCode: account.swiftCode || '',
-      iban: iban || '', // Frontend sends this but we don't store it yet
-      country: country || 'United States', // Frontend sends this but we don't store it yet
-      currency: currency || 'USD', // Frontend sends this but we don't store it yet
+      bankAddress: account.bankAddress || '',
+      businessAddress: account.businessAddress || '',
+      iban: account.iban || '',
+      country: account.country,
+      currency: account.currency,
       active: account.isActive,
+      isActive: account.isActive,
       createdAt: account.createdAt,
       updatedAt: account.updatedAt
     };

@@ -6,13 +6,17 @@ export interface IBankAccount extends Document {
   accountNumber: string;
   routingNumber?: string;
   swiftCode?: string;
+  iban?: string;
+  country: string;
+  currency: string;
   bankAddress?: string;
+  businessAddress?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const BankAccountSchema: Schema = new Schema({
+const bankAccountSchema = new Schema({
   bankName: {
     type: String,
     required: true,
@@ -36,8 +40,27 @@ const BankAccountSchema: Schema = new Schema({
     type: String,
     trim: true
   },
+  iban: {
+    type: String,
+    trim: true
+  },
   bankAddress: {
     type: String,
+    trim: true
+  },
+  businessAddress: {
+    type: String,
+    trim: true
+  },
+  currency: {
+    type: String,
+    required: true,
+    trim: true,
+    default: 'USD'
+  },
+  country: {
+    type: String,
+    required: true,
     trim: true
   },
   isActive: {
@@ -48,4 +71,4 @@ const BankAccountSchema: Schema = new Schema({
   timestamps: true
 });
 
-export default mongoose.model<IBankAccount>('BankAccount', BankAccountSchema);
+export default mongoose.model<IBankAccount>('BankAccount', bankAccountSchema);

@@ -285,7 +285,14 @@ export interface BankAccount {
   accountName: string;
   accountNumber: string;
   routingNumber?: string;
-  instructions?: string;
+  swiftCode?: string;
+  iban?: string;
+  bankAddress?: string;
+  businessAddress?: string;
+  currency: string;
+  country: string;
+  isActive: boolean;
+  active?: boolean; // Legacy support - maps to isActive
 }
 
 export interface PaymentOptions {

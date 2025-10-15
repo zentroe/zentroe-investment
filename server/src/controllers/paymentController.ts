@@ -65,7 +65,7 @@ export const getPaymentOptions = async (req: Request, res: Response): Promise<vo
     }
 
     if (config?.bankTransferEnabled) {
-      bankAccounts = await BankAccount.find({ isActive: true }).select('bankName accountName accountNumber routingNumber swiftCode iban country currency');
+      bankAccounts = await BankAccount.find({ isActive: true }).select('bankName accountName accountNumber routingNumber swiftCode bankAddress businessAddress iban country currency');
     }
 
     const response = {
@@ -133,7 +133,11 @@ export const getBankAccountDetails = async (req: Request, res: Response): Promis
         accountName: account.accountName,
         accountNumber: account.accountNumber,
         routingNumber: account.routingNumber,
-        swiftCode: account.swiftCode
+        swiftCode: account.swiftCode,
+        bankAddress: account.bankAddress,
+        businessAddress: account.businessAddress,
+        country: account.country,
+        currency: account.currency
       },
       amount: amount || 0
     });

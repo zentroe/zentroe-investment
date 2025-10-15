@@ -35,6 +35,8 @@ interface BankAccount {
   routingNumber?: string;
   swiftCode?: string;
   iban?: string;
+  bankAddress?: string;
+  businessAddress?: string;
   country: string;
   currency: string;
   active: boolean;
@@ -79,6 +81,8 @@ const PaymentPageNew: React.FC = () => {
     }
   }, [user]);
 
+
+
   useEffect(() => {
     fetchPaymentOptions();
   }, []);
@@ -88,27 +92,17 @@ const PaymentPageNew: React.FC = () => {
       setLoading(true);
       setError(null);
       const data = await getPaymentOptions();
-      // console.log('🔍 Frontend: Received payment options data:', JSON.stringify(data, null, 2));
-
       setPaymentOptions(data);
 
       // Auto-select the first available payment method (prioritize card first)
       if (data.config.cardPaymentEnabled) {
         setSelectedMethod('card');
-        // console.log('💳 Frontend: Selected card payment method');
       } else if (data.config.cryptoEnabled && data.cryptoWallets.length > 0) {
         setSelectedMethod('crypto');
         setSelectedWallet(data.cryptoWallets[0]);
-        // console.log('🏦 Frontend: Selected crypto wallet:', {
-        //   name: data.cryptoWallets[0].name,
-        //   address: data.cryptoWallets[0].address,
-        //   hasAddress: !!data.cryptoWallets[0].address,
-        //   addressType: typeof data.cryptoWallets[0].address
-        // });
       } else if (data.config.bankTransferEnabled && data.bankAccounts.length > 0) {
         setSelectedMethod('bank');
         setSelectedBankAccount(data.bankAccounts[0]);
-        // console.log('🏧 Frontend: Selected bank account');
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to load payment options';
@@ -136,9 +130,7 @@ const PaymentPageNew: React.FC = () => {
   const handlePaymentSuccess = async (data: any) => {
     try {
       // Update onboarding status to completed since payment is successful/pending
-      console.log('🎯 Updating onboarding status to completed after successful payment');
       await updateStatus('completed');
-      console.log('✅ Onboarding status successfully updated to completed');
       toast.success('Payment submitted successfully! Welcome to your dashboard!');
     } catch (error) {
       console.error('❌ Error updating onboarding status:', error);
@@ -174,7 +166,6 @@ const PaymentPageNew: React.FC = () => {
           setConfirmingPayment(false);
           return;
         }
-        console.log('💰 Creating crypto payment record with screenshot');
         paymentResult = await confirmCryptoPayment({
           walletId: selectedWallet._id,
           amount: amount,
@@ -184,7 +175,6 @@ const PaymentPageNew: React.FC = () => {
         });
         toast.success('Crypto payment recorded! Admin will verify your transaction.');
       } else if (selectedMethod === 'bank' && selectedBankAccount) {
-        console.log('🏦 Creating bank transfer payment record');
         paymentResult = await confirmBankTransferPayment({
           accountId: selectedBankAccount._id,
           amount: amount,
@@ -197,14 +187,8 @@ const PaymentPageNew: React.FC = () => {
         toast.success('Bank transfer recorded! Admin will verify your payment.');
       }
 
-      if (paymentResult) {
-        console.log('✅ Payment record created:', paymentResult);
-      }
-
       // Update onboarding status to completed
-      console.log('🎯 Updating onboarding status to completed after payment confirmation');
       await updateStatus('completed');
-      console.log('✅ Onboarding status successfully updated to completed');
 
       // Navigate to success page
       navigate('/payment/success', {
@@ -640,6 +624,8 @@ const PaymentPageNew: React.FC = () => {
                           {paymentOptions?.bankAccounts.map(account => (
                             <option key={account._id} value={account._id}>
                               {account.bankName} - {account.accountName}
+                              {account.currency ? ` (${account.currency})` : ''}
+                              {account.country ? ` - ${account.country}` : ''}
                             </option>
                           ))}
                         </select>
@@ -651,6 +637,7 @@ const PaymentPageNew: React.FC = () => {
                       <h4 className="font-medium mb-3">{selectedBankAccount.bankName}</h4>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Account Name - Always shown */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Account Name
@@ -669,6 +656,7 @@ const PaymentPageNew: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* Account Number - Always shown */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Account Number
@@ -687,6 +675,7 @@ const PaymentPageNew: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* Routing Number - Show if available */}
                         {selectedBankAccount.routingNumber && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -707,6 +696,7 @@ const PaymentPageNew: React.FC = () => {
                           </div>
                         )}
 
+                        {/* SWIFT Code - Show if available */}
                         {selectedBankAccount.swiftCode && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -727,6 +717,7 @@ const PaymentPageNew: React.FC = () => {
                           </div>
                         )}
 
+                        {/* IBAN - Show if available */}
                         {selectedBankAccount.iban && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -746,16 +737,104 @@ const PaymentPageNew: React.FC = () => {
                             </div>
                           </div>
                         )}
+
+                        {/* Bank Address - Show if available */}
+                        {selectedBankAccount.bankAddress && (
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Bank Address
+                            </label>
+                            <div className="flex items-center space-x-2">
+                              <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
+                                {selectedBankAccount.bankAddress}
+                              </code>
+                              <button
+                                onClick={() => copyToClipboard(selectedBankAccount.bankAddress!)}
+                                className="p-2 text-gray-400 hover:text-gray-600"
+                                title="Copy bank address"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Business Address - Show if available */}
+                        {selectedBankAccount.businessAddress && (
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Business Address
+                            </label>
+                            <div className="flex items-center space-x-2">
+                              <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
+                                {selectedBankAccount.businessAddress}
+                              </code>
+                              <button
+                                onClick={() => copyToClipboard(selectedBankAccount.businessAddress!)}
+                                className="p-2 text-gray-400 hover:text-gray-600"
+                                title="Copy business address"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Currency - Show if available */}
+                        {/* {selectedBankAccount.currency && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Currency
+                            </label>
+                            <div className="flex items-center space-x-2">
+                              <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
+                                {selectedBankAccount.currency}
+                              </code>
+                              <button
+                                onClick={() => copyToClipboard(selectedBankAccount.currency!)}
+                                className="p-2 text-gray-400 hover:text-gray-600"
+                                title="Copy currency"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )} */}
+
+                        {/* Country - Show if available */}
+                        {/* {selectedBankAccount.country && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Country
+                            </label>
+                            <div className="flex items-center space-x-2">
+                              <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
+                                {selectedBankAccount.country}
+                              </code>
+                              <button
+                                onClick={() => copyToClipboard(selectedBankAccount.country!)}
+                                className="p-2 text-gray-400 hover:text-gray-600"
+                                title="Copy country"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )} */}
                       </div>
 
                       <div className="mt-4 pt-4 border-t">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-600">Country:</span>
-                          <span className="font-medium">{selectedBankAccount.country}</span>
+                          <span className="font-medium">
+                            {selectedBankAccount.country || 'Not specified'}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between text-sm mt-1">
                           <span className="text-gray-600">Currency:</span>
-                          <span className="font-medium">{selectedBankAccount.currency}</span>
+                          <span className="font-medium">
+                            {selectedBankAccount.currency || 'Not specified'}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -766,9 +845,8 @@ const PaymentPageNew: React.FC = () => {
                       <ol className="text-sm text-green-700 space-y-1">
                         <li>1. Initiate a wire transfer for <strong>${amount.toLocaleString()}</strong></li>
                         <li>2. Use the bank details provided above</li>
-                        <li>3. Include your full name in the transfer reference</li>
-                        <li>4. Save your transfer receipt for verification</li>
-                        <li>5. Processing time: 1-3 business days</li>
+                        <li>3. Save your transfer receipt for verification</li>
+                        <li>4. Processing time: 1-3 business days</li>
                       </ol>
                     </div>
                   </div>
