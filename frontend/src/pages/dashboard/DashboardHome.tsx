@@ -1,8 +1,6 @@
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import SalesChart from "@/components/dashboard/SalesChart";
-// import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import TotalSales from "@/components/dashboard/TotalSales";
-// import PaymentHistory from "@/components/dashboard/PaymentHistory";
 import UserInvestmentOverview from "@/components/dashboard/UserInvestmentOverview";
 import InvestmentGrowthChart from "@/components/dashboard/InvestmentGrowthChart";
 import WithdrawalWidget from "@/components/dashboard/WithdrawalWidget";
@@ -56,14 +54,6 @@ export default function DashboardHome() {
           </h1>
           <p className="text-sm text-gray-500 mt-1">Here's your investment overview</p>
         </div>
-        {/* <div className="flex flex-col sm:flex-row gap-3">
-          <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-            Rollover
-          </button>
-          <button className="px-4 py-2 bg-gradient-to-r from-primary to-orange-600 text-white rounded-lg text-sm font-medium hover:from-primary/90 hover:to-orange-600/90 transition-all shadow-md hover:shadow-lg">
-            Add Target
-          </button>
-        </div> */}
       </div>
 
       {/* Stats Grid */}
@@ -87,12 +77,6 @@ export default function DashboardHome() {
           <TotalSales />
         </div>
       </div>
-
-      {/* Bottom Row */}
-      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <UpcomingEvents />
-        <PaymentHistory />
-      </div> */}
 
       {/* Additional Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

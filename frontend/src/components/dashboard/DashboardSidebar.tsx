@@ -9,7 +9,6 @@ import {
   RefreshCw,
   Users,
   Settings,
-  Menu,
   X,
   LogOut
 } from "lucide-react";
@@ -25,6 +24,11 @@ interface NavigationItem {
   icon: React.ComponentType<{ size?: number; className?: string }>;
 }
 
+interface DashboardSidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
 const navigationItems: NavigationItem[] = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { name: "Portfolio", path: "/dashboard/portfolio", icon: TrendingUp },
@@ -36,8 +40,7 @@ const navigationItems: NavigationItem[] = [
   { name: "Settings", path: "/dashboard/settings", icon: Settings },
 ];
 
-export default function DashboardSidebar() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+export default function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -58,26 +61,25 @@ export default function DashboardSidebar() {
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsMobileMenuOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
-      >
-        <Menu size={20} className="text-gray-600" />
-      </button>
-
       {/* Mobile Overlay */}
-      {isMobileMenuOpen && (
+      {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
+          className="fixed inset-0 flex justify-end items-start bg-black/50 z-40 lg:hidden"
+          onClick={onClose}
+        >
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1 text-gray-200 hover:bg-gray-100 rounded"
+          >
+            <X size={24} />
+          </button>
+        </div>
       )}
 
       {/* Sidebar */}
       <div className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out shadow-lg lg:shadow-sm
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="flex flex-col h-screen">
           {/* Header */}
@@ -87,12 +89,7 @@ export default function DashboardSidebar() {
               <Logo variant="icon" size="sm" />
               <img src={logo} alt="Zentroe Logo" className="h-5" />
             </Link>
-            <button
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="lg:hidden p-1 text-white hover:bg-white/20 rounded"
-            >
-              <X size={20} />
-            </button>
+
           </div>
 
           {/* Navigation */}
@@ -107,7 +104,7 @@ export default function DashboardSidebar() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={onClose}
                     className={`
                       flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200
                       ${isActive
@@ -131,7 +128,7 @@ export default function DashboardSidebar() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={onClose}
                     className={`
                       flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200
                       ${isActive
@@ -155,7 +152,7 @@ export default function DashboardSidebar() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={onClose}
                     className={`
                       flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200
                       ${isActive

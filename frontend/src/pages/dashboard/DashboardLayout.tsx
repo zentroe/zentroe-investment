@@ -16,6 +16,11 @@ export default function DashboardLayout() {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Close sidebar when clicking outside on mobile
+  const closeSidebar = () => setIsSidebarOpen(false);
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   // Show loading while auth is initializing
   if (isLoading) {
@@ -166,12 +171,18 @@ export default function DashboardLayout() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <DashboardSidebar />
+      <DashboardSidebar
+        isOpen={isSidebarOpen}
+        onClose={closeSidebar}
+      />
 
       {/* Main Content - with left margin to account for fixed sidebar */}
       <div className="lg:ml-64 flex flex-col min-h-screen">
         {/* Header */}
-        <DashboardHeader />
+        <DashboardHeader
+          onToggleSidebar={toggleSidebar}
+          isSidebarOpen={isSidebarOpen}
+        />
 
         {/* Page Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
