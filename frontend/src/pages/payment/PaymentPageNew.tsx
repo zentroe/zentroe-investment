@@ -763,7 +763,7 @@ const PaymentPageNew: React.FC = () => {
                         {selectedBankAccount.businessAddress && (
                           <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Business Address
+                              Business/Home Address
                             </label>
                             <div className="flex items-center space-x-2">
                               <code className="flex-1 text-sm bg-white px-3 py-2 rounded border font-mono">
