@@ -12,7 +12,7 @@ export default function AboutHero() {
           We're on a mission to build a better financial system by empowering the individual.
         </h1>
         <p className="text-sm md:text-base text-gray-600">
-          Founded in 2012 and headquartered in London, UK, Zentroe is one of the leading real estate investment platforms.
+          Founded in 2012 and headquartered in Genève, Switzerland, Zentroe is one of the leading real estate investment platforms.
         </p>
       </div>
 

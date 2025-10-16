@@ -12,8 +12,7 @@ export default function LandingFooter() {
         <div className="space-y-6">
           <img src={zenLogoDark} alt="Zentroe Logo" className="h-10" />
           <div>
-            <p>10 Market Street</p>
-            <p>London, United Kingdom</p>
+            <p>Genève, Switzerland</p>
           </div>
           <p>Contact us</p>
           <div className="flex gap-4 text-white">

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 const milestones = [
   {
     year: "2012",
-    title: "Founded in London",
+    title: "Founded in Genève",
     description: "Zentroe was founded with a vision to democratize access to alternative investments."
   },
   {
