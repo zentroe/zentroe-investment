@@ -52,7 +52,7 @@ export const createDepositApprovedEmailTemplate = (
             You can track your investment performance and earnings in your dashboard.
           </p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.FRONTEND_URL || 'https://zentroe.com'}/dashboard" style="background-color: #a9462d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            <a href="${process.env.CLIENT_URL || 'https://zentroe.com'}/dashboard" style="background-color: #a9462d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
               View Dashboard
             </a>
           </div>
@@ -112,7 +112,7 @@ export const createInvestmentStartedEmailTemplate = (
             Your investment is now generating returns. Track your earnings in real-time through your dashboard.
           </p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.FRONTEND_URL || 'https://zentroe.com'}/dashboard" style="background-color: #a9462d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            <a href="${process.env.CLIENT_URL || 'https://zentroe.com'}/dashboard" style="background-color: #a9462d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
               View Investment
             </a>
           </div>
@@ -149,7 +149,7 @@ export const createKycApprovedEmailTemplate = (userName: string): string => {
             <li>Enjoy full platform features</li>
           </ul>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.FRONTEND_URL || 'https://zentroe.com'}/dashboard" style="background-color: #a9462d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            <a href="${process.env.CLIENT_URL || 'https://zentroe.com'}/dashboard" style="background-color: #a9462d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
               Start Investing
             </a>
           </div>
@@ -190,7 +190,7 @@ export const createKycRejectedEmailTemplate = (
             Please review your information and submit updated documents. If you have any questions, our support team is here to help.
           </p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.FRONTEND_URL || 'https://zentroe.com'}/profile" style="background-color: #a9462d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            <a href="${process.env.CLIENT_URL || 'https://zentroe.com'}/dashboard" style="background-color: #a9462d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
               Update KYC Information
             </a>
           </div>
@@ -227,7 +227,7 @@ export const createWithdrawalRequestedEmailTemplate = (
             You will receive another email once your withdrawal has been processed.
           </p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.FRONTEND_URL || 'https://zentroe.com'}/withdrawals" style="background-color: #a9462d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            <a href="${process.env.CLIENT_URL || 'https://zentroe.com'}/dashboard/withdrawals" style="background-color: #a9462d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
               View Withdrawal Status
             </a>
           </div>
@@ -268,7 +268,7 @@ export const createWithdrawalProcessedEmailTemplate = (
             The funds should arrive in your account within 1-5 business days, depending on your payment method.
           </p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.FRONTEND_URL || 'https://zentroe.com'}/withdrawals" style="background-color: #a9462d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            <a href="${process.env.CLIENT_URL || 'https://zentroe.com'}/dashboard/withdrawals" style="background-color: #a9462d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
               View Transaction History
             </a>
           </div>
