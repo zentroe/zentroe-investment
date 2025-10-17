@@ -21,6 +21,7 @@ import userSettingsRoutes from "./routes/userSettingsRoutes";
 import kycRoutes from "./routes/kycRoutes";
 import adminKycRoutes from "./routes/adminKycRoutes";
 import adminWithdrawalRoutes from "./routes/adminWithdrawalRoutes";
+import adminUserRoutes from "./routes/adminUserRoutes";
 
 import { errorHandler } from "./middleware/errorHandler";
 import helmet from "helmet";
@@ -84,6 +85,7 @@ app.use("/admin/payments", adminPaymentRoutes);
 app.use("/admin", adminInvestmentRoutes);
 app.use("/admin/kyc", adminKycRoutes);
 app.use("/admin/withdrawals", adminWithdrawalRoutes);
+app.use("/admin", adminUserRoutes);
 app.use("/api/user", userInvestmentRoutes);
 app.use("/api", uploadRoutes);
 app.use("/payments/card", simpleCardPaymentRoutes);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Users, Share, DollarSign, TrendingUp, Copy, Trophy, Crown, Star, Building } from "lucide-react";
 import { useUser } from '@/context/UserContext';
-import { getReferralCode, convertPointsToEquity, getTierColor, getTierIcon, formatPoints, getStatusColor, formatEquityPercentage } from '@/services/referralService';
+import { getReferralCode, convertPointsToEquity, getTierColor, getTierIcon, formatPoints, getStatusColor } from '@/services/referralService';
 
 export default function ReferralsPage() {
   const { referralData, loading } = useUser();
@@ -93,7 +93,7 @@ export default function ReferralsPage() {
               </p>
             </div>
           </div>
-          {stats?.equityPercentage && stats.equityPercentage > 0 && (
+          {/* {stats?.equityPercentage && stats.equityPercentage > 0 && (
             <div className="text-right">
               <div className="flex items-center space-x-2">
                 <Building size={20} />
@@ -101,12 +101,12 @@ export default function ReferralsPage() {
               </div>
               <p className="text-sm opacity-75">Company Ownership</p>
             </div>
-          )}
+          )} */}
         </div>
       </div>
 
       {/* Referral Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -133,7 +133,7 @@ export default function ReferralsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        {/* <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Referred</p>
@@ -144,7 +144,7 @@ export default function ReferralsPage() {
               <Users size={24} className="text-purple-600" />
             </div>
           </div>
-        </div>
+        </div> */}
 
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
@@ -176,7 +176,7 @@ export default function ReferralsPage() {
             onClick={handleCopyLink}
             className={`px-6 py-3 rounded-lg whitespace-nowrap transition-colors ${copySuccess
               ? 'bg-green-600 text-white'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'bg-primary text-white hover:bg-blue-700'
               }`}
           >
             {copySuccess ? (
@@ -280,7 +280,7 @@ export default function ReferralsPage() {
               <div className="space-y-2">
                 {tierInfo.benefits.map((benefit, index) => (
                   <div key={index} className="flex items-center space-x-2 text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
                     <span>{benefit}</span>
                   </div>
                 ))}
@@ -297,7 +297,7 @@ export default function ReferralsPage() {
                   <>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                        className="bg-primary h-2 rounded-full transition-all duration-500"
                         style={{
                           width: `${((tierInfo.maxPoints - stats.pointsToNextTier) / tierInfo.maxPoints) * 100}%`
                         }}
@@ -336,12 +336,16 @@ export default function ReferralsPage() {
                     <td className="py-4 px-4">
                       <div>
                         <p className="font-medium text-gray-900">
-                          {referral.referred.firstName && referral.referred.lastName
+                          {referral.referred?.firstName && referral.referred?.lastName
                             ? `${referral.referred.firstName} ${referral.referred.lastName}`
-                            : referral.referred.email.split('@')[0]
+                            : referral.referred?.email
+                              ? referral.referred.email.split('@')[0]
+                              : 'Unknown User'
                           }
                         </p>
-                        <p className="text-sm text-gray-500">{referral.referred.email}</p>
+                        <p className="text-sm text-gray-500">
+                          {referral.referred?.email || 'No email provided'}
+                        </p>
                       </div>
                     </td>
                     <td className="py-4 px-4 text-gray-600">
@@ -383,21 +387,21 @@ export default function ReferralsPage() {
         <h3 className="text-lg font-semibold text-gray-900 mb-6">How the Points System Works</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
-            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
               <Share size={24} className="text-white" />
             </div>
             <h4 className="font-medium text-gray-900 mb-2">1. Share & Earn</h4>
             <p className="text-sm text-gray-600">Share your link and earn points when friends invest $1,000+</p>
           </div>
           <div className="text-center">
-            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
               <TrendingUp size={24} className="text-white" />
             </div>
             <h4 className="font-medium text-gray-900 mb-2">2. Climb Tiers</h4>
             <p className="text-sm text-gray-600">Advance through tiers to earn more points per referral</p>
           </div>
           <div className="text-center">
-            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
               <Crown size={24} className="text-white" />
             </div>
             <h4 className="font-medium text-gray-900 mb-2">3. Own Equity</h4>
@@ -408,12 +412,12 @@ export default function ReferralsPage() {
         <div className="mt-8 p-4 bg-gray-50 rounded-lg">
           <h4 className="font-medium text-gray-900 mb-3">Tier Progression</h4>
           <div className="space-y-2 text-sm text-gray-600">
-            <div className="flex justify-between"><span>🥉 Bronze (0-99 pts):</span> <span>10 pts/referral</span></div>
-            <div className="flex justify-between"><span>🥈 Silver (100-499 pts):</span> <span>15 pts/referral</span></div>
-            <div className="flex justify-between"><span>🥇 Gold (500-1,999 pts):</span> <span>20 pts/referral</span></div>
-            <div className="flex justify-between"><span>💎 Platinum (2K-9.9K pts):</span> <span>30 pts/referral</span></div>
-            <div className="flex justify-between"><span>💠 Diamond (10K-49.9K pts):</span> <span>50 pts/referral</span></div>
-            <div className="flex justify-between"><span>🏛️ Shareholder (50K+ pts):</span> <span>100 pts/referral + Equity</span></div>
+            <div className="flex justify-between"><span>🥉 Bronze (0-99 pts):</span></div>
+            <div className="flex justify-between"><span>🥈 Silver (100-499 pts):</span></div>
+            <div className="flex justify-between"><span>🥇 Gold (500-1,999 pts):</span> </div>
+            <div className="flex justify-between"><span>💎 Platinum (2K-9.9K pts):</span> </div>
+            <div className="flex justify-between"><span>💠 Diamond (10K-49.9K pts):</span> </div>
+            <div className="flex justify-between"><span>🏛️ Shareholder (50K+ pts):</span></div>
           </div>
         </div>
       </div>

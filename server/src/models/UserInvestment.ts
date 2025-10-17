@@ -217,9 +217,9 @@ UserInvestmentSchema.pre('save', async function (next) {
       const plan = this.investmentPlan as any;
 
       if (plan) {
-        // Calculate daily profit rate: (total profit percentage / duration in days)
-        const totalProfitPercentage = plan.profitPercentage / 100;
-        this.dailyProfitRate = (this.amount * totalProfitPercentage) / plan.duration;
+        // Calculate daily profit rate as percentage: (total profit percentage / duration in days)
+        // Example: 25% over 365 days = 0.0685% per day
+        this.dailyProfitRate = plan.profitPercentage / plan.duration;
       }
 
       next();

@@ -26,10 +26,36 @@ export const getReferralDashboard = async (req: AuthenticatedRequest, res: Respo
       referralPoints = await ReferralPoints.create({ user: userId });
     }
 
-    // Get referral history
-    const referrals = await Referral.find({ referrer: userId })
+    // Get referral history (includes demo/generated referrals with metadata)
+    const allReferrals = await Referral.find({ referrer: userId })
       .populate('referred', 'firstName lastName email createdAt')
       .sort({ createdAt: -1 });
+
+    // Transform referrals to handle both real users and demo data
+    const referrals = allReferrals.map(ref => {
+      // If referred user exists (real referral)
+      if (ref.referred && ref.referred._id) {
+        return ref;
+      }
+
+      // If no referred user (demo/generated referral with metadata)
+      if (ref.metadata?.fakeUserInfo) {
+        // Create a virtual referred user object from metadata
+        return {
+          ...ref.toObject(),
+          referred: {
+            _id: ref.referred,
+            firstName: ref.metadata.fakeUserInfo.firstName,
+            lastName: ref.metadata.fakeUserInfo.lastName,
+            email: ref.metadata.fakeUserInfo.email,
+            createdAt: ref.signupDate
+          }
+        };
+      }
+
+      // Invalid referral (no user and no metadata) - filter out
+      return null;
+    }).filter(ref => ref !== null);
 
     // Get points transaction history
     const pointsHistory = await PointsTransaction.find({ user: userId })

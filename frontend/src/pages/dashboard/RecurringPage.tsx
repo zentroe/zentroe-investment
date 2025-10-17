@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Play, Pause, Edit, Plus, Calendar, DollarSign } from "lucide-react";
+import { Play, Pause, Edit, Calendar, DollarSign } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 
 export default function RecurringPage() {
@@ -135,10 +135,6 @@ export default function RecurringPage() {
           <h1 className="text-2xl font-semibold text-gray-900">Recurring Investments</h1>
           <p className="text-sm text-gray-500 mt-1">Automate your investment strategy</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          <Plus size={16} className="mr-2" />
-          Add New Plan
-        </button>
       </div>
 
       {/* Summary Cards */}
@@ -289,7 +285,7 @@ export default function RecurringPage() {
       </div>
 
       {/* How It Works */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
+      {/* <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">How Recurring Investments Work</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
@@ -314,7 +310,7 @@ export default function RecurringPage() {
             <p className="text-sm text-gray-600 mt-1">Monitor your investments and adjust as needed</p>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

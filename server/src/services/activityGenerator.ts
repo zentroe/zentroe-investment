@@ -1,0 +1,577 @@
+import { ActivityHistory } from '../models/ActivityHistory';
+import { User } from '../models/User';
+import Deposit from '../models/Deposit';
+import { Withdrawal } from '../models/Withdrawal';
+import { UserInvestment } from '../models/UserInvestment';
+import { DailyProfit } from '../models/DailyProfit';
+import { Referral, ReferralPoints } from '../models/Referral';
+import { InvestmentPlan } from '../models/InvestmentPlan';
+import mongoose from 'mongoose';
+
+interface GenerateActivityOptions {
+  userId: string;
+  years: number;
+  adminId: string;
+}
+
+// Helper function to generate random date within range
+const randomDate = (start: Date, end: Date): Date => {
+  return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+};
+
+// Helper function to generate random amount within range (rounded to tens)
+const randomAmount = (min: number, max: number): number => {
+  const amount = Math.random() * (max - min) + min;
+  // Round to nearest 10
+  return Math.round(amount / 10) * 10;
+};
+
+// Portfolio types and investment plans
+const portfolioTypes = ['Conservative Growth', 'Balanced Portfolio', 'Aggressive Growth', 'Income Focus', 'Diversified'];
+const investmentPlans = ['Starter Plan', 'Growth Plan', 'Premium Plan', 'Elite Plan', 'Enterprise Plan'];
+
+export const generateUserActivity = async (options: GenerateActivityOptions) => {
+  const { userId, years, adminId } = options;
+
+  // Verify user exists
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  // Get available investment plans
+  const investmentPlans = await InvestmentPlan.find({ isActive: true });
+  if (investmentPlans.length === 0) {
+    throw new Error('No active investment plans available');
+  }
+
+  // Create a map for quick plan lookup by ID
+  const planMap = new Map();
+  investmentPlans.forEach((plan: any) => {
+    planMap.set(plan._id.toString(), plan);
+  });
+
+  const activities: any[] = [];
+  const now = new Date();
+  const startDate = new Date(now.getFullYear() - years, now.getMonth(), now.getDate());
+
+  // Calculate number of activities based on years (SPARSE - not too many!)
+  const depositsCount = Math.floor(years * 3); // ~3 deposits per year
+  const withdrawalsCount = Math.floor(years * 1.5); // ~1-2 withdrawals per year
+  const investmentsCount = Math.floor(years * 2.5); // ~2-3 investments per year
+  const referralsCount = Math.floor(years * 1.5); // ~1-2 referrals per year
+  const loginsCount = Math.floor(years * 30); // ~30 logins per year (more reasonable)
+
+  // Track totals
+  let totalDeposited = 0;
+  let totalInvested = 0;
+  let totalReturns = 0;
+  let totalWithdrawn = 0;
+
+  // Arrays to store created records
+  const createdDeposits: any[] = [];
+  const createdInvestments: any[] = [];
+  const createdWithdrawals: any[] = [];
+  const createdDailyProfits: any[] = [];
+  const usedDates = new Set<string>(); // Track used dates to avoid duplicates
+
+  // Helper to get unique date (no activities on same day)
+  const getUniqueDate = (start: Date, end: Date): Date => {
+    let attempts = 0;
+    let date: Date;
+    do {
+      date = randomDate(start, end);
+      const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      if (!usedDates.has(dateKey)) {
+        usedDates.add(dateKey);
+        return date;
+      }
+      attempts++;
+    } while (attempts < 100);
+    // If we can't find unique date, just return random one
+    return randomDate(start, end);
+  };
+
+  // Generate Deposits with real Deposit records (SPARSE)
+  for (let i = 0; i < depositsCount; i++) {
+    // Use amounts that are realistic and rounded to tens
+    const amount = randomAmount(1000, 50000); // $1,000 to $50,000
+    totalDeposited += amount;
+    const paymentMethods: ('bank_transfer' | 'crypto' | 'card')[] = ['bank_transfer', 'crypto', 'card'];
+    const paymentMethod = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
+    const depositDate = getUniqueDate(startDate, now);
+
+    // Create real Deposit record
+    const deposit = await Deposit.create({
+      userId: new mongoose.Types.ObjectId(userId),
+      amount,
+      paymentMethod,
+      status: 'approved',
+      processedAt: depositDate,
+      adminNotes: 'Deposit processed successfully',
+      createdAt: depositDate,
+      updatedAt: depositDate
+    });
+
+    createdDeposits.push(deposit);
+
+    // Create activity history record
+    activities.push({
+      userId: new mongoose.Types.ObjectId(userId),
+      activityType: 'deposit',
+      date: depositDate,
+      description: `Deposit via ${paymentMethod.replace('_', ' ')}`,
+      amount,
+      currency: 'USD',
+      transactionId: `TXN-DEP-${deposit._id}`,
+      status: 'completed',
+      paymentMethod,
+      isGenerated: true,
+      generatedAt: now
+    });
+  }
+
+  // Generate Investments with real UserInvestment records (using real plan constraints)
+  for (let i = 0; i < investmentsCount; i++) {
+    // Pick a random plan
+    const plan = investmentPlans[Math.floor(Math.random() * investmentPlans.length)];
+
+    // Use amount within the plan's min/max range and round to tens
+    const amount = randomAmount(plan.minInvestment || 1000, plan.maxInvestment || 50000);
+    totalInvested += amount;
+
+    const investmentDate = getUniqueDate(startDate, now);
+    const durationDays = plan.duration || 365; // Use duration in days from plan
+    const endDate = new Date(investmentDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+    // Check if investment has already completed (endDate is in the past)
+    const hasCompleted = endDate < now;
+    const investmentStatus = hasCompleted ? 'completed' : 'active';
+    const completedDate = hasCompleted ? endDate : undefined;
+
+    // Create real UserInvestment record
+    const userInvestment = await UserInvestment.create({
+      user: new mongoose.Types.ObjectId(userId),
+      investmentPlan: plan._id,
+      amount,
+      currency: 'USD',
+      status: investmentStatus,
+      startDate: investmentDate,
+      endDate: endDate,
+      completedDate: completedDate,
+      totalProfitsEarned: 0,
+      dailyProfitRate: plan.profitPercentage / durationDays, // Distribute profit over duration
+      totalWithdrawn: 0,
+      principalWithdrawn: 0,
+      profitsWithdrawn: 0,
+      adminNotes: 'Investment Created',
+      createdAt: investmentDate,
+      updatedAt: investmentDate
+    });
+
+    // Store the plan in the map for this investment
+    planMap.set(userInvestment.investmentPlan.toString(), plan);
+
+    createdInvestments.push(userInvestment);
+
+    // Create activity history record
+    activities.push({
+      userId: new mongoose.Types.ObjectId(userId),
+      activityType: 'investment',
+      date: investmentDate,
+      description: `Investment in ${plan.name}`,
+      amount,
+      currency: 'USD',
+      transactionId: `TXN-INV-${userInvestment._id}`,
+      status: 'completed',
+      investmentPlanName: plan.name,
+      portfolioType: plan.category || 'Diversified',
+      shares: Math.floor(amount / 100),
+      isGenerated: true,
+      generatedAt: now
+    });
+  }
+
+  // Generate Daily Profits/Returns for each investment (LOGICAL AMOUNTS)
+  // Calculate profits for ALL investments based on days running
+  console.log(`\n💰 Starting profit calculation for ${createdInvestments.length} investments...`);
+
+  for (const investment of createdInvestments) {
+    const investmentStartDate = new Date(investment.startDate);
+
+    // Get the plan from our map using the stored plan ID
+    const plan = planMap.get(investment.investmentPlan.toString());
+
+    if (!plan) {
+      console.log(`⚠️  No plan found for investment ${investment._id}`);
+      console.log(`   Investment plan ID: ${investment.investmentPlan.toString()}`);
+      console.log(`   Available plan IDs:`, Array.from(planMap.keys()));
+      continue;
+    }
+
+    // Calculate how many days have passed since investment started
+    // For completed investments, use the full duration
+    // For active investments, use days elapsed so far (capped at duration)
+    const investmentEndDate = new Date(investment.endDate);
+    const isCompleted = investmentEndDate < now;
+
+    let daysSinceStart;
+    if (isCompleted) {
+      // Investment has completed - use full duration
+      daysSinceStart = Math.floor((investmentEndDate.getTime() - investmentStartDate.getTime()) / (24 * 60 * 60 * 1000));
+    } else {
+      // Investment is active - use days elapsed so far (capped at duration)
+      daysSinceStart = Math.min(
+        Math.floor((now.getTime() - investmentStartDate.getTime()) / (24 * 60 * 60 * 1000)),
+        plan.duration
+      );
+    }
+
+    console.log(`\n📊 Processing investment ${investment._id.toString().substring(0, 8)}...`);
+    console.log(`   Status: ${investment.status}`);
+    console.log(`   Start date: ${investmentStartDate.toISOString().split('T')[0]}`);
+    console.log(`   End date: ${investmentEndDate.toISOString().split('T')[0]}`);
+    console.log(`   Days since start: ${daysSinceStart}`);
+
+    // Skip if investment just started (less than 1 day old)
+    if (daysSinceStart < 1) {
+      console.log(`   ⏭️  Skipping - less than 1 day old`);
+      continue;
+    }
+
+    // Calculate daily profit using the plan's percentage and duration
+    // Formula: (Total Percentage / Duration) = Daily Percentage
+    // Then: Principal × Daily Percentage = Daily Profit Amount
+    const dailyProfitPercentage = plan.profitPercentage / plan.duration; // e.g., 25% / 365 = 0.0685%
+    const dailyProfitAmount = investment.amount * (dailyProfitPercentage / 100);
+
+    // Total profit accumulated for ALL days the investment has been running
+    const totalProfitAccumulated = dailyProfitAmount * daysSinceStart;
+
+    console.log(`   💵 Calculation:`);
+    console.log(`      Plan: ${plan.name}`);
+    console.log(`      Principal: $${investment.amount.toLocaleString()}`);
+    console.log(`      Plan %: ${plan.profitPercentage}% over ${plan.duration} days`);
+    console.log(`      Daily %: ${dailyProfitPercentage.toFixed(4)}%`);
+    console.log(`      Daily $: $${dailyProfitAmount.toFixed(2)}`);
+    console.log(`      Days running: ${daysSinceStart}`);
+    console.log(`      TOTAL PROFIT: $${totalProfitAccumulated.toFixed(2)}`);
+
+    // Create ONE summary DailyProfit record representing all accumulated profit
+    const dailyProfit = await DailyProfit.create({
+      userInvestment: investment._id,
+      user: new mongoose.Types.ObjectId(userId),
+      date: now, // Current date
+      profitAmount: totalProfitAccumulated,
+      dailyRate: dailyProfitPercentage,
+      investmentAmount: investment.amount,
+      status: 'paid',
+      calculatedAt: now,
+      paidAt: now,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    createdDailyProfits.push(dailyProfit);
+    totalReturns += totalProfitAccumulated;
+
+    // Create activity history records every ~30 days to show profit milestones (not too many)
+    const monthsPassed = Math.floor(daysSinceStart / 30);
+    for (let month = 0; month < Math.min(monthsPassed, 3); month++) { // Max 3 activity records
+      const profitDate = new Date(investmentStartDate.getTime() + (month * 30 + 15) * 24 * 60 * 60 * 1000);
+      const monthlyProfit = dailyProfitAmount * 30;
+
+      activities.push({
+        userId: new mongoose.Types.ObjectId(userId),
+        activityType: 'return',
+        date: profitDate,
+        description: `Profit return on ${plan.name}`,
+        amount: monthlyProfit,
+        currency: 'USD',
+        transactionId: `TXN-RET-${month}-${investment._id}`,
+        status: 'completed',
+        returnPercentage: (monthlyProfit / investment.amount) * 100,
+        principalAmount: investment.amount,
+        isGenerated: true,
+        generatedAt: now
+      });
+    }
+
+    // UPDATE THE INVESTMENT RECORD with total profits earned
+    const updateResult = await UserInvestment.findByIdAndUpdate(
+      investment._id,
+      {
+        totalProfitsEarned: totalProfitAccumulated
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (updateResult) {
+      console.log(`✅ Updated investment ${investment._id} with totalProfitsEarned: $${totalProfitAccumulated.toFixed(2)}`);
+      console.log(`   Verified in DB: $${updateResult.totalProfitsEarned.toFixed(2)}`);
+    } else {
+      console.log(`❌ Failed to update investment ${investment._id}`);
+    }
+  }
+
+  // Generate Withdrawals with real Withdrawal records (LOGICAL)
+  // Can only withdraw from investments that have accumulated profits
+  const investmentsWithAvailableProfits = createdInvestments.filter(inv => {
+    const profits = createdDailyProfits
+      .filter(dp => dp.userInvestment.toString() === inv._id.toString())
+      .reduce((sum, dp) => sum + dp.profitAmount, 0);
+    return profits > 100; // At least $100 in profits
+  });
+
+  // Limit withdrawals - only some people withdraw (not everyone)
+  const actualWithdrawalsCount = Math.min(withdrawalsCount, Math.floor(investmentsWithAvailableProfits.length * 0.5)); // Only 50% withdraw
+
+  for (let i = 0; i < actualWithdrawalsCount; i++) {
+    // Pick an investment with available profits
+    const sourceInvestment = investmentsWithAvailableProfits[i % investmentsWithAvailableProfits.length];
+
+    // Calculate available profits for this investment
+    const availableProfits = createdDailyProfits
+      .filter(dp => dp.userInvestment.toString() === sourceInvestment._id.toString())
+      .reduce((sum, dp) => sum + dp.profitAmount, 0);
+
+    // Withdraw only a portion of available profits (30-70%)
+    const withdrawalPercentage = 0.3 + Math.random() * 0.4; // 30% to 70%
+    const amount = Math.round((availableProfits * withdrawalPercentage) / 10) * 10; // Round to tens
+
+    totalWithdrawn += amount;
+    const withdrawalDate = getUniqueDate(new Date(sourceInvestment.startDate), now);
+
+    // Create real Withdrawal record
+    const withdrawal = await Withdrawal.create({
+      user: new mongoose.Types.ObjectId(userId),
+      userInvestment: sourceInvestment?._id || new mongoose.Types.ObjectId(),
+      amount,
+      type: 'profits_only',
+      status: 'completed',
+      requestedAt: withdrawalDate,
+      reviewedAt: withdrawalDate,
+      processedAt: withdrawalDate,
+      transactionId: `TXN-WTH-${Date.now()}-${i}`,
+      paymentMethod: 'bank_transfer',
+      principalAmount: 0,
+      profitAmount: amount,
+      totalFees: amount * 0.01, // 1% fee
+      netAmount: amount * 0.99,
+      adminNotes: 'Withdrawal processed successfully',
+      createdAt: withdrawalDate,
+      updatedAt: withdrawalDate
+    });
+
+    createdWithdrawals.push(withdrawal);
+
+    // Update investment's withdrawal tracking
+    await UserInvestment.findByIdAndUpdate(sourceInvestment._id, {
+      $inc: {
+        totalWithdrawn: amount,
+        profitsWithdrawn: amount
+      }
+    });
+
+    // Create activity history record
+    activities.push({
+      userId: new mongoose.Types.ObjectId(userId),
+      activityType: 'withdrawal',
+      date: withdrawalDate,
+      description: `Withdrawal to bank account`,
+      amount,
+      currency: 'USD',
+      transactionId: `TXN-WTH-${withdrawal._id}`,
+      status: 'completed',
+      paymentMethod: 'bank_transfer',
+      isGenerated: true,
+      generatedAt: now
+    });
+  }
+
+  // Generate Referrals with real Referral records
+  const firstNames = ['James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth', 'David', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen', 'Christopher', 'Nancy', 'Daniel', 'Lisa', 'Matthew', 'Betty'];
+  const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez'];
+
+  let totalReferralPoints = 0;
+
+  for (let i = 0; i < referralsCount; i++) {
+    const bonus = randomAmount(50, 300); // Rounded to tens
+    const pointsEarned = Math.floor(bonus / 10); // 10 points per dollar
+    totalReferralPoints += pointsEarned;
+
+    const referralDate = getUniqueDate(startDate, now);
+
+    // Generate realistic fake user data
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Math.floor(Math.random() * 999)}@${['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com', 'hotmail.com'][Math.floor(Math.random() * 5)]}`;
+    const referredUserName = `${firstName} ${lastName}`;
+
+    // Generate unique referral code for each referral
+    const uniqueReferralCode = `${user.referralCode || 'REF' + userId.substring(0, 8).toUpperCase()}-${Date.now()}-${i}`;
+
+    // Create Referral record with metadata storing the fake user info
+    const referral = await Referral.create({
+      referrer: new mongoose.Types.ObjectId(userId),
+      referred: new mongoose.Types.ObjectId(), // Dummy ID for demo
+      referralCode: uniqueReferralCode,
+      status: 'rewarded',
+      pointsEarned: pointsEarned,
+      qualifyingInvestment: bonus * 10, // Assume referred user invested 10x the bonus
+      signupDate: referralDate,
+      qualificationDate: referralDate,
+      rewardDate: referralDate,
+      metadata: {
+        ipAddress: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+        source: 'direct',
+        campaign: 'demo-generated',
+        // Store fake user info in metadata so it can be displayed
+        fakeUserInfo: {
+          firstName,
+          lastName,
+          email
+        }
+      },
+      createdAt: referralDate,
+      updatedAt: referralDate
+    });
+
+    // Create activity history record
+    activities.push({
+      userId: new mongoose.Types.ObjectId(userId),
+      activityType: 'referral',
+      date: referralDate,
+      description: `Referral bonus for inviting ${referredUserName}`,
+      amount: bonus,
+      currency: 'USD',
+      referredUserName,
+      referredUserEmail: email,
+      referralBonus: bonus,
+      status: 'completed',
+      isGenerated: true,
+      generatedAt: now
+    });
+  }
+
+  // Generate Logins (SPARSE - logins can be on same day, so not using getUniqueDate)
+  const locations = ['New York, US', 'Los Angeles, US', 'Chicago, US', 'Houston, US', 'Miami, US'];
+  const devices = ['Chrome on Windows', 'Safari on MacOS', 'Chrome on Android', 'Safari on iOS', 'Firefox on Windows'];
+
+  for (let i = 0; i < loginsCount; i++) {
+    activities.push({
+      userId: new mongoose.Types.ObjectId(userId),
+      activityType: 'login',
+      date: randomDate(startDate, now),
+      description: `User logged in`,
+      status: 'completed',
+      ipAddress: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+      device: devices[Math.floor(Math.random() * devices.length)],
+      location: locations[Math.floor(Math.random() * locations.length)],
+      isGenerated: true,
+      generatedAt: now
+    });
+  }
+
+  // Generate KYC milestone
+  const kycDate = new Date(startDate.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days after start
+  activities.push({
+    userId: new mongoose.Types.ObjectId(userId),
+    activityType: 'kyc_update',
+    date: kycDate,
+    description: 'KYC verification approved',
+    status: 'completed',
+    kycStatus: 'approved',
+    isGenerated: true,
+    generatedAt: now
+  });
+
+  // Generate Portfolio changes
+  const portfolioTypes = ['Conservative Growth', 'Balanced Portfolio', 'Aggressive Growth', 'Income Focus', 'Diversified'];
+  for (let i = 0; i < Math.floor(years * 2); i++) {
+    activities.push({
+      userId: new mongoose.Types.ObjectId(userId),
+      activityType: 'portfolio_change',
+      date: randomDate(startDate, now),
+      description: `Portfolio rebalanced to ${portfolioTypes[Math.floor(Math.random() * portfolioTypes.length)]}`,
+      status: 'completed',
+      portfolioType: portfolioTypes[Math.floor(Math.random() * portfolioTypes.length)],
+      isGenerated: true,
+      generatedAt: now
+    });
+  }
+
+  // Sort all activities by date
+  activities.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  // Save all activity history records to database
+  const savedActivities = await ActivityHistory.insertMany(activities);
+
+  // Calculate tier based on total points
+  let currentTier = 'bronze';
+  if (totalReferralPoints >= 50000) currentTier = 'shareholder';
+  else if (totalReferralPoints >= 10000) currentTier = 'diamond';
+  else if (totalReferralPoints >= 2000) currentTier = 'platinum';
+  else if (totalReferralPoints >= 500) currentTier = 'gold';
+  else if (totalReferralPoints >= 100) currentTier = 'silver';
+
+  // Update user's financial data and referral stats
+  const netBalance = totalDeposited + totalReturns - totalInvested - totalWithdrawn;
+
+  await User.findByIdAndUpdate(userId, {
+    walletBalance: Math.max(0, netBalance),
+    totalInvested: totalInvested,
+    totalDeposited: totalDeposited,
+    totalWithdrawn: totalWithdrawn,
+    'referralStats.totalReferrals': referralsCount,
+    'referralStats.qualifiedReferrals': referralsCount, // All demo referrals are qualified
+    'referralStats.totalPointsEarned': totalReferralPoints,
+    'referralStats.currentTier': currentTier,
+    lastLogin: now
+  });
+
+  // Create or update ReferralPoints record (this is what the dashboard reads from!)
+  await ReferralPoints.findOneAndUpdate(
+    { user: new mongoose.Types.ObjectId(userId) },
+    {
+      totalPoints: totalReferralPoints,
+      availablePoints: totalReferralPoints, // All points available for demo
+      usedPoints: 0,
+      tier: currentTier,
+      lifetimeStats: {
+        totalEarned: totalReferralPoints,
+        totalReferred: referralsCount,
+        qualifiedReferrals: referralsCount
+      }
+    },
+    { upsert: true, new: true }
+  );
+
+  return {
+    success: true,
+    activitiesGenerated: savedActivities.length,
+    recordsCreated: {
+      deposits: createdDeposits.length,
+      investments: createdInvestments.length,
+      withdrawals: createdWithdrawals.length,
+      dailyProfits: createdDailyProfits.length,
+      referrals: referralsCount,
+      activityHistory: savedActivities.length
+    },
+    summary: {
+      totalDeposits: depositsCount,
+      totalWithdrawals: withdrawalsCount,
+      totalInvestments: investmentsCount,
+      totalReturns: createdDailyProfits.length,
+      totalReferrals: referralsCount,
+      totalReferralPoints: totalReferralPoints,
+      currentTier: currentTier,
+      totalLogins: loginsCount,
+      totalAmountDeposited: totalDeposited.toFixed(2),
+      totalAmountInvested: totalInvested.toFixed(2),
+      totalReturnsEarned: totalReturns.toFixed(2),
+      totalAmountWithdrawn: totalWithdrawn.toFixed(2),
+      netBalance: netBalance.toFixed(2)
+    }
+  };
+};

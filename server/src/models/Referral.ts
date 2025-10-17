@@ -49,7 +49,13 @@ const referralSchema = new mongoose.Schema({
   metadata: {
     ipAddress: String,
     userAgent: String,
-    source: String // where the referral link was shared
+    source: String, // where the referral link was shared
+    campaign: String, // marketing campaign name
+    fakeUserInfo: { // For demo-generated referrals
+      firstName: String,
+      lastName: String,
+      email: String
+    }
   }
 }, {
   timestamps: true

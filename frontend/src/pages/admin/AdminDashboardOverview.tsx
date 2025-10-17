@@ -325,7 +325,7 @@ const AdminDashboardOverview: React.FC = () => {
                     <div>
                       <p className="text-sm font-medium text-gray-900">{activity.description}</p>
                       <p className="text-sm text-gray-500">
-                        {activity.user.name} • {activity.user.email}
+                        {activity.user?.name || 'Unknown User'} • {activity.user?.email || 'No email'}
                       </p>
                     </div>
                   </div>

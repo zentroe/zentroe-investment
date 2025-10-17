@@ -422,7 +422,7 @@ const AdminDepositsManagement: React.FC = () => {
 
       {/* Deposit Detail Modal */}
       {selectedDeposit && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="fixed inset-0 bg-gray-600/50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">

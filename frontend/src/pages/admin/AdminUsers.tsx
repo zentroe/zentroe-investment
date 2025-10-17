@@ -9,7 +9,12 @@ import {
   Calendar,
   // DollarSign,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Edit,
+  TrendingUp,
+  History,
+  Trash2,
+  Copy
 } from 'lucide-react';
 import {
   getAllUsers,
@@ -17,6 +22,11 @@ import {
   updateKycStatus,
   AdminUserData
 } from '@/services/adminService';
+import { deleteUser } from '@/services/adminUserService';
+import EditUserModal from '@/components/admin/EditUserModal';
+import GenerateActivityModal from '@/components/admin/GenerateActivityModal';
+import UserActivityHistory from '@/components/admin/UserActivityHistory';
+import CreateUserModal from '@/components/admin/CreateUserModal';
 
 // Use AdminUserData from the service
 type UserData = AdminUserData;
@@ -32,6 +42,14 @@ const AdminUsers: React.FC = () => {
   const [itemsPerPage] = useState(10);
   const [totalUsers, setTotalUsers] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  // New state for admin features
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showActivityHistory, setShowActivityHistory] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [cloneFromUserId, setCloneFromUserId] = useState<string | null>(null);
+  const [activeUserId, setActiveUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -128,6 +146,72 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  // Admin feature handlers
+  const handleEditUser = (user: UserData) => {
+    setSelectedUser(user);
+    setShowEditModal(true);
+  };
+
+  const handleGenerateActivity = (user: UserData) => {
+    setSelectedUser(user);
+    setShowGenerateModal(true);
+  };
+
+  const handleViewActivity = (userId: string) => {
+    setActiveUserId(userId);
+    setShowActivityHistory(true);
+  };
+
+  const handleDeleteUser = async (user: UserData) => {
+    const confirmMessage = `Are you sure you want to delete ${user.firstName} ${user.lastName} (${user.email})?\n\n⚠️ This will permanently delete:\n- User account\n- All deposits and withdrawals\n- All investments and profits\n- All referrals and points\n- KYC documents\n- Bank accounts and payment methods\n- Activity history\n\nThis action cannot be undone!`;
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await deleteUser(user._id);
+
+      if (response.success) {
+        alert(`✅ User deleted successfully!\n\nDeleted ${response.deletedRecords.total} records:\n- ${response.deletedRecords.deposits} deposits\n- ${response.deletedRecords.investments} investments\n- ${response.deletedRecords.withdrawals} withdrawals\n- ${response.deletedRecords.referralsAsReferrer} referrals\n- ${response.deletedRecords.kycDocuments} KYC documents\n- And more...`);
+        fetchUsers(); // Refresh the list
+      }
+    } catch (error: any) {
+      console.error('Failed to delete user:', error);
+      alert(`❌ Failed to delete user: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateUser = () => {
+    setCloneFromUserId(null);
+    setShowCreateModal(true);
+  };
+
+  const handleCloneUser = (userId: string) => {
+    setCloneFromUserId(userId);
+    setShowCreateModal(true);
+  };
+
+  const handleModalClose = () => {
+    setShowEditModal(false);
+    setShowGenerateModal(false);
+    setShowActivityHistory(false);
+    setShowCreateModal(false);
+    setCloneFromUserId(null);
+    setActiveUserId(null);
+    setSelectedUser(null);
+    fetchUsers(); // Refresh the user list
+  };
+
+  const handleUserUpdateSuccess = (updatedUser: any) => {
+    // Update the user in the list
+    setUsers(users.map(u => u._id === updatedUser._id ? updatedUser : u));
+    handleModalClose();
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -209,8 +293,17 @@ const AdminUsers: React.FC = () => {
             Manage user accounts, KYC verification, and account status
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 text-sm text-gray-500">
-          Total Users: {totalUsers.toLocaleString()}
+        <div className="flex items-center space-x-4">
+          <div className="text-sm text-gray-500">
+            Total Users: {totalUsers.toLocaleString()}
+          </div>
+          <button
+            onClick={handleCreateUser}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2"
+          >
+            <User size={18} />
+            <span>Create User</span>
+          </button>
         </div>
       </div>
 
@@ -350,17 +443,60 @@ const AdminUsers: React.FC = () => {
                       <button
                         onClick={() => setSelectedUser(user)}
                         className="text-blue-600 hover:text-blue-900 flex items-center"
+                        title="View Details"
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View
                       </button>
                       <button
+                        onClick={() => handleEditUser(user)}
+                        className="text-purple-600 hover:text-purple-900 flex items-center"
+                        title="Edit User"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleGenerateActivity(user)}
+                        className="text-green-600 hover:text-green-900 flex items-center"
+                        title="Generate Activity"
+                      >
+                        <TrendingUp className="h-4 w-4 mr-1" />
+                        Generate
+                      </button>
+                      <button
+                        onClick={() => handleViewActivity(user._id)}
+                        className="text-indigo-600 hover:text-indigo-900 flex items-center"
+                        title="View Activity History"
+                      >
+                        <History className="h-4 w-4 mr-1" />
+                        History
+                      </button>
+                      <button
                         onClick={() => handleToggleUserStatus(user._id)}
                         className={`flex items-center ${user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'
                           }`}
+                        title={user.isActive ? 'Deactivate' : 'Activate'}
                       >
                         <Ban className="h-4 w-4 mr-1" />
                         {user.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleCloneUser(user._id)}
+                        className="text-orange-600 hover:text-orange-900 flex items-center"
+                        title="Clone User Settings"
+                      >
+                        <Copy className="h-4 w-4 mr-1" />
+                        Clone
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user)}
+                        className="text-red-600 hover:text-red-900 flex items-center font-medium"
+                        title="Delete User"
+                        disabled={user.role === 'admin'}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
                       </button>
                     </div>
                   </td>
@@ -434,7 +570,7 @@ const AdminUsers: React.FC = () => {
 
       {/* User Detail Modal */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="fixed inset-0 bg-gray-600/50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
@@ -572,6 +708,43 @@ const AdminUsers: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Admin Feature Modals */}
+      {selectedUser && showEditModal && (
+        <EditUserModal
+          user={selectedUser}
+          isOpen={showEditModal}
+          onClose={handleModalClose}
+          onSuccess={handleUserUpdateSuccess}
+        />
+      )}
+
+      {selectedUser && showGenerateModal && (
+        <GenerateActivityModal
+          userId={selectedUser._id}
+          userName={`${selectedUser.firstName} ${selectedUser.lastName}` || selectedUser.email}
+          isOpen={showGenerateModal}
+          onClose={handleModalClose}
+          onSuccess={handleModalClose}
+        />
+      )}
+
+      {activeUserId && showActivityHistory && (
+        <UserActivityHistory
+          userId={activeUserId}
+          isOpen={showActivityHistory}
+          onClose={handleModalClose}
+        />
+      )}
+
+      {showCreateModal && (
+        <CreateUserModal
+          isOpen={showCreateModal}
+          onClose={handleModalClose}
+          onSuccess={handleModalClose}
+          cloneFromUserId={cloneFromUserId}
+        />
       )}
     </div>
   );

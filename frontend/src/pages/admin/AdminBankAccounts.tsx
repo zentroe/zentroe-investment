@@ -484,7 +484,7 @@ const AdminBankAccounts: React.FC = () => {
 
       {/* Create/Edit Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="fixed inset-0 bg-gray-600/50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-10 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
             <form onSubmit={handleSubmit}>
               <div className="mb-4">

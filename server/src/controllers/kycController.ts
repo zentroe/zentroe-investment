@@ -3,6 +3,7 @@ import { KYCService } from '../services/kycService';
 import { AuthenticatedRequest } from '../types/CustomRequest';
 import { AuthenticatedAdminRequest } from '../middleware/adminAuth';
 import { uploadFile } from '../config/cloudinary';
+import { User } from '../models/User';
 
 /**
  * Get user's KYC status and documents
@@ -11,14 +12,26 @@ export const getUserKYCStatus = async (req: AuthenticatedRequest, res: Response)
   try {
     const userId = req.user!.userId;
 
-    const kycStatus = await KYCService.getUserKYCStatus(userId);
+    // Get KYC document status from KYC collection
+    const kycDocument = await KYCService.getUserKYCStatus(userId);
+
+    // Also get the user's kyc status from User model (this is the source of truth)
+    const user = await User.findById(userId).select('kyc').lean();
+
+    // Merge both sources - User.kyc.status takes priority if it exists
+    let finalStatus: any = {
+      status: user?.kyc?.status || kycDocument?.status || 'pending',
+      submittedAt: kycDocument?.submittedAt || user?.kyc?.submittedAt,
+      reviewedAt: kycDocument?.reviewedAt || user?.kyc?.reviewedAt,
+      reviewedBy: kycDocument?.reviewedBy || user?.kyc?.reviewedBy,
+      rejectionReason: kycDocument?.rejectionReason,
+      notes: kycDocument?.notes || user?.kyc?.notes,
+      documents: kycDocument?.documents || []
+    };
 
     res.status(200).json({
       success: true,
-      data: kycStatus || {
-        status: 'pending',
-        documents: []
-      }
+      data: finalStatus
     });
   } catch (error) {
     console.error('Get KYC status error:', error);
