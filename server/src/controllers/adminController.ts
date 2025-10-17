@@ -555,6 +555,16 @@ export const updateUserKycStatus = async (req: Request, res: Response): Promise<
 
     console.log(`Admin ${adminId} ${status} KYC for user ${userId}`);
 
+    // Send KYC status email
+    const { sendKycStatusEmail } = require('../utils/emailHandler');
+    try {
+      const userName = `${user.firstName} ${user.lastName}`;
+      await sendKycStatusEmail(user.email, userName, status, status === 'rejected' ? notes : '');
+      console.log(`✅ KYC ${status} email sent to ${user.email}`);
+    } catch (emailError) {
+      console.error(`❌ Error sending KYC ${status} email:`, emailError);
+    }
+
     res.json({
       success: true,
       message: `KYC status updated to ${status} successfully`,

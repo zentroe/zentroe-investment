@@ -7,6 +7,10 @@ import { CardPayment } from '../models/CardPayment';
 import { SimpleCardPayment } from '../models/SimpleCardPayment';
 import { uploadFile } from '../config/cloudinary';
 import { activateInvestmentFromPayment } from '../services/investmentService';
+import { User } from '../models/User';
+import { UserInvestment } from '../models/UserInvestment';
+import InvestmentPlan from '../models/InvestmentPlan';
+import { sendDepositApprovedEmail, sendInvestmentStartedEmail } from '../utils/emailHandler';
 
 // Helper function to upload assets from base64 data
 const uploadAsset = async (base64Data: string, folder: string, publicId: string) => {
@@ -440,9 +444,11 @@ export const updateDepositStatus = async (req: Request, res: Response): Promise<
 
     // If approved, update user balance (this would be implemented in user service)
     if (status === 'approved') {
+      const userId = (deposit.userId as any)._id.toString();
+      const userEmail = (deposit.userId as any).email;
+      const userName = `${(deposit.userId as any).firstName} ${(deposit.userId as any).lastName}`;
+
       try {
-        // Extract the actual user ID from the populated object
-        const userId = (deposit.userId as any)._id.toString();
         console.log(`🚀 Activating investment for user ID: ${userId}, amount: ${deposit.amount}`);
         await activateInvestmentFromPayment(
           userId,
@@ -450,6 +456,38 @@ export const updateDepositStatus = async (req: Request, res: Response): Promise<
           deposit.amount
         );
         console.log(`✅ Investment activated successfully for deposit ${(deposit._id as any)}`);
+
+        // Send deposit approved email
+        try {
+          await sendDepositApprovedEmail(userEmail, userName, deposit.amount);
+          console.log(`✅ Deposit approved email sent to ${userEmail}`);
+        } catch (emailError) {
+          console.error('❌ Error sending deposit approved email:', emailError);
+        }
+
+        // Get investment details to send investment started email
+        try {
+          const investment = await UserInvestment.findOne({
+            userId,
+            depositId: (deposit._id as any).toString(),
+            status: 'active'
+          }).populate('investmentPlan');
+
+          if (investment && investment.investmentPlan && investment.amountInvested) {
+            const plan = investment.investmentPlan as any;
+            await sendInvestmentStartedEmail(
+              userEmail,
+              userName,
+              investment.amountInvested,
+              plan.name,
+              plan.duration,
+              plan.profitPercentage
+            );
+            console.log(`✅ Investment started email sent to ${userEmail}`);
+          }
+        } catch (emailError) {
+          console.error('❌ Error sending investment started email:', emailError);
+        }
       } catch (error) {
         console.error(`❌ Error activating investment for deposit ${(deposit._id as any)}:`, error);
         // Don't fail the payment approval if investment activation fails

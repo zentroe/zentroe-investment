@@ -2,6 +2,10 @@ import { Request, Response } from 'express';
 import { WithdrawalService } from '../services/withdrawalService';
 import { AuthenticatedRequest } from '../types/CustomRequest';
 import { AuthenticatedAdminRequest } from '../middleware/adminAuth';
+import { Withdrawal } from '../models/Withdrawal';
+import { User } from '../models/User';
+import { sendWithdrawalRequestedEmail, sendWithdrawalProcessedEmail } from '../utils/emailHandler';
+import { ActivityHistory } from '../models/ActivityHistory';
 
 /**
  * Get user's investments with withdrawal eligibility
@@ -145,6 +149,18 @@ export const createWithdrawalRequest = async (req: AuthenticatedRequest, res: Re
       paymentDetails,
       reason
     });
+
+    // Send withdrawal requested email
+    try {
+      const user = await User.findById(userId);
+      if (user) {
+        const userName = `${user.firstName} ${user.lastName}`;
+        await sendWithdrawalRequestedEmail(user.email, userName, parseFloat(amount));
+        console.log(`✅ Withdrawal requested email sent to ${user.email}`);
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending withdrawal requested email:', emailError);
+    }
 
     res.status(201).json({
       success: true,
@@ -326,6 +342,24 @@ export const processWithdrawal = async (req: AuthenticatedAdminRequest, res: Res
       transactionId,
       adminId
     );
+
+    // Send withdrawal processed email
+    try {
+      const fullWithdrawal = await Withdrawal.findById(withdrawalId).populate('user');
+      if (fullWithdrawal && fullWithdrawal.user) {
+        const user = fullWithdrawal.user as any;
+        const userName = `${user.firstName} ${user.lastName}`;
+        await sendWithdrawalProcessedEmail(
+          user.email,
+          userName,
+          fullWithdrawal.amount,
+          transactionId
+        );
+        console.log(`✅ Withdrawal processed email sent to ${user.email}`);
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending withdrawal processed email:', emailError);
+    }
 
     res.status(200).json({
       success: true,
