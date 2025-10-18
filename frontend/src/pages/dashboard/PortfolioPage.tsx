@@ -1,13 +1,16 @@
-import { TrendingUp, TrendingDown, DollarSign, Briefcase } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Briefcase, Plus } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import { useUser } from "@/context/UserContext";
 import { useState, useEffect } from "react";
 import { getProfitDashboard } from "@/services/userInvestmentService";
+import NewInvestmentModal from "@/components/modals/NewInvestmentModal";
+import { Button } from "@/components/ui/button";
 
 export default function PortfolioPage() {
-  const { investments, investmentSummary, loading } = useUser();
+  const { investments, investmentSummary, loading, refreshInvestments } = useUser();
   const [performanceData, setPerformanceData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showNewInvestmentModal, setShowNewInvestmentModal] = useState(false);
 
   // Color palette for different investment types
   const investmentColors = {
@@ -123,12 +126,26 @@ export default function PortfolioPage() {
       </div>
     );
   }
+  const handleInvestmentSuccess = () => {
+    // Refresh investments data after successful investment
+    refreshInvestments();
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Portfolio Overview</h1>
-        <p className="text-sm text-gray-500 mt-1">Track your investment performance and allocation</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Portfolio Overview</h1>
+          <p className="text-sm text-gray-500 mt-1">Track your investment performance and allocation</p>
+        </div>
+        <Button
+          onClick={() => setShowNewInvestmentModal(true)}
+          className="bg-primary flex flex-col md:flex-row items-center hover:bg-primary/90 text-white"
+        >
+          <Plus size={16} className="mr-2" />
+          New Investment
+        </Button>
       </div>
 
       {/* Portfolio Summary */}
@@ -339,12 +356,23 @@ export default function PortfolioPage() {
             <Briefcase size={48} className="mx-auto mb-3 text-gray-300" />
             <h4 className="text-lg font-medium text-gray-900 mb-2">No investments yet</h4>
             <p>Start building your portfolio by making your first investment.</p>
-            <button className="mt-4 bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+            <Button
+              onClick={() => setShowNewInvestmentModal(true)}
+              className="mt-4 bg-primary text-white hover:bg-primary/90"
+            >
+              <Plus size={16} className="mr-2" />
               Start Investing
-            </button>
+            </Button>
           </div>
         )}
       </div>
+
+      {/* New Investment Modal */}
+      <NewInvestmentModal
+        isOpen={showNewInvestmentModal}
+        onClose={() => setShowNewInvestmentModal(false)}
+        onSuccess={handleInvestmentSuccess}
+      />
     </div>
   );
 }
