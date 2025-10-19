@@ -6,6 +6,9 @@ export interface IDeposit extends Document {
   paymentMethod: 'crypto' | 'bank_transfer' | 'card';
   status: 'pending' | 'approved' | 'rejected';
 
+  // Investment plan reference (for dashboard investments)
+  investmentPlanId?: mongoose.Types.ObjectId;
+
   // Crypto payment specific fields
   cryptoWalletId?: mongoose.Types.ObjectId;
   cryptoTransactionHash?: string;
@@ -45,6 +48,12 @@ const DepositSchema: Schema = new Schema({
     type: String,
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending'
+  },
+
+  // Investment plan reference (optional - for dashboard investments)
+  investmentPlanId: {
+    type: Schema.Types.ObjectId,
+    ref: 'InvestmentPlan'
   },
 
   // Crypto payment fields

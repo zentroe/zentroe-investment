@@ -197,6 +197,71 @@ export const updateActivity = async (req: Request, res: Response): Promise<void>
     const updateData = req.body;
     const adminId = (req as any).user?.id;
 
+    // First, get the existing activity to check its type and if it's generated
+    const existingActivity = await ActivityHistory.findById(activityId);
+    if (!existingActivity) {
+      res.status(404).json({ message: 'Activity not found' });
+      return;
+    }
+
+    // If the activity is generated, we need to update the corresponding real model
+    if (existingActivity.isGenerated && existingActivity.transactionId) {
+      const activityType = updateData.activityType || existingActivity.activityType;
+
+      switch (activityType) {
+        case 'deposit': {
+          // Find and update the real Deposit record
+          const depositId = existingActivity.transactionId.replace('TXN-DEP-', '');
+          const existingDeposit = await Deposit.findById(depositId);
+          await Deposit.findByIdAndUpdate(depositId, {
+            amount: updateData.amount || existingActivity.amount,
+            paymentMethod: updateData.paymentMethod || existingActivity.paymentMethod,
+            status: updateData.status || existingActivity.status,
+            processedAt: updateData.date || existingActivity.date,
+            adminNotes: `${existingDeposit?.adminNotes || 'Deposit processed successfully'} (Edited by admin)`
+          });
+          break;
+        }
+
+        case 'investment': {
+          // Find and update the real UserInvestment record
+          const investmentId = existingActivity.transactionId.replace('TXN-INV-', '');
+          await UserInvestment.findByIdAndUpdate(investmentId, {
+            amount: updateData.amount || existingActivity.amount,
+            startDate: updateData.date || existingActivity.date,
+            status: updateData.status || existingActivity.status
+          });
+          break;
+        }
+
+        case 'withdrawal': {
+          // Find and update the real Withdrawal record
+          const withdrawalId = existingActivity.transactionId.replace('TXN-WTH-', '');
+          await Withdrawal.findByIdAndUpdate(withdrawalId, {
+            amount: updateData.amount || existingActivity.amount,
+            status: updateData.status || existingActivity.status,
+            processedAt: updateData.date || existingActivity.date,
+            adminNotes: `Withdrawal processed successfully (Edited by admin)`
+          });
+          break;
+        }
+
+        case 'return':
+        case 'dividend': {
+          // For returns/dividends, we need to update DailyProfit records
+          // This is more complex as we need to find the profit by amount and date
+          // We'll update the activity history but note that profit records may be harder to match
+          console.log('⚠️  Return/dividend editing: ActivityHistory updated, but DailyProfit records remain unchanged for data integrity');
+          break;
+        }
+
+        default:
+          // For other types (login, kyc_update, referral, etc.), just update the activity history
+          break;
+      }
+    }
+
+    // Update the ActivityHistory record
     const activity = await ActivityHistory.findByIdAndUpdate(
       activityId,
       {
@@ -213,7 +278,7 @@ export const updateActivity = async (req: Request, res: Response): Promise<void>
     }
 
     res.json({
-      message: 'Activity updated successfully',
+      message: 'Activity updated successfully (both activity history and underlying records)',
       activity
     });
   } catch (error) {

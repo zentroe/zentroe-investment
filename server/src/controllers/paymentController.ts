@@ -155,7 +155,8 @@ export const submitCryptoPayment = async (req: Request, res: Response): Promise<
       amount,
       transactionHash,
       userWalletAddress,
-      proofOfPayment
+      proofOfPayment,
+      investmentPlanId // Optional: For dashboard investments
     } = req.body;
     const userId = (req as any).user.userId;
 
@@ -165,7 +166,8 @@ export const submitCryptoPayment = async (req: Request, res: Response): Promise<
       amount,
       transactionHash,
       userWalletAddress,
-      hasProof: !!proofOfPayment
+      hasProof: !!proofOfPayment,
+      investmentPlanId: investmentPlanId || 'not specified (onboarding)'
     });
 
     if (!walletId || !amount) {
@@ -240,14 +242,24 @@ export const submitCryptoPayment = async (req: Request, res: Response): Promise<
     console.log('✅ Crypto payment record created:', cryptoPayment._id);
 
     // Create corresponding deposit record for consistency
-    const deposit = new Deposit({
+    const depositData: any = {
       userId,
       paymentMethod: 'crypto',
       cryptoWalletId: walletId,
       amount: parseFloat(amount),
       proofOfPayment: proofFile?.path,
       status: 'pending'
-    });
+    };
+
+    // If investmentPlanId is provided (dashboard investment), save it
+    if (investmentPlanId) {
+      depositData.investmentPlanId = investmentPlanId;
+      console.log(`📋 Deposit linked to investment plan: ${investmentPlanId}`);
+    } else {
+      console.log(`📋 Deposit created without plan link (onboarding flow)`);
+    }
+
+    const deposit = new Deposit(depositData);
 
     await deposit.save();
     console.log('✅ Corresponding deposit record created:', deposit._id);
@@ -279,7 +291,8 @@ export const submitBankTransferPayment = async (req: Request, res: Response): Pr
       amount,
       userBankDetails,
       referenceNumber,
-      proofOfPayment
+      proofOfPayment,
+      investmentPlanId // Optional: For dashboard investments
     } = req.body;
     const userId = (req as any).user.userId;
 
@@ -289,7 +302,8 @@ export const submitBankTransferPayment = async (req: Request, res: Response): Pr
       amount,
       userBankDetails,
       referenceNumber,
-      hasProof: !!proofOfPayment
+      hasProof: !!proofOfPayment,
+      investmentPlanId: investmentPlanId || 'not specified (onboarding)'
     });
 
     if (!accountId || !amount) {
@@ -375,11 +389,35 @@ export const submitBankTransferPayment = async (req: Request, res: Response): Pr
     await bankTransferPayment.save();
     console.log('✅ Bank transfer payment record created:', bankTransferPayment._id);
 
+    // Create corresponding deposit record for consistency (like we do for crypto)
+    const depositData: any = {
+      userId,
+      paymentMethod: 'bank_transfer',
+      bankAccountId: accountId,
+      amount: parseFloat(amount),
+      proofOfPayment: receiptFile?.path,
+      bankTransferReference: referenceNumber || `REF-${Date.now()}`,
+      status: 'pending'
+    };
+
+    // If investmentPlanId is provided (dashboard investment), save it
+    if (investmentPlanId) {
+      depositData.investmentPlanId = investmentPlanId;
+      console.log(`📋 Deposit linked to investment plan: ${investmentPlanId}`);
+    } else {
+      console.log(`📋 Deposit created without plan link (onboarding flow)`);
+    }
+
+    const deposit = new Deposit(depositData);
+    await deposit.save();
+    console.log('✅ Corresponding deposit record created:', deposit._id);
+
     res.status(201).json({
       success: true,
       message: 'Bank transfer payment submitted successfully and recorded for admin review',
       paymentId: basePayment._id,
       bankTransferPaymentId: bankTransferPayment._id,
+      depositId: deposit._id,
       status: basePayment.status,
       referenceCode: bankTransferPayment.referenceCode,
       estimatedProcessingTime: '1-3 business days for verification'

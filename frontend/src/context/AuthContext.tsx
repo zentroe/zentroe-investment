@@ -12,6 +12,7 @@ interface User {
   onboardingStep?: number;
   isEmailVerified: boolean;
   walletBalance: number;
+  paymentReferenceId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +34,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const isAuthenticated = !!user;
+
+  // Inactivity timeout configuration (30 minutes)
+  const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+  const WARNING_TIME = 2 * 60 * 1000; // Show warning 2 minutes before logout
 
   const login = (userData: User) => {
     setUser(userData);
@@ -83,6 +88,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     initializeAuth();
   }, []);
+
+  // Auto-logout on inactivity
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let inactivityTimer: NodeJS.Timeout;
+    let warningTimer: NodeJS.Timeout;
+
+    const resetTimers = () => {
+      // Clear existing timers
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      if (warningTimer) clearTimeout(warningTimer);
+
+      // Show warning before auto-logout
+      warningTimer = setTimeout(() => {
+        toast.warning("You will be logged out in 2 minutes due to inactivity", {
+          duration: 5000,
+        });
+      }, INACTIVITY_TIMEOUT - WARNING_TIME);
+
+      // Auto-logout after inactivity
+      inactivityTimer = setTimeout(async () => {
+        toast.info("You have been logged out due to inactivity");
+        await logout();
+      }, INACTIVITY_TIMEOUT);
+    };
+
+    // Events that indicate user activity
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+
+    // Reset timer on any user activity
+    events.forEach(event => {
+      window.addEventListener(event, resetTimers);
+    });
+
+    // Start the initial timer
+    resetTimers();
+
+    // Cleanup
+    return () => {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      if (warningTimer) clearTimeout(warningTimer);
+      events.forEach(event => {
+        window.removeEventListener(event, resetTimers);
+      });
+    };
+  }, [isAuthenticated]);
 
   return (
     <AuthContext.Provider

@@ -186,6 +186,39 @@ export const completeUserInvestment = async (req: AuthenticatedAdminRequest, res
   }
 };
 
+/**
+ * Delete a user investment
+ */
+export const deleteUserInvestment = async (req: AuthenticatedAdminRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // Check if investment exists
+    const investment = await UserInvestment.findById(id);
+    if (!investment) {
+      res.status(404).json({ message: 'Investment not found' });
+      return;
+    }
+
+    // Delete associated daily profits
+    await DailyProfit.deleteMany({ investment: id });
+
+    // Delete the investment
+    await UserInvestment.findByIdAndDelete(id);
+
+    console.log(`🗑️ Admin deleted investment ${id} and associated profits`);
+
+    res.json({
+      message: 'Investment and associated profits deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete investment error:', error);
+    res.status(400).json({
+      message: error instanceof Error ? error.message : 'Failed to delete investment'
+    });
+  }
+};
+
 // ===== PROFIT MANAGEMENT =====
 
 /**

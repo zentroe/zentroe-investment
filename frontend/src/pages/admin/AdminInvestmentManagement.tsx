@@ -18,7 +18,8 @@ import {
   TrendingUp,
   DollarSign,
   Users,
-  Activity
+  Activity,
+  Trash2
 } from 'lucide-react';
 
 interface Investment {
@@ -98,6 +99,28 @@ export default function AdminInvestmentManagement() {
     } catch (error) {
       console.error(`Failed to ${action} investment:`, error);
       alert(`Failed to ${action} investment`);
+    }
+  };
+
+  const handleDeleteInvestment = async (investment: Investment) => {
+    const confirmMessage = `Are you sure you want to delete this investment?\n\n` +
+      `User: ${investment.user.firstName} ${investment.user.lastName}\n` +
+      `Amount: ${formatCurrency(investment.amount)}\n` +
+      `Plan: ${investment.investmentPlan.name}\n` +
+      `Status: ${investment.status}\n\n` +
+      `This action cannot be undone!`;
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`/admin/investments/${investment._id}`);
+      fetchInvestments(); // Refresh the list
+      alert('Investment deleted successfully!');
+    } catch (error) {
+      console.error('Failed to delete investment:', error);
+      alert('Failed to delete investment. Please try again.');
     }
   };
 
@@ -317,6 +340,15 @@ export default function AdminInvestmentManagement() {
                             Complete
                           </Button>
                         )}
+
+                        <Button
+                          variant="outline"
+                          onClick={() => handleDeleteInvestment(investment)}
+                          className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </Button>
                       </div>
                     </div>
                   </div>

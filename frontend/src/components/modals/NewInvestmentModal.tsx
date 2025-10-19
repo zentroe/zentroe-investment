@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, ChevronRight, ChevronLeft, FileText, Check, Download, Loader2 } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, FileText, Check, Download, Loader2, Wallet, Building2, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getInvestmentPlans, type InvestmentPlan } from '@/services/onboardingService';
@@ -7,6 +7,9 @@ import { getPaymentOptions, submitCryptoPayment, submitBankTransferPayment } fro
 import { saveInitialInvestmentAmount } from '@/services/investmentService';
 import { toast } from 'sonner';
 import SimpleCardPaymentForm from '@/components/payment/SimpleCardPaymentForm';
+import CryptoPaymentDisplay from '@/components/payment/CryptoPaymentDisplay';
+import BankTransferDisplay from '@/components/payment/BankTransferDisplay';
+import { useAuth } from '@/context/AuthContext';
 
 interface NewInvestmentModalProps {
   isOpen: boolean;
@@ -53,6 +56,7 @@ interface PaymentOptions {
 }
 
 export default function NewInvestmentModal({ isOpen, onClose, onSuccess }: NewInvestmentModalProps) {
+  const { user } = useAuth();
   const [stage, setStage] = useState<Stage>('select-plan');
   const [loading, setLoading] = useState(false);
 
@@ -155,7 +159,9 @@ export default function NewInvestmentModal({ isOpen, onClose, onSuccess }: NewIn
 
     setSavingAmount(true);
     try {
-      await saveInitialInvestmentAmount(numericAmount);
+      // Pass the selected plan ID to link it with the amount
+      await saveInitialInvestmentAmount(numericAmount, selectedPlan._id);
+      console.log(`💰 Saved investment amount $${numericAmount} with plan ${selectedPlan._id}`);
       setStage('payment');
     } catch (error) {
       console.error('Error saving investment amount:', error);
@@ -173,6 +179,11 @@ export default function NewInvestmentModal({ isOpen, onClose, onSuccess }: NewIn
   const handleManualPaymentConfirmation = async () => {
     if (confirmingPayment) return;
 
+    if (!selectedPlan) {
+      toast.error('Investment plan not selected');
+      return;
+    }
+
     setConfirmingPayment(true);
     try {
       let paymentResult = null;
@@ -187,8 +198,10 @@ export default function NewInvestmentModal({ isOpen, onClose, onSuccess }: NewIn
         paymentResult = await submitCryptoPayment({
           walletId: selectedWallet._id,
           amount: numericAmount,
-          proofOfPayment: transactionScreenshot
+          proofOfPayment: transactionScreenshot,
+          investmentPlanId: selectedPlan._id // ✅ Pass the selected plan ID
         });
+        console.log(`✅ Crypto payment submitted with plan ${selectedPlan._id}`);
         toast.success('Crypto payment recorded! Admin will verify your transaction.');
       } else if (selectedMethod === 'bank' && selectedBankAccount) {
         if (!transactionScreenshot) {
@@ -199,8 +212,10 @@ export default function NewInvestmentModal({ isOpen, onClose, onSuccess }: NewIn
         paymentResult = await submitBankTransferPayment({
           accountId: selectedBankAccount._id,
           amount: numericAmount,
-          proofOfPayment: transactionScreenshot
+          proofOfPayment: transactionScreenshot,
+          investmentPlanId: selectedPlan._id // ✅ Pass the selected plan ID
         });
+        console.log(`✅ Bank transfer submitted with plan ${selectedPlan._id}`);
         toast.success('Bank transfer recorded! Admin will verify your payment.');
       }
 
@@ -247,11 +262,6 @@ export default function NewInvestmentModal({ isOpen, onClose, onSuccess }: NewIn
       toast.error('Failed to upload screenshot');
       setUploadingScreenshot(false);
     }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard');
   };
 
   const downloadReceipt = () => {
@@ -436,7 +446,7 @@ export default function NewInvestmentModal({ isOpen, onClose, onSuccess }: NewIn
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
           <div>
@@ -607,6 +617,70 @@ export default function NewInvestmentModal({ isOpen, onClose, onSuccess }: NewIn
                   {/* Payment Method Selection */}
                   {paymentOptions && (
                     <>
+                      {/* Show method selector if more than one method available */}
+                      {(() => {
+                        const availableMethods = [];
+                        if (paymentOptions.config.cardPaymentEnabled) availableMethods.push('card');
+                        if (paymentOptions.config.cryptoEnabled && paymentOptions.cryptoWallets.length > 0) availableMethods.push('crypto');
+                        if (paymentOptions.config.bankTransferEnabled && paymentOptions.bankAccounts.length > 0) availableMethods.push('bank');
+
+                        return availableMethods.length > 1 ? (
+                          <div className="mb-6">
+                            <h3 className="text-lg font-semibold mb-4">Select Payment Method</h3>
+                            <div className="grid grid-cols-3 gap-3">
+                              {availableMethods.includes('card') && (
+                                <button
+                                  onClick={() => setSelectedMethod('card')}
+                                  className={`p-4 border-2 rounded-lg text-center transition-all ${selectedMethod === 'card'
+                                    ? 'border-primary bg-primary/5 text-primary'
+                                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                                    }`}
+                                >
+                                  <CreditCard className="h-6 w-6 mx-auto mb-2" />
+                                  <div className="font-medium text-sm">Card</div>
+                                </button>
+                              )}
+
+                              {availableMethods.includes('crypto') && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedMethod('crypto');
+                                    if (paymentOptions.cryptoWallets.length > 0) {
+                                      setSelectedWallet(paymentOptions.cryptoWallets[0]);
+                                    }
+                                  }}
+                                  className={`p-4 border-2 rounded-lg text-center transition-all ${selectedMethod === 'crypto'
+                                    ? 'border-primary bg-primary/5 text-primary'
+                                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                                    }`}
+                                >
+                                  <Wallet className="h-6 w-6 mx-auto mb-2" />
+                                  <div className="font-medium text-sm">Crypto</div>
+                                </button>
+                              )}
+
+                              {availableMethods.includes('bank') && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedMethod('bank');
+                                    if (paymentOptions.bankAccounts.length > 0) {
+                                      setSelectedBankAccount(paymentOptions.bankAccounts[0]);
+                                    }
+                                  }}
+                                  className={`p-4 border-2 rounded-lg text-center transition-all ${selectedMethod === 'bank'
+                                    ? 'border-primary bg-primary/5 text-primary'
+                                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                                    }`}
+                                >
+                                  <Building2 className="h-6 w-6 mx-auto mb-2" />
+                                  <div className="font-medium text-sm">Bank</div>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+
                       {/* Card Payment */}
                       {selectedMethod === 'card' && paymentOptions.config.cardPaymentEnabled && (
                         <SimpleCardPaymentForm
@@ -620,51 +694,15 @@ export default function NewInvestmentModal({ isOpen, onClose, onSuccess }: NewIn
                       {/* Crypto Payment */}
                       {selectedMethod === 'crypto' && selectedWallet && (
                         <div className="space-y-4">
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <h3 className="font-semibold text-blue-900 mb-2">Payment Instructions</h3>
-                            <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
-                              <li>Copy the wallet address below</li>
-                              <li>Send ${Number(amount.trim().replace(/[^0-9.]/g, '')).toLocaleString()} worth of cryptocurrency</li>
-                              <li>Upload a screenshot of your transaction</li>
-                              <li>Click "Confirm Payment" to submit</li>
-                            </ol>
-                          </div>
-
-                          <div className="bg-white border rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-medium">{selectedWallet.name}</span>
-                              {selectedWallet.network && (
-                                <span className="text-xs bg-gray-100 px-2 py-1 rounded">{selectedWallet.network}</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <code className="flex-1 bg-gray-50 p-2 rounded text-sm break-all">{selectedWallet.address}</code>
-                              <Button 
-                                onClick={() => copyToClipboard(selectedWallet.address)} 
-                                className="shrink-0 bg-primary text-white hover:bg-primary/90 px-4"
-                              >
-                                Copy
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="block text-sm font-medium text-gray-700">
-                              Upload Transaction Screenshot *
-                            </label>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleScreenshotUpload}
-                              disabled={uploadingScreenshot}
-                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
-                            />
-                            {transactionScreenshot && (
-                              <div className="mt-2">
-                                <img src={transactionScreenshot} alt="Transaction proof" className="max-h-40 rounded border" />
-                              </div>
-                            )}
-                          </div>
+                          <CryptoPaymentDisplay
+                            cryptoWallets={paymentOptions?.cryptoWallets || []}
+                            selectedWallet={selectedWallet}
+                            onWalletChange={setSelectedWallet}
+                            amount={Number(amount.trim().replace(/[^0-9.]/g, ''))}
+                            transactionScreenshot={transactionScreenshot}
+                            onScreenshotUpload={handleScreenshotUpload}
+                            uploadingScreenshot={uploadingScreenshot}
+                          />
 
                           <div className="flex gap-3 pt-4">
                             <Button onClick={() => setStage('enter-amount')} variant="outline" className="flex-1">
@@ -692,38 +730,13 @@ export default function NewInvestmentModal({ isOpen, onClose, onSuccess }: NewIn
                       {/* Bank Transfer */}
                       {selectedMethod === 'bank' && selectedBankAccount && (
                         <div className="space-y-4">
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <h3 className="font-semibold text-blue-900 mb-2">Bank Transfer Instructions</h3>
-                            <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
-                              <li>Use the bank details below to make a transfer</li>
-                              <li>Transfer ${Number(amount.trim().replace(/[^0-9.]/g, '')).toLocaleString()}</li>
-                              <li>Upload proof of payment</li>
-                              <li>Click "Confirm Payment"</li>
-                            </ol>
-                          </div>
-
-                          <div className="bg-white border rounded-lg p-4 space-y-3">
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div>
-                                <span className="text-gray-600">Bank Name:</span>
-                                <p className="font-medium">{selectedBankAccount.bankName}</p>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">Account Name:</span>
-                                <p className="font-medium">{selectedBankAccount.accountName}</p>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">Account Number:</span>
-                                <p className="font-medium">{selectedBankAccount.accountNumber}</p>
-                              </div>
-                              {selectedBankAccount.routingNumber && (
-                                <div>
-                                  <span className="text-gray-600">Routing Number:</span>
-                                  <p className="font-medium">{selectedBankAccount.routingNumber}</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                          <BankTransferDisplay
+                            bankAccounts={paymentOptions?.bankAccounts || []}
+                            selectedBankAccount={selectedBankAccount}
+                            onBankAccountChange={setSelectedBankAccount}
+                            amount={Number(amount.trim().replace(/[^0-9.]/g, ''))}
+                            paymentReferenceId={user?.paymentReferenceId}
+                          />
 
                           <div className="space-y-2">
                             <label className="block text-sm font-medium text-gray-700">
@@ -823,16 +836,16 @@ export default function NewInvestmentModal({ isOpen, onClose, onSuccess }: NewIn
               </div>
 
               <div className="space-y-3">
-                <Button 
-                  onClick={downloadReceipt} 
-                  variant="outline" 
+                <Button
+                  onClick={downloadReceipt}
+                  variant="outline"
                   className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
                 >
                   <Download size={18} className="mr-2" />
                   Download Receipt
                 </Button>
-                <Button 
-                  onClick={handleSuccessComplete} 
+                <Button
+                  onClick={handleSuccessComplete}
                   className="w-full bg-primary text-white hover:bg-primary/90"
                 >
                   Go to Portfolio

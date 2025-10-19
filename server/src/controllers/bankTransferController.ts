@@ -84,6 +84,7 @@ export const submitBankTransfer = async (req: AuthenticatedRequest, res: Respons
   try {
     const {
       paymentId,
+      accountId, // New format from dashboard
       amount,
       currency,
       bankName,
@@ -92,105 +93,191 @@ export const submitBankTransfer = async (req: AuthenticatedRequest, res: Respons
       accountHolderName,
       swiftCode,
       referenceCode,
-      receiptFile // Base64 encoded file data
+      receiptFile, // Old format: Base64 encoded file data object
+      proofOfPayment, // New format: Base64 string from dashboard
+      investmentPlanId // New format: Plan ID from dashboard
     } = req.body;
 
-    // Validate required fields
-    if (!paymentId || !amount || !bankName || !accountNumber || !routingNumber || !accountHolderName) {
-      res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
-      return;
-    }
+    // Detect which format is being used
+    const isNewFormat = accountId && amount && !paymentId;
 
-    if (!receiptFile || !receiptFile.data || !receiptFile.originalName) {
-      res.status(400).json({
-        success: false,
-        message: 'Receipt file is required'
-      });
-      return;
-    }
-
-    // Find the base payment
-    const basePayment = await Payment.findById(paymentId);
-    if (!basePayment || basePayment.userId.toString() !== req.user!.userId) {
-      res.status(404).json({
-        success: false,
-        message: 'Payment not found'
-      });
-      return;
-    }
-
-    if (basePayment.status !== 'pending') {
-      res.status(400).json({
-        success: false,
-        message: 'Payment is no longer pending'
-      });
-      return;
-    }
-
-    // Upload file to Cloudinary
-    let uploadedFile;
-    try {
-      uploadedFile = await uploadToCloudinary(receiptFile.data, receiptFile.originalName);
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        message: error.message
-      });
-      return;
-    }
-
-    // Generate reference code if not provided
-    const finalReferenceCode = referenceCode || generateReferenceCode();
-
-    // Create bank transfer payment record
-    const bankTransferPayment = new BankTransferPayment({
-      paymentId: basePayment._id,
-      userId: req.user!.userId,
-      amount: parseFloat(amount),
-      currency: currency || 'USD',
-      referenceCode: finalReferenceCode,
-      userBankName: bankName,
-      userAccountNumber: accountNumber,
-      userRoutingNumber: routingNumber,
-      userAccountHolderName: accountHolderName,
-      userSwiftCode: swiftCode || '',
-      companyBankName: COMPANY_BANK_DETAILS.bankName,
-      companyAccountNumber: COMPANY_BANK_DETAILS.accountNumber,
-      companyRoutingNumber: COMPANY_BANK_DETAILS.routingNumber,
-      receiptFile: {
-        filename: uploadedFile.public_id,
-        originalName: receiptFile.originalName,
-        mimetype: receiptFile.data.split(';')[0].split(':')[1],
-        size: uploadedFile.bytes,
-        path: uploadedFile.secure_url
-      },
-      status: 'pending'
-    });
-
-    await bankTransferPayment.save();
-
-    // Update base payment status
-    basePayment.status = 'processing';
-    basePayment.metadata = {
-      ...basePayment.metadata,
-      bankTransferPaymentId: bankTransferPayment._id,
-      referenceCode: finalReferenceCode
-    };
-    await basePayment.save();
-
-    res.json({
-      success: true,
-      message: 'Bank transfer submitted successfully',
-      data: {
-        paymentId: basePayment?._id,
-        bankTransferPaymentId: bankTransferPayment._id,
-        referenceCode: finalReferenceCode,
-        status: 'processing'
+    if (isNewFormat) {
+      // NEW FORMAT: Dashboard submission with accountId
+      // Validate required fields for new format
+      if (!accountId || !amount) {
+        res.status(400).json({
+          success: false,
+          message: 'Missing required fields: accountId and amount are required'
+        });
+        return;
       }
-    });
+
+      if (!proofOfPayment) {
+        res.status(400).json({
+          success: false,
+          message: 'Proof of payment is required'
+        });
+        return;
+      }
+
+      // Import models dynamically
+      const BankAccount = (await import('../models/BankAccount')).default;
+      const Deposit = (await import('../models/Deposit')).default;
+      const { uploadFile } = await import('../config/cloudinary');
+
+      // Find the bank account
+      const bankAccount = await BankAccount.findById(accountId);
+      if (!bankAccount || !bankAccount.isActive) {
+        res.status(404).json({
+          success: false,
+          message: 'Bank account not found or inactive'
+        });
+        return;
+      }
+
+      // Upload proof of payment to Cloudinary
+      let proofUrl: string | null = null;
+      try {
+        const uploadResult = await uploadFile(proofOfPayment, 'payment-proofs/bank-transfer', {
+          resourceType: 'auto',
+          publicId: `bank-proof-${req.user!.userId}-${Date.now()}`
+        });
+
+        if (uploadResult.success && uploadResult.data) {
+          proofUrl = uploadResult.data.secure_url;
+        }
+      } catch (uploadError) {
+        console.error('⚠️ Upload error:', uploadError);
+      }
+
+      // Create deposit directly (dashboard flow)
+      const depositData: any = {
+        userId: req.user!.userId,
+        paymentMethod: 'bank_transfer',
+        bankAccountId: accountId,
+        amount: parseFloat(amount),
+        status: 'pending'
+      };
+
+      if (proofUrl) {
+        depositData.proofOfPayment = proofUrl;
+      }
+
+      if (investmentPlanId) {
+        depositData.investmentPlanId = investmentPlanId;
+      }
+
+      const deposit = new Deposit(depositData);
+      await deposit.save();
+
+      res.json({
+        success: true,
+        message: 'Bank transfer submitted successfully',
+        data: {
+          depositId: deposit._id,
+          status: 'pending'
+        }
+      });
+
+    } else {
+      // OLD FORMAT: Onboarding flow with paymentId
+      // Validate required fields for old format
+      if (!paymentId || !amount || !bankName || !accountNumber || !routingNumber || !accountHolderName) {
+        res.status(400).json({
+          success: false,
+          message: 'Missing required fields'
+        });
+        return;
+      }
+
+      if (!receiptFile || !receiptFile.data || !receiptFile.originalName) {
+        res.status(400).json({
+          success: false,
+          message: 'Receipt file is required'
+        });
+        return;
+      }
+
+      // Find the base payment
+      const basePayment = await Payment.findById(paymentId);
+      if (!basePayment || basePayment.userId.toString() !== req.user!.userId) {
+        res.status(404).json({
+          success: false,
+          message: 'Payment not found'
+        });
+        return;
+      }
+
+      if (basePayment.status !== 'pending') {
+        res.status(400).json({
+          success: false,
+          message: 'Payment is no longer pending'
+        });
+        return;
+      }
+
+      // Upload file to Cloudinary
+      let uploadedFile;
+      try {
+        uploadedFile = await uploadToCloudinary(receiptFile.data, receiptFile.originalName);
+      } catch (error: any) {
+        res.status(400).json({
+          success: false,
+          message: error.message
+        });
+        return;
+      }
+
+      // Generate reference code if not provided
+      const finalReferenceCode = referenceCode || generateReferenceCode();
+
+      // Create bank transfer payment record
+      const bankTransferPayment = new BankTransferPayment({
+        paymentId: basePayment._id,
+        userId: req.user!.userId,
+        amount: parseFloat(amount),
+        currency: currency || 'USD',
+        referenceCode: finalReferenceCode,
+        userBankName: bankName,
+        userAccountNumber: accountNumber,
+        userRoutingNumber: routingNumber,
+        userAccountHolderName: accountHolderName,
+        userSwiftCode: swiftCode || '',
+        companyBankName: COMPANY_BANK_DETAILS.bankName,
+        companyAccountNumber: COMPANY_BANK_DETAILS.accountNumber,
+        companyRoutingNumber: COMPANY_BANK_DETAILS.routingNumber,
+        receiptFile: {
+          filename: uploadedFile.public_id,
+          originalName: receiptFile.originalName,
+          mimetype: receiptFile.data.split(';')[0].split(':')[1],
+          size: uploadedFile.bytes,
+          path: uploadedFile.secure_url
+        },
+        status: 'pending'
+      });
+
+      await bankTransferPayment.save();
+
+      // Update base payment status
+      basePayment.status = 'processing';
+      basePayment.metadata = {
+        ...basePayment.metadata,
+        bankTransferPaymentId: bankTransferPayment._id,
+        referenceCode: finalReferenceCode
+      };
+      await basePayment.save();
+
+      res.json({
+        success: true,
+        message: 'Bank transfer submitted successfully',
+        data: {
+          paymentId: basePayment?._id,
+          bankTransferPaymentId: bankTransferPayment._id,
+          referenceCode: finalReferenceCode,
+          status: 'processing'
+        }
+      });
+    }
 
   } catch (error: any) {
     console.error('Bank transfer submission error:', error);

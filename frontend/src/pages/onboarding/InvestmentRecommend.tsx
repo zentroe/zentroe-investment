@@ -19,9 +19,68 @@ function getRecommendedPlan(userData: any, investmentPlans: InvestmentPlan[]): I
     return null;
   }
 
+  // Convert user's investment range to numeric values for comparison
+  const getUserInvestmentRange = (rangeString: string): { min: number, max: number } => {
+    // Normalize the string to handle both formats: "- " and " to "
+    const normalizedRange = rangeString.replace(/ to /g, ' - ');
+
+    const ranges: Record<string, { min: number, max: number }> = {
+      'Less than $1,000': { min: 0, max: 999 },
+      '$1,000 - $10,000': { min: 1000, max: 10000 },
+      '$10,000 - $50,000': { min: 10000, max: 50000 },
+      '$50,000 - $100,000': { min: 50000, max: 100000 },
+      '$100,000 - $1,000,000': { min: 100000, max: 1000000 },
+      'More than $1,000,000': { min: 1000000, max: Infinity }
+    };
+
+    console.log(`📊 Converting range string: "${rangeString}"`);
+    console.log(`   Normalized to: "${normalizedRange}"`);
+    const result = ranges[normalizedRange];
+    if (!result) {
+      console.warn(`⚠️ Unknown range string: "${normalizedRange}", using default`);
+      return { min: 0, max: Infinity };
+    }
+    console.log(`   → min: ${result.min}, max: ${result.max}`);
+    return result;
+  };
+
+  // Get user's investment range from their selection or actual amount
+  const userRange = userData.annualInvestmentAmount
+    ? getUserInvestmentRange(userData.annualInvestmentAmount)
+    : { min: userData.initialInvestmentAmount || 0, max: userData.initialInvestmentAmount || Infinity };
+
+  console.log(`💰 User's investment range: $${userRange.min.toLocaleString()} - $${userRange.max === Infinity ? '∞' : userRange.max.toLocaleString()}`);
+  console.log(`   Based on annualInvestmentAmount: "${userData.annualInvestmentAmount}"`);
+  console.log(`   initialInvestmentAmount: ${userData.initialInvestmentAmount || 'not set'}`);
+
   // Filter plans based on user profile matching
   const matchingPlans = investmentPlans.filter(plan => {
     console.log(`🔍 Checking plan "${plan.name}" against user profile:`);
+
+    // CRITICAL: Check if there's ANY overlap between user's range and plan's range
+    const planMin = plan.minInvestment || 0;
+    const planMax = plan.maxInvestment || Infinity;
+
+    console.log(`  - Plan min/max from DB: minInvestment=${plan.minInvestment}, maxInvestment=${plan.maxInvestment}`);
+
+    // Special check: if user's minimum is above plan's maximum (and plan has a defined max), no match
+    if (plan.maxInvestment && userRange.min > plan.maxInvestment) {
+      console.log(`  ❌ User minimum ($${userRange.min.toLocaleString()}) is above plan maximum ($${plan.maxInvestment.toLocaleString()})`);
+      return false;
+    }
+
+    // Ranges overlap if: userMin <= planMax AND userMax >= planMin
+    const hasOverlap = userRange.min <= planMax && userRange.max >= planMin;
+
+    console.log(`  - Range overlap check: ${hasOverlap}`);
+    console.log(`    User range: $${userRange.min.toLocaleString()} - $${userRange.max === Infinity ? '∞' : userRange.max.toLocaleString()}`);
+    console.log(`    Plan range: $${planMin.toLocaleString()} - $${planMax === Infinity ? '∞' : planMax.toLocaleString()}`);
+
+    // If no overlap, exclude this plan immediately
+    if (!hasOverlap) {
+      console.log(`  ❌ No overlap between user range and plan range`);
+      return false;
+    }
 
     // Check account type matching
     const accountTypeMatch = !plan.targetAccountTypes.length ||
@@ -33,12 +92,12 @@ function getRecommendedPlan(userData: any, investmentPlans: InvestmentPlan[]): I
       plan.targetIncomeRanges.includes(userData.annualIncome);
     console.log(`  - Income match: ${incomeMatch} (user: ${userData.annualIncome}, targets: [${plan.targetIncomeRanges.join(', ')}])`);
 
-    // Check investment amount matching  
+    // Check investment amount matching (this is about their annual investment preference, not actual amount)
     const investmentMatch = !plan.targetInvestmentAmounts.length ||
       plan.targetInvestmentAmounts.includes(userData.annualInvestmentAmount);
     console.log(`  - Investment amount match: ${investmentMatch} (user: ${userData.annualInvestmentAmount}, targets: [${plan.targetInvestmentAmounts.join(', ')}])`);
 
-    const isMatch = accountTypeMatch && incomeMatch && investmentMatch;
+    const isMatch = hasOverlap && accountTypeMatch && incomeMatch && investmentMatch;
     console.log(`  ✨ Overall match: ${isMatch}`);
 
     return isMatch;
@@ -56,7 +115,20 @@ function getRecommendedPlan(userData: any, investmentPlans: InvestmentPlan[]): I
   console.log("🔄 No exact matches, trying fallback logic...");
 
   // Fallback: return highest priority plan that matches account type or category
+  // BUT still respect the amount range overlap
   const fallbackPlans = investmentPlans.filter(plan => {
+    // CRITICAL: Still check range overlap in fallback
+    const planMin = plan.minInvestment || 0;
+    const planMax = plan.maxInvestment || Infinity;
+    const hasOverlap = userRange.min <= planMax && userRange.max >= planMin;
+
+    if (!hasOverlap) {
+      console.log(`🔍 Fallback: Skipping ${plan.name} - no range overlap`);
+      console.log(`   User: $${userRange.min.toLocaleString()} - $${userRange.max === Infinity ? '∞' : userRange.max.toLocaleString()}`);
+      console.log(`   Plan: $${planMin.toLocaleString()} - $${planMax === Infinity ? '∞' : planMax.toLocaleString()}`);
+      return false;
+    }
+
     if (userData.accountType === 'retirement') {
       console.log(`🔍 Fallback: Checking retirement plan ${plan.name}, category: ${plan.category}`);
       return plan.category === 'retirement';
@@ -81,17 +153,47 @@ function getRecommendedPlan(userData: any, investmentPlans: InvestmentPlan[]): I
     return topFallback;
   }
 
-  console.log("🔄 No fallback matches, returning highest priority plan...");
+  console.log("🔄 No fallback matches, returning highest priority plan within range overlap...");
 
-  // Final fallback: return highest priority active plan
-  const finalPlan = investmentPlans.sort((a, b) => b.priority - a.priority)[0] || null;
-  if (finalPlan) {
-    console.log(`✅ Returning highest priority plan: ${finalPlan.name} (priority: ${finalPlan.priority})`);
-  } else {
-    console.log("❌ No plans available at all");
+  // Final fallback: return highest priority active plan that has range overlap
+  const plansInRange = investmentPlans.filter(plan => {
+    const planMin = plan.minInvestment || 0;
+    const planMax = plan.maxInvestment || Infinity;
+    const hasOverlap = userRange.min <= planMax && userRange.max >= planMin;
+
+    if (hasOverlap) {
+      console.log(`✅ Plan ${plan.name} has range overlap`);
+      console.log(`   User: $${userRange.min.toLocaleString()} - $${userRange.max === Infinity ? '∞' : userRange.max.toLocaleString()}`);
+      console.log(`   Plan: $${planMin.toLocaleString()} - $${planMax === Infinity ? '∞' : planMax.toLocaleString()}`);
+    }
+    return hasOverlap;
+  });
+
+  if (plansInRange.length > 0) {
+    const finalPlan = plansInRange.sort((a, b) => b.priority - a.priority)[0];
+    console.log(`✅ Returning highest priority plan in range: ${finalPlan.name} (priority: ${finalPlan.priority})`);
+    return finalPlan;
   }
 
-  return finalPlan;
+  // Absolute final fallback: ONLY if no plans exist at all
+  if (investmentPlans.length === 0) {
+    console.log("❌ No plans available at all");
+    return null;
+  }
+
+  // If we get here, it means NO plans match the user's range
+  console.log("⚠️ CRITICAL: No plans match user's investment range!");
+  console.log(`   User range: $${userRange.min.toLocaleString()} - $${userRange.max === Infinity ? '∞' : userRange.max.toLocaleString()}`);
+  console.log(`   Available plans:`);
+  investmentPlans.forEach(plan => {
+    const planMin = plan.minInvestment || 0;
+    const planMax = plan.maxInvestment || Infinity;
+    console.log(`     - ${plan.name}: $${planMin.toLocaleString()} - $${planMax === Infinity ? '∞' : planMax.toLocaleString()}`);
+  });
+
+  // Don't return a mismatched plan - return null to show error message
+  console.log("❌ Returning null - no suitable plans available");
+  return null;
 } export default function InvestmentRecommendation() {
   const [tab, setTab] = useState("best");
   const [loading, setLoading] = useState(false);

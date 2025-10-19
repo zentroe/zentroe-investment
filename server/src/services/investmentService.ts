@@ -105,10 +105,23 @@ export const activateInvestmentFromPayment = async (
       throw new Error('User not found');
     }
 
-    let investmentPlanId: Schema.Types.ObjectId | undefined = user.selectedInvestmentPlan;
+    let investmentPlanId: Schema.Types.ObjectId | undefined;
 
-    // If user doesn't have a selected investment plan, use default
-    if (!investmentPlanId) {
+    // PRIORITY 1: Check if the deposit has an investmentPlanId (dashboard investment)
+    const Deposit = require('../models/Deposit').default;
+    const deposit = await Deposit.findById(paymentId);
+
+    if (deposit && deposit.investmentPlanId) {
+      investmentPlanId = deposit.investmentPlanId;
+      console.log(`✅ Using investment plan from deposit: ${investmentPlanId}`);
+    }
+    // PRIORITY 2: Use user's selected plan (onboarding recommendation)
+    else if (user.selectedInvestmentPlan) {
+      investmentPlanId = user.selectedInvestmentPlan;
+      console.log(`✅ Using user's selected investment plan: ${investmentPlanId}`);
+    }
+    // PRIORITY 3: Find a default plan
+    else {
       console.log(`⚠️ User ${userId} has no selected investment plan, finding default...`);
       const defaultPlan = await InvestmentPlan.findOne({
         isActive: true,

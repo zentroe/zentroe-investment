@@ -190,6 +190,7 @@ export const submitCryptoPayment = async (req: AuthenticatedRequest, res: Respon
   try {
     const {
       paymentId,
+      walletId, // NEW: From dashboard modal
       amount,
       currency,
       cryptocurrency,
@@ -197,10 +198,106 @@ export const submitCryptoPayment = async (req: AuthenticatedRequest, res: Respon
       transactionHash,
       userWalletAddress,
       networkFee,
-      proofFile // Base64 encoded file data
+      proofFile, // Old format: { data, originalName }
+      proofOfPayment, // NEW: Direct base64 string from dashboard
+      investmentPlanId // NEW: For dashboard investments
     } = req.body;
 
-    // Validate required fields
+    // Support both old format (paymentId required) and new format (walletId + amount)
+    const isNewFormat = walletId && amount && !paymentId;
+
+    if (isNewFormat) {
+      // NEW FORMAT: Dashboard investment modal
+      console.log('🔵 Processing crypto payment (new format - dashboard):', {
+        walletId,
+        amount,
+        investmentPlanId: investmentPlanId || 'not specified',
+        hasProof: !!proofOfPayment
+      });
+
+      // Validate new format fields
+      if (!walletId || !amount) {
+        res.status(400).json({
+          success: false,
+          message: 'Wallet ID and amount are required'
+        });
+        return;
+      }
+
+      if (!proofOfPayment) {
+        res.status(400).json({
+          success: false,
+          message: 'Proof of payment is required'
+        });
+        return;
+      }
+
+      // Import models
+      const CryptoWallet = (await import('../models/CryptoWallet')).default;
+      const Deposit = (await import('../models/Deposit')).default;
+      const { uploadFile } = await import('../config/cloudinary');
+
+      // Get wallet details
+      const wallet = await CryptoWallet.findById(walletId);
+      if (!wallet || !wallet.isActive) {
+        res.status(404).json({
+          success: false,
+          message: 'Wallet not found or inactive'
+        });
+        return;
+      }
+
+      // Upload proof to Cloudinary
+      let proofUrl: string | null = null;
+      try {
+        const uploadResult = await uploadFile(proofOfPayment, 'payment-proofs/crypto', {
+          resourceType: 'auto',
+          publicId: `crypto-proof-${req.user!.userId}-${Date.now()}`
+        });
+
+        if (uploadResult.success && uploadResult.data) {
+          proofUrl = uploadResult.data.secure_url;
+        }
+      } catch (uploadError) {
+        console.error('⚠️ Upload error:', uploadError);
+      }
+
+      // Create deposit record
+      const depositData: any = {
+        userId: req.user!.userId,
+        paymentMethod: 'crypto',
+        cryptoWalletId: walletId,
+        amount: parseFloat(amount as string),
+        status: 'pending'
+      };
+
+      if (proofUrl) {
+        depositData.proofOfPayment = proofUrl;
+      }
+
+      if (investmentPlanId) {
+        depositData.investmentPlanId = investmentPlanId;
+      }
+
+      const deposit = new Deposit(depositData);
+      await deposit.save();
+
+      console.log('✅ Crypto payment submitted (new format):', deposit._id);
+
+      res.status(201).json({
+        success: true,
+        message: 'Crypto payment submitted successfully',
+        paymentId: deposit._id,
+        depositId: deposit._id,
+        status: 'pending'
+      });
+      return;
+    }
+
+    // OLD FORMAT: Original implementation
+    console.log('🟡 Processing crypto payment (old format - onboarding)');
+
+    // Validate old format required fields
     if (!paymentId || !amount || !cryptocurrency || !transactionHash || !userWalletAddress) {
       res.status(400).json({
         success: false,

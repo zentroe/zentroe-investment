@@ -6,6 +6,7 @@ import {
   pauseUserInvestment,
   resumeUserInvestment,
   completeUserInvestment,
+  deleteUserInvestment,
 
   // Profit Management
   getDailyProfitOverview,
@@ -62,6 +63,13 @@ router.put('/investments/:id/resume', resumeUserInvestment as any);
  * @access  Admin
  */
 router.put('/investments/:id/complete', completeUserInvestment as any);
+
+/**
+ * @route   DELETE /api/admin/investments/:id
+ * @desc    Delete a user investment and associated profits
+ * @access  Admin
+ */
+router.delete('/investments/:id', deleteUserInvestment as any);
 
 // ===== PROFIT MANAGEMENT ROUTES =====
 

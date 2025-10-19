@@ -23,6 +23,7 @@ export const submitCryptoPayment = async (paymentData: {
   walletId: string;
   amount: number;
   proofOfPayment: string; // base64 image
+  investmentPlanId?: string; // OPTIONAL: For dashboard investments
 }) => {
   try {
     const response = await axios.post('/payments/crypto', paymentData);
@@ -39,6 +40,7 @@ export const submitBankTransferPayment = async (paymentData: {
   accountId: string;
   amount: number;
   proofOfPayment: string; // base64 image
+  investmentPlanId?: string; // OPTIONAL: For dashboard investments
 }) => {
   try {
     const response = await axios.post('/payments/bank-transfer', paymentData);

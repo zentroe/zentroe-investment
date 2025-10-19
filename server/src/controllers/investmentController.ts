@@ -16,7 +16,7 @@ import { createTransaction } from "./transactionController";
 export const updateInitialInvestmentAmount = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.userId;
-    const { initialInvestmentAmount } = req.body;
+    const { initialInvestmentAmount, investmentPlanId } = req.body;
 
     if (!userId) {
       res.status(401).json({ message: "User not authenticated" });
@@ -28,9 +28,20 @@ export const updateInitialInvestmentAmount = async (req: AuthenticatedRequest, r
       return;
     }
 
+    const updateData: any = { initialInvestmentAmount };
+
+    // If investmentPlanId is provided (from dashboard), save it
+    // If not provided (from onboarding), leave it to the recommendation flow
+    if (investmentPlanId) {
+      updateData.selectedInvestmentPlan = investmentPlanId;
+      console.log(`💰 Saving investment amount $${initialInvestmentAmount} with plan ${investmentPlanId}`);
+    } else {
+      console.log(`💰 Saving investment amount $${initialInvestmentAmount} (no plan specified - onboarding flow)`);
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { initialInvestmentAmount },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -44,6 +55,7 @@ export const updateInitialInvestmentAmount = async (req: AuthenticatedRequest, r
       user: {
         id: updatedUser._id,
         initialInvestmentAmount: updatedUser.initialInvestmentAmount,
+        selectedInvestmentPlan: updatedUser.selectedInvestmentPlan,
       },
     });
   } catch (error) {

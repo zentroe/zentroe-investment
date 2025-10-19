@@ -92,6 +92,9 @@ export interface IUser extends Document {
     currentTier: string;
   };
 
+  // Payment Reference (for bank transfer reconciliation)
+  paymentReferenceId?: string; // Unique reference ID for bank transfers (e.g., ZENT-123456)
+
   // Timestamps
   createdAt?: Date;
   updatedAt?: Date;
@@ -240,6 +243,13 @@ const UserSchema = new Schema<IUser>(
         default: 'bronze'
       }
     },
+
+    // Payment Reference (for bank transfer reconciliation)
+    paymentReferenceId: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow null values but ensure uniqueness when present
+    },
   },
   {
     timestamps: true,
@@ -259,5 +269,29 @@ UserSchema.index({ createdAt: 1 });
 UserSchema.index({ referredBy: 1 });
 UserSchema.index({ 'kyc.status': 1 });
 UserSchema.index({ isActive: 1 });
+
+// Pre-save hook to generate payment reference ID
+UserSchema.pre('save', async function (next) {
+  // Generate payment reference ID if it doesn't exist
+  if (!this.paymentReferenceId && this.isNew) {
+    // Generate a 6-digit unique number
+    const randomNum = Math.floor(100000 + Math.random() * 900000);
+    this.paymentReferenceId = `ZENT-${randomNum}`;
+
+    // Check for uniqueness (very rare collision, but handle it)
+    let attempts = 0;
+    while (attempts < 10) {
+      const exists = await mongoose.model('User').findOne({
+        paymentReferenceId: this.paymentReferenceId
+      });
+      if (!exists) break;
+
+      const newRandomNum = Math.floor(100000 + Math.random() * 900000);
+      this.paymentReferenceId = `ZENT-${newRandomNum}`;
+      attempts++;
+    }
+  }
+  next();
+});
 
 export const User = mongoose.model<IUser>("User", UserSchema);

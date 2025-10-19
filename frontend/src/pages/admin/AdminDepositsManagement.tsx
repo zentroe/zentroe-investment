@@ -296,6 +296,9 @@ const AdminDepositsManagement: React.FC = () => {
                   Method
                 </th>
                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  Proof
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
@@ -331,6 +334,37 @@ const AdminDepositsManagement: React.FC = () => {
                       {getMethodIcon(deposit.method)}
                       <span className="ml-2 text-sm text-gray-900 capitalize">{deposit.method}</span>
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {deposit.proofOfPayment ? (
+                      <a
+                        href={deposit.proofOfPayment}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group relative inline-block"
+                        title="View proof of payment"
+                      >
+                        <img
+                          src={deposit.proofOfPayment}
+                          alt="Payment proof thumbnail"
+                          className="h-10 w-10 rounded object-cover border border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+                          onError={(e) => {
+                            // If image fails to load, show icon instead
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            const parent = (e.target as HTMLImageElement).parentElement;
+                            if (parent) {
+                              parent.innerHTML = '<div class="h-10 w-10 rounded bg-gray-100 flex items-center justify-center border border-gray-300"><svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div>';
+                            }
+                          }}
+                        />
+                        {/* Hover tooltip */}
+                        <div className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-10">
+                          Click to view
+                        </div>
+                      </a>
+                    ) : (
+                      <span className="text-sm text-gray-400 italic">No proof</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium border ${getStatusColor(deposit.status)}`}>
@@ -507,14 +541,42 @@ const AdminDepositsManagement: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Proof of Payment</label>
                     <div className="bg-gray-50 p-3 rounded-md">
-                      <a
-                        href={selectedDeposit.proofOfPayment}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        View Proof of Payment
-                      </a>
+                      {/* Image Preview */}
+                      <div className="mb-3">
+                        <img
+                          src={selectedDeposit.proofOfPayment}
+                          alt="Payment Proof"
+                          className="max-h-96 w-auto rounded-md border border-gray-300 shadow-sm"
+                          onError={(e) => {
+                            // If image fails to load, hide it and show link only
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <a
+                          href={selectedDeposit.proofOfPayment}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                        >
+                          <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Open Full Size
+                        </a>
+                        <a
+                          href={selectedDeposit.proofOfPayment}
+                          download
+                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
+                        >
+                          <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Download
+                        </a>
+                      </div>
                     </div>
                   </div>
                 )}

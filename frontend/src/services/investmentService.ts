@@ -6,11 +6,21 @@ import axios from '@/utils/axios';
  */
 
 // Save Initial Investment Amount
-export const saveInitialInvestmentAmount = async (initialInvestmentAmount: number) => {
+// investmentPlanId is OPTIONAL - only used for dashboard investments
+// Onboarding flow doesn't need to pass it (uses recommendation)
+export const saveInitialInvestmentAmount = async (
+  initialInvestmentAmount: number,
+  investmentPlanId?: string
+) => {
   try {
-    const response = await axios.patch('/investment/setup/initial-amount', {
-      initialInvestmentAmount
-    });
+    const payload: any = { initialInvestmentAmount };
+
+    // Only include investmentPlanId if provided (dashboard flow)
+    if (investmentPlanId) {
+      payload.investmentPlanId = investmentPlanId;
+    }
+
+    const response = await axios.patch('/investment/setup/initial-amount', payload);
     return response.data;
   } catch (error) {
     console.error('Error saving initial investment amount:', error);
