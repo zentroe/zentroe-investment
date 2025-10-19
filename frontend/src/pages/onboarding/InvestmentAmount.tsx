@@ -26,35 +26,16 @@ export default function InvestmentAmount() {
     }
   }, [data.initialInvestmentAmount]);
 
-  const selectedRange = data.annualInvestmentAmount;
-
+  // Set min/max based on selected investment plan
   useEffect(() => {
-    switch (selectedRange) {
-      case "Less than $1,000":
-        setMin(1);
-        setMax(999);
-        break;
-      case "$1,000 to $10,000":
-        setMin(1000);
-        setMax(10000);
-        break;
-      case "$10,000 to $100,000":
-        setMin(10000);
-        setMax(100000);
-        break;
-      case "$100,000 to $1,000,000":
-        setMin(100000);
-        setMax(1000000);
-        break;
-      case "More than $1,000,000":
-        setMin(1000001);
-        setMax(Infinity);
-        break;
-      default:
-        setMin(0);
-        setMax(Infinity);
+    if (data.selectedInvestmentPlan) {
+      setMin(data.selectedInvestmentPlan.minInvestment || 0);
+      setMax(data.selectedInvestmentPlan.maxInvestment || Infinity);
+    } else {
+      setMin(0);
+      setMax(Infinity);
     }
-  }, [selectedRange]);
+  }, [data.selectedInvestmentPlan]);
 
   const numericAmount = Number(amount.trim().replace(/[^0-9.]/g, ""));
   const isValidAmount =
@@ -69,10 +50,17 @@ export default function InvestmentAmount() {
       return;
     }
 
+    if (!data.selectedInvestmentPlan) {
+      toast.error("Please select an investment plan first.");
+      navigate("/onboarding/investment-recommendation");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await saveInitialInvestmentAmount(numericAmount);
+      // Pass the investment plan ID along with the amount
+      await saveInitialInvestmentAmount(numericAmount, data.selectedInvestmentPlan._id);
 
       // Update local context data for immediate UI feedback
       updateLocalData({ initialInvestmentAmount: numericAmount });
@@ -110,11 +98,29 @@ export default function InvestmentAmount() {
           Initial investment amount
         </h1>
 
+        {/* Show investment plan info */}
+        {data.selectedInvestmentPlan && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h3 className="font-semibold text-blue-900 mb-2">{data.selectedInvestmentPlan.name}</h3>
+            <div className="text-sm text-blue-800 space-y-1">
+              <p>• Expected Return: <strong>{data.selectedInvestmentPlan.profitPercentage}%</strong></p>
+              <p>• Duration: <strong>{data.selectedInvestmentPlan.duration} days</strong></p>
+              <p>• Min: <strong>${data.selectedInvestmentPlan.minInvestment.toLocaleString()}</strong>
+                {data.selectedInvestmentPlan.maxInvestment && ` - Max: $${data.selectedInvestmentPlan.maxInvestment.toLocaleString()}`}
+              </p>
+            </div>
+          </div>
+        )}
+
         <Input
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
-          placeholder={`Initial amount: ${selectedRange || "$0 to $X"}`}
+          placeholder={
+            data.selectedInvestmentPlan
+              ? `Enter amount (min: $${data.selectedInvestmentPlan.minInvestment.toLocaleString()})`
+              : "Enter initial investment amount"
+          }
           value={amount}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)}
           className="mb-6"
@@ -125,6 +131,22 @@ export default function InvestmentAmount() {
             Amount must be between ${min.toLocaleString()} and{" "}
             {max !== Infinity ? `$${max.toLocaleString()}` : "above"}.
           </p>
+        )}
+
+        {/* Amount Preview */}
+        {amount && isValidAmount && data.selectedInvestmentPlan && (
+          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-gray-600 text-sm">Investment Amount:</span>
+              <span className="font-semibold text-lg">${numericAmount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 text-sm">Expected Profit ({data.selectedInvestmentPlan.profitPercentage}%):</span>
+              <span className="font-semibold text-green-600">
+                ${(numericAmount * data.selectedInvestmentPlan.profitPercentage / 100).toLocaleString()}
+              </span>
+            </div>
+          </div>
         )}
 
         <div className="bg-gray-50 border border-gray-300 rounded-md p-4 text-sm flex items-start gap-3 mb-8">

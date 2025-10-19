@@ -126,8 +126,11 @@ export const updateAdminUserDetails = async (userId: string, userData: Partial<U
 };
 
 // Generate activity history
-export const generateUserActivity = async (userId: string, years: number) => {
-  const response = await api.post(`/admin/users/${userId}/generate-activity`, { years });
+export const generateUserActivity = async (userId: string, years: number, activityConfig?: any) => {
+  const response = await api.post(`/admin/users/${userId}/generate-activity`, {
+    years,
+    activityConfig
+  });
   return response.data;
 };
 

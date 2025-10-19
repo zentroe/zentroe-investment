@@ -12,6 +12,7 @@ import {
   deleteBankAccount,
   getAllDeposits,
   updateDepositStatus,
+  deleteDeposit,
   startInvestmentFromDeposit,
   getAllCardPayments,
   updateCardPaymentStatus,
@@ -49,6 +50,7 @@ router.delete('/bank-accounts/:id', deleteBankAccount);
 // Deposit management routes
 router.get('/deposits', getAllDeposits);
 router.put('/deposits/:id/status', updateDepositStatus);
+router.delete('/deposits/:id', deleteDeposit);
 router.post('/deposits/:id/start-investment', startInvestmentFromDeposit);
 
 // Card payment management routes

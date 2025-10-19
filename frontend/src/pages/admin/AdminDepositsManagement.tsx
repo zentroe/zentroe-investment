@@ -12,9 +12,11 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
-  Play
+  Play,
+  Trash2
 } from 'lucide-react';
-import { getAllDeposits, updateDepositStatus, startInvestmentFromDeposit } from '@/services/adminService';
+import { getAllDeposits, updateDepositStatus, startInvestmentFromDeposit, deleteDeposit } from '@/services/adminService';
+import { toast } from 'sonner';
 
 interface Deposit {
   _id: string;
@@ -122,14 +124,31 @@ const AdminDepositsManagement: React.FC = () => {
       if (!confirmed) return;
 
       await startInvestmentFromDeposit(depositId);
-      alert('Investment started successfully!');
+      toast.success('Investment started successfully!');
 
       // Refresh the deposits list to see any updates
       fetchDeposits();
     } catch (error: any) {
       console.error('Failed to start investment:', error);
       const errorMessage = error.response?.data?.message || 'Failed to start investment';
-      alert(`Error: ${errorMessage}`);
+      toast.error(`Error: ${errorMessage}`);
+    }
+  };
+
+  const handleDeleteDeposit = async (depositId: string) => {
+    try {
+      const confirmed = window.confirm('Are you sure you want to delete this deposit? This action cannot be undone.');
+      if (!confirmed) return;
+
+      await deleteDeposit(depositId);
+      toast.success('Deposit deleted successfully!');
+
+      // Refresh the deposits list
+      fetchDeposits();
+    } catch (error: any) {
+      console.error('Failed to delete deposit:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to delete deposit';
+      toast.error(`Error: ${errorMessage}`);
     }
   };
 
@@ -378,13 +397,24 @@ const AdminDepositsManagement: React.FC = () => {
                     {formatDate(deposit.createdAt)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => setSelectedDeposit(deposit)}
-                      className="text-blue-600 hover:text-blue-900 flex items-center"
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setSelectedDeposit(deposit)}
+                        className="text-blue-600 hover:text-blue-900 flex items-center"
+                        title="View details"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </button>
+                      <button
+                        onClick={() => handleDeleteDeposit(deposit._id)}
+                        className="text-red-600 hover:text-red-900 flex items-center"
+                        title="Delete deposit"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

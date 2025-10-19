@@ -92,7 +92,7 @@ export const updateUserDetails = async (req: Request, res: Response): Promise<vo
 export const generateActivity = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId } = req.params;
-    const { years } = req.body;
+    const { years, activityConfig } = req.body;
     const adminId = (req as any).user?.id;
 
     if (!years || years < 1 || years > 5) {
@@ -103,7 +103,8 @@ export const generateActivity = async (req: Request, res: Response): Promise<voi
     const result = await generateUserActivity({
       userId,
       years,
-      adminId
+      adminId,
+      activityConfig
     });
 
     res.json({
@@ -328,28 +329,37 @@ export const deleteGeneratedActivities = async (req: Request, res: Response): Pr
       dailyProfitsResult,
       referralsResult
     ] = await Promise.all([
-      // Delete ActivityHistory records
+      // Delete ActivityHistory records with isGenerated flag
       ActivityHistory.deleteMany({
         userId,
         isGenerated: true
       }),
 
-      // Delete Deposit records with isGenerated flag
+      // Delete Deposit records - check both old and new formats
       Deposit.deleteMany({
         user: userId,
-        adminNotes: /Auto-generated demo data/
+        $or: [
+          { adminNotes: /Auto-generated demo data/ },
+          { adminNotes: 'Deposit processed successfully' }
+        ]
       }),
 
-      // Delete Withdrawal records with isGenerated flag
+      // Delete Withdrawal records - check both old and new formats
       Withdrawal.deleteMany({
         user: userId,
-        adminNotes: /Auto-generated demo data/
+        $or: [
+          { adminNotes: /Auto-generated demo data/ },
+          { adminNotes: 'Withdrawal processed successfully' }
+        ]
       }),
 
-      // Delete UserInvestment records (demo ones have adminNotes marker)
+      // Delete UserInvestment records - check both old and new formats
       UserInvestment.deleteMany({
         user: userId,
-        adminNotes: /Auto-generated demo data/
+        $or: [
+          { adminNotes: /Auto-generated demo data/ },
+          { adminNotes: 'Investment Created' }
+        ]
       }),
 
       // Delete DailyProfit records for generated investments

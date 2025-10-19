@@ -20,7 +20,7 @@ export const getUserOnboardingData = async (req: AuthenticatedRequest, res: Resp
 
     const user = await User.findById(userId).select(
       'accountType portfolioPriority investmentGoal annualIncome annualInvestmentAmount referralSource recommendedPortfolio selectedInvestmentPlan accountSubType firstName lastName initialInvestmentAmount recurringInvestment recurringFrequency recurringDay recurringAmount onboardingStatus email phone countryOfResidence countryOfCitizenship address dateOfBirth socialSecurityNumber ssn'
-    ).populate('selectedInvestmentPlan', 'name description category profitPercentage duration');
+    ).populate('selectedInvestmentPlan', 'name description category profitPercentage duration minInvestment maxInvestment');
 
     if (!user) {
       res.status(404).json({ message: "User not found" });
@@ -882,9 +882,9 @@ export const saveSelectedInvestmentPlan = async (req: AuthenticatedRequest, res:
     }
 
     // Validate that the investment plan exists and is active
-    const investmentPlan = await InvestmentPlan.findOne({ 
-      _id: selectedInvestmentPlan, 
-      isActive: true 
+    const investmentPlan = await InvestmentPlan.findOne({
+      _id: selectedInvestmentPlan,
+      isActive: true
     });
 
     if (!investmentPlan) {
@@ -898,7 +898,7 @@ export const saveSelectedInvestmentPlan = async (req: AuthenticatedRequest, res:
     // Update the user with the selected investment plan
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { 
+      {
         selectedInvestmentPlan,
         recommendedPortfolio: investmentPlan.name // Keep for backward compatibility
       },

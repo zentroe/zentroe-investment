@@ -1,4 +1,4 @@
-import { TrendingUp, DollarSign, Target, Activity } from "lucide-react";
+import { TrendingUp, DollarSign, Activity } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 
 interface StatCard {
@@ -46,14 +46,7 @@ export default function DashboardStats() {
           icon: Activity,
           iconColor: "text-orange-600",
           isLoading: loading.investments,
-        },
-        {
-          title: "Available Balance",
-          value: "$0",
-          icon: Target,
-          iconColor: "text-purple-600",
-          isLoading: loading.investments,
-        },
+        }
       ];
     }
 
@@ -78,12 +71,6 @@ export default function DashboardStats() {
         icon: Activity,
         iconColor: "text-orange-600",
       },
-      {
-        title: "Available Balance",
-        value: `$${investmentSummary?.availableBalance?.toLocaleString() || '0'}`,
-        icon: Target,
-        iconColor: "text-purple-600",
-      },
     ];
   };
 
@@ -104,7 +91,7 @@ export default function DashboardStats() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {stats.map((stat, index) => (
         <div
           key={index}

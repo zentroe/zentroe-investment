@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Share, DollarSign, TrendingUp, Copy, Trophy, Crown, Star, Building } from "lucide-react";
+import { Users, Share, DollarSign, TrendingUp, Copy, Trophy, Crown, Star, Building, ChevronLeft, ChevronRight } from "lucide-react";
 import { useUser } from '@/context/UserContext';
 import { getReferralCode, convertPointsToEquity, getTierColor, getTierIcon, formatPoints, getStatusColor } from '@/services/referralService';
 
@@ -10,6 +10,8 @@ export default function ReferralsPage() {
   const [conversionAmount, setConversionAmount] = useState<string>('');
   const [isConverting, setIsConverting] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchReferralCode();
@@ -215,7 +217,7 @@ export default function ReferralsPage() {
       </div>
 
       {/* Equity Conversion */}
-      {stats?.availablePoints && stats.availablePoints >= (referralData?.equityConversion.minimumPoints || 10000) && (
+      {stats?.availablePoints && stats.availablePoints >= (referralData?.equityConversion.minimumPoints || 50000) && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6 border border-green-200">
           <div className="flex items-center space-x-3 mb-4">
             <Building size={24} className="text-green-600" />
@@ -319,60 +321,110 @@ export default function ReferralsPage() {
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Referral History</h3>
         {referralData?.referrals && referralData.referrals.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Friend</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Date Joined</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Investment</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Points Earned</th>
-                </tr>
-              </thead>
-              <tbody>
-                {referralData.referrals.map((referral, index) => (
-                  <tr key={index} className="border-b border-gray-100">
-                    <td className="py-4 px-4">
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {referral.referred?.firstName && referral.referred?.lastName
-                            ? `${referral.referred.firstName} ${referral.referred.lastName}`
-                            : referral.referred?.email
-                              ? referral.referred.email.split('@')[0]
-                              : 'Unknown User'
-                          }
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {referral.referred?.email || 'No email provided'}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-gray-600">
-                      {new Date(referral.signupDate).toLocaleDateString()}
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className={`px-2 py-1 text-sm rounded-full ${getStatusColor(referral.status)}`}>
-                        {referral.status.charAt(0).toUpperCase() + referral.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-gray-600">
-                      {referral.qualifyingInvestment > 0
-                        ? `$${referral.qualifyingInvestment.toLocaleString()}`
-                        : "-"
-                      }
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className={`font-medium ${referral.status === "rewarded" ? "text-green-600" : "text-gray-500"
-                        }`}>
-                        {referral.pointsEarned > 0 ? formatPoints(referral.pointsEarned) : "-"}
-                      </span>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Friend</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Date Joined</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Points Earned</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {referralData.referrals
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((referral, index) => (
+                      <tr key={index} className="border-b border-gray-100">
+                        <td className="py-4 px-4">
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {referral.referred?.firstName && referral.referred?.lastName
+                                ? `${referral.referred.firstName} ${referral.referred.lastName}`
+                                : referral.referred?.email
+                                  ? referral.referred.email.split('@')[0]
+                                  : 'Unknown User'
+                              }
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {referral.referred?.email || 'No email provided'}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 text-gray-600">
+                          {new Date(referral.signupDate).toLocaleDateString()}
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className={`px-2 py-1 text-sm rounded-full ${getStatusColor(referral.status)}`}>
+                            {referral.status.charAt(0).toUpperCase() + referral.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className={`font-medium ${referral.status === "rewarded" ? "text-green-600" : "text-gray-500"
+                            }`}>
+                            {referral.pointsEarned > 0 ? formatPoints(referral.pointsEarned) : "-"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {referralData.referrals.length > itemsPerPage && (
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+                <div className="text-sm text-gray-600">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, referralData.referrals.length)} of {referralData.referrals.length} referrals
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  >
+                    <ChevronLeft size={16} />
+                    Previous
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.ceil(referralData.referrals.length / itemsPerPage) }, (_, i) => i + 1)
+                      .filter(page => {
+                        // Show first, last, current, and pages around current
+                        const totalPages = Math.ceil(referralData.referrals.length / itemsPerPage);
+                        return page === 1 ||
+                          page === totalPages ||
+                          Math.abs(page - currentPage) <= 1;
+                      })
+                      .map((page, idx, arr) => (
+                        <div key={page} className="flex items-center">
+                          {idx > 0 && arr[idx - 1] !== page - 1 && (
+                            <span className="px-2 text-gray-400">...</span>
+                          )}
+                          <button
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium ${currentPage === page
+                                ? 'bg-primary text-white'
+                                : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                          >
+                            {page}
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(Math.ceil(referralData.referrals.length / itemsPerPage), prev + 1))}
+                    disabled={currentPage === Math.ceil(referralData.referrals.length / itemsPerPage)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  >
+                    Next
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-8 text-gray-500">
             <Users size={48} className="mx-auto mb-3 text-gray-300" />

@@ -238,6 +238,16 @@ export const updateDepositStatus = async (id: string, statusData: {
   }
 };
 
+export const deleteDeposit = async (id: string) => {
+  try {
+    const response = await axios.delete(`/admin/payments/deposits/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting deposit:', error);
+    throw error;
+  }
+};
+
 // ===== CRYPTO PAYMENT MANAGEMENT =====
 
 export const getAllCryptoPayments = async (filters?: {

@@ -31,7 +31,7 @@ const GenerateActivityModal: React.FC<GenerateActivityModalProps> = ({
   const [selectedYears, setSelectedYears] = useState(2);
   const [generating, setGenerating] = useState(false);
   const [summary, setSummary] = useState<any>(null);
-  
+
   const [activityConfig, setActivityConfig] = useState<ActivityConfig>({
     deposits: { enabled: true, count: 6, minAmount: 1000, maxAmount: 50000 },
     investments: { enabled: true, count: 5 },
@@ -56,7 +56,7 @@ const GenerateActivityModal: React.FC<GenerateActivityModalProps> = ({
     });
   };
 
-  const allEnabled = Object.values(activityConfig).every(config => 
+  const allEnabled = Object.values(activityConfig).every(config =>
     typeof config === 'object' && 'enabled' in config ? config.enabled : true
   );
 
@@ -154,11 +154,10 @@ const GenerateActivityModal: React.FC<GenerateActivityModalProps> = ({
                       key={option.value}
                       onClick={() => setSelectedYears(option.value)}
                       disabled={generating}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        selectedYears === option.value
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedYears === option.value
                           ? 'bg-purple-600 text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      } ${generating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        } ${generating ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {option.label}
                     </button>

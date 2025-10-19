@@ -34,6 +34,16 @@ export interface OnboardingData {
   annualInvestmentAmount?: string;
   referralSource?: string;
   recommendedPortfolio?: string;
+  selectedInvestmentPlan?: {
+    _id: string;
+    name: string;
+    description: string;
+    category: string;
+    profitPercentage: number;
+    duration: number;
+    minInvestment: number;
+    maxInvestment?: number;
+  };
 
   // Investment Setup
   initialInvestmentAmount?: number;

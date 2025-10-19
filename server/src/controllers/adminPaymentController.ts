@@ -502,6 +502,42 @@ export const updateDepositStatus = async (req: Request, res: Response): Promise<
   }
 };
 
+// Delete Deposit (Admin only)
+export const deleteDeposit = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const deposit = await Deposit.findById(id);
+
+    if (!deposit) {
+      res.status(404).json({ message: 'Deposit not found' });
+      return;
+    }
+
+    // Check if deposit has an associated active investment
+    const hasActiveInvestment = await UserInvestment.findOne({
+      depositId: id,
+      status: 'active'
+    });
+
+    if (hasActiveInvestment) {
+      res.status(400).json({
+        message: 'Cannot delete deposit with an active investment. Please close the investment first.'
+      });
+      return;
+    }
+
+    // Delete the deposit
+    await Deposit.findByIdAndDelete(id);
+
+    console.log(`✅ Deposit ${id} deleted by admin`);
+    res.json({ message: 'Deposit deleted successfully' });
+  } catch (error) {
+    console.error('Delete deposit error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // Card Payment Management
 export const getAllCardPayments = async (req: Request, res: Response): Promise<void> => {
   try {

@@ -8,10 +8,21 @@ import { Referral, ReferralPoints } from '../models/Referral';
 import { InvestmentPlan } from '../models/InvestmentPlan';
 import mongoose from 'mongoose';
 
+interface ActivityConfig {
+  deposits?: { enabled: boolean; count: number; minAmount: number; maxAmount: number };
+  investments?: { enabled: boolean; count: number };
+  withdrawals?: { enabled: boolean; count: number };
+  returns?: { enabled: boolean; count: number };
+  referrals?: { enabled: boolean; targetTier: string };
+  logins?: { enabled: boolean; count: number };
+  kycUpdates?: { enabled: boolean };
+}
+
 interface GenerateActivityOptions {
   userId: string;
   years: number;
   adminId: string;
+  activityConfig?: ActivityConfig;
 }
 
 // Helper function to generate random date within range
@@ -31,7 +42,7 @@ const portfolioTypes = ['Conservative Growth', 'Balanced Portfolio', 'Aggressive
 const investmentPlans = ['Starter Plan', 'Growth Plan', 'Premium Plan', 'Elite Plan', 'Enterprise Plan'];
 
 export const generateUserActivity = async (options: GenerateActivityOptions) => {
-  const { userId, years, adminId } = options;
+  const { userId, years, adminId, activityConfig } = options;
 
   // Verify user exists
   const user = await User.findById(userId);
@@ -55,18 +66,48 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
   const now = new Date();
   const startDate = new Date(now.getFullYear() - years, now.getMonth(), now.getDate());
 
-  // Calculate number of activities based on years (SPARSE - not too many!)
-  const depositsCount = Math.floor(years * 3); // ~3 deposits per year
-  const withdrawalsCount = Math.floor(years * 1.5); // ~1-2 withdrawals per year
-  const investmentsCount = Math.floor(years * 2.5); // ~2-3 investments per year
-  const referralsCount = Math.floor(years * 1.5); // ~1-2 referrals per year
-  const loginsCount = Math.floor(years * 30); // ~30 logins per year (more reasonable)
+  // Helper function to calculate referrals needed for target tier
+  const calculateReferralsForTier = (targetTier: string): number => {
+    const tierThresholds: { [key: string]: number } = {
+      bronze: 0,
+      silver: 100,
+      gold: 500,
+      platinum: 2000,
+      diamond: 10000,
+      shareholder: 50000
+    };
+
+    const targetPoints = tierThresholds[targetTier.toLowerCase()] || 100;
+    // Start from 0 as we don't have referralPoints in User model yet
+    const currentPoints = 0;
+    const pointsNeeded = Math.max(0, targetPoints - currentPoints);
+
+    // Average points per referral: bonus $5K-$30K / 10 = 500-3000 points, avg ~1750 points
+    const avgPointsPerReferral = 1750;
+    return Math.ceil(pointsNeeded / avgPointsPerReferral);
+  };  // Calculate number of activities based on config or default (SPARSE - not too many!)
+  const depositsCount = activityConfig?.deposits?.enabled
+    ? activityConfig.deposits.count
+    : Math.floor(years * 3);
+  const withdrawalsCount = activityConfig?.withdrawals?.enabled
+    ? activityConfig.withdrawals.count
+    : Math.floor(years * 1.5);
+  const investmentsCount = activityConfig?.investments?.enabled
+    ? activityConfig.investments.count
+    : Math.floor(years * 2.5);
+  const referralsCount = activityConfig?.referrals?.enabled
+    ? calculateReferralsForTier(activityConfig.referrals.targetTier)
+    : Math.floor(years * 1.5);
+  const loginsCount = activityConfig?.logins?.enabled
+    ? activityConfig.logins.count
+    : Math.floor(years * 30);
 
   // Track totals
   let totalDeposited = 0;
   let totalInvested = 0;
   let totalReturns = 0;
   let totalWithdrawn = 0;
+  let totalReferralPoints = 0; // Declare here so it's accessible outside the if block
 
   // Arrays to store created records
   const createdDeposits: any[] = [];
@@ -92,104 +133,112 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
     return randomDate(start, end);
   };
 
-  // Generate Deposits with real Deposit records (SPARSE)
-  for (let i = 0; i < depositsCount; i++) {
-    // Use amounts that are realistic and rounded to tens
-    const amount = randomAmount(1000, 50000); // $1,000 to $50,000
-    totalDeposited += amount;
-    const paymentMethods: ('bank_transfer' | 'crypto' | 'card')[] = ['bank_transfer', 'crypto', 'card'];
-    const paymentMethod = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
-    const depositDate = getUniqueDate(startDate, now);
+  // Get deposit amount range from config
+  const depositMinAmount = activityConfig?.deposits?.minAmount || 1000;
+  const depositMaxAmount = activityConfig?.deposits?.maxAmount || 50000;
 
-    // Create real Deposit record
-    const deposit = await Deposit.create({
-      userId: new mongoose.Types.ObjectId(userId),
-      amount,
-      paymentMethod,
-      status: 'approved',
-      processedAt: depositDate,
-      adminNotes: 'Deposit processed successfully',
-      createdAt: depositDate,
-      updatedAt: depositDate
-    });
+  // Generate Deposits with real Deposit records (SPARSE) - only if enabled
+  if (activityConfig?.deposits?.enabled !== false) {
+    for (let i = 0; i < depositsCount; i++) {
+      // Use amounts from config or defaults, rounded to tens
+      const amount = randomAmount(depositMinAmount, depositMaxAmount);
+      totalDeposited += amount;
+      const paymentMethods: ('bank_transfer' | 'crypto' | 'card')[] = ['bank_transfer', 'crypto', 'card'];
+      const paymentMethod = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
+      const depositDate = getUniqueDate(startDate, now);
 
-    createdDeposits.push(deposit);
+      // Create real Deposit record
+      const deposit = await Deposit.create({
+        userId: new mongoose.Types.ObjectId(userId),
+        amount,
+        paymentMethod,
+        status: 'approved',
+        processedAt: depositDate,
+        adminNotes: 'Deposit processed successfully',
+        createdAt: depositDate,
+        updatedAt: depositDate
+      });
 
-    // Create activity history record
-    activities.push({
-      userId: new mongoose.Types.ObjectId(userId),
-      activityType: 'deposit',
-      date: depositDate,
-      description: `Deposit via ${paymentMethod.replace('_', ' ')}`,
-      amount,
-      currency: 'USD',
-      transactionId: `TXN-DEP-${deposit._id}`,
-      status: 'completed',
-      paymentMethod,
-      isGenerated: true,
-      generatedAt: now
-    });
+      createdDeposits.push(deposit);
+
+      // Create activity history record
+      activities.push({
+        userId: new mongoose.Types.ObjectId(userId),
+        activityType: 'deposit',
+        date: depositDate,
+        description: `Deposit via ${paymentMethod.replace('_', ' ')}`,
+        amount,
+        currency: 'USD',
+        transactionId: `TXN-DEP-${deposit._id}`,
+        status: 'completed',
+        paymentMethod,
+        isGenerated: true,
+        generatedAt: now
+      });
+    }
   }
 
-  // Generate Investments with real UserInvestment records (using real plan constraints)
-  for (let i = 0; i < investmentsCount; i++) {
-    // Pick a random plan
-    const plan = investmentPlans[Math.floor(Math.random() * investmentPlans.length)];
+  // Generate Investments with real UserInvestment records (using real plan constraints) - only if enabled
+  if (activityConfig?.investments?.enabled !== false) {
+    for (let i = 0; i < investmentsCount; i++) {
+      // Pick a random plan
+      const plan = investmentPlans[Math.floor(Math.random() * investmentPlans.length)];
 
-    // Use amount within the plan's min/max range and round to tens
-    const amount = randomAmount(plan.minInvestment || 1000, plan.maxInvestment || 50000);
-    totalInvested += amount;
+      // Use amount within the plan's min/max range and round to tens
+      const amount = randomAmount(plan.minInvestment || 1000, plan.maxInvestment || 50000);
+      totalInvested += amount;
 
-    const investmentDate = getUniqueDate(startDate, now);
-    const durationDays = plan.duration || 365; // Use duration in days from plan
-    const endDate = new Date(investmentDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+      const investmentDate = getUniqueDate(startDate, now);
+      const durationDays = plan.duration || 365; // Use duration in days from plan
+      const endDate = new Date(investmentDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
-    // Check if investment has already completed (endDate is in the past)
-    const hasCompleted = endDate < now;
-    const investmentStatus = hasCompleted ? 'completed' : 'active';
-    const completedDate = hasCompleted ? endDate : undefined;
+      // Check if investment has already completed (endDate is in the past)
+      const hasCompleted = endDate < now;
+      const investmentStatus = hasCompleted ? 'completed' : 'active';
+      const completedDate = hasCompleted ? endDate : undefined;
 
-    // Create real UserInvestment record
-    const userInvestment = await UserInvestment.create({
-      user: new mongoose.Types.ObjectId(userId),
-      investmentPlan: plan._id,
-      amount,
-      currency: 'USD',
-      status: investmentStatus,
-      startDate: investmentDate,
-      endDate: endDate,
-      completedDate: completedDate,
-      totalProfitsEarned: 0,
-      dailyProfitRate: plan.profitPercentage / durationDays, // Distribute profit over duration
-      totalWithdrawn: 0,
-      principalWithdrawn: 0,
-      profitsWithdrawn: 0,
-      adminNotes: 'Investment Created',
-      createdAt: investmentDate,
-      updatedAt: investmentDate
-    });
+      // Create real UserInvestment record
+      const userInvestment = await UserInvestment.create({
+        user: new mongoose.Types.ObjectId(userId),
+        investmentPlan: plan._id,
+        amount,
+        currency: 'USD',
+        status: investmentStatus,
+        startDate: investmentDate,
+        endDate: endDate,
+        completedDate: completedDate,
+        totalProfitsEarned: 0,
+        dailyProfitRate: plan.profitPercentage / durationDays, // Distribute profit over duration
+        totalWithdrawn: 0,
+        principalWithdrawn: 0,
+        profitsWithdrawn: 0,
+        adminNotes: 'Investment Created',
+        createdAt: investmentDate,
+        updatedAt: investmentDate
+      });
 
-    // Store the plan in the map for this investment
-    planMap.set(userInvestment.investmentPlan.toString(), plan);
+      // Store the plan in the map for this investment
+      planMap.set(userInvestment.investmentPlan.toString(), plan);
 
-    createdInvestments.push(userInvestment);
+      createdInvestments.push(userInvestment);
 
-    // Create activity history record
-    activities.push({
-      userId: new mongoose.Types.ObjectId(userId),
-      activityType: 'investment',
-      date: investmentDate,
-      description: `Investment in ${plan.name}`,
-      amount,
-      currency: 'USD',
-      transactionId: `TXN-INV-${userInvestment._id}`,
-      status: 'completed',
-      investmentPlanName: plan.name,
-      portfolioType: plan.category || 'Diversified',
-      shares: Math.floor(amount / 100),
-      isGenerated: true,
-      generatedAt: now
-    });
+      // Create activity history record
+      activities.push({
+        userId: new mongoose.Types.ObjectId(userId),
+        activityType: 'investment',
+        date: investmentDate,
+        description: `Investment in ${plan.name}`,
+        amount,
+        currency: 'USD',
+        transactionId: `TXN-INV-${userInvestment._id}`,
+        status: 'completed',
+        investmentPlanName: plan.name,
+        portfolioType: plan.category || 'Diversified',
+        shares: Math.floor(amount / 100),
+        isGenerated: true,
+        generatedAt: now
+      });
+    }
   }
 
   // Generate Daily Profits/Returns for each investment (LOGICAL AMOUNTS)
@@ -314,177 +363,191 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
     }
   }
 
-  // Generate Withdrawals with real Withdrawal records (LOGICAL)
-  // Can only withdraw from investments that have accumulated profits
-  const investmentsWithAvailableProfits = createdInvestments.filter(inv => {
-    const profits = createdDailyProfits
-      .filter(dp => dp.userInvestment.toString() === inv._id.toString())
-      .reduce((sum, dp) => sum + dp.profitAmount, 0);
-    return profits > 100; // At least $100 in profits
-  });
-
-  // Limit withdrawals - only some people withdraw (not everyone)
-  const actualWithdrawalsCount = Math.min(withdrawalsCount, Math.floor(investmentsWithAvailableProfits.length * 0.5)); // Only 50% withdraw
-
-  for (let i = 0; i < actualWithdrawalsCount; i++) {
-    // Pick an investment with available profits
-    const sourceInvestment = investmentsWithAvailableProfits[i % investmentsWithAvailableProfits.length];
-
-    // Calculate available profits for this investment
-    const availableProfits = createdDailyProfits
-      .filter(dp => dp.userInvestment.toString() === sourceInvestment._id.toString())
-      .reduce((sum, dp) => sum + dp.profitAmount, 0);
-
-    // Withdraw only a portion of available profits (30-70%)
-    const withdrawalPercentage = 0.3 + Math.random() * 0.4; // 30% to 70%
-    const amount = Math.round((availableProfits * withdrawalPercentage) / 10) * 10; // Round to tens
-
-    totalWithdrawn += amount;
-    const withdrawalDate = getUniqueDate(new Date(sourceInvestment.startDate), now);
-
-    // Create real Withdrawal record
-    const withdrawal = await Withdrawal.create({
-      user: new mongoose.Types.ObjectId(userId),
-      userInvestment: sourceInvestment?._id || new mongoose.Types.ObjectId(),
-      amount,
-      type: 'profits_only',
-      status: 'completed',
-      requestedAt: withdrawalDate,
-      reviewedAt: withdrawalDate,
-      processedAt: withdrawalDate,
-      transactionId: `TXN-WTH-${Date.now()}-${i}`,
-      paymentMethod: 'bank_transfer',
-      principalAmount: 0,
-      profitAmount: amount,
-      totalFees: amount * 0.01, // 1% fee
-      netAmount: amount * 0.99,
-      adminNotes: 'Withdrawal processed successfully',
-      createdAt: withdrawalDate,
-      updatedAt: withdrawalDate
+  // Generate Withdrawals with real Withdrawal records (LOGICAL) - only if enabled
+  if (activityConfig?.withdrawals?.enabled !== false) {
+    // Can only withdraw from investments that have accumulated profits
+    const investmentsWithAvailableProfits = createdInvestments.filter(inv => {
+      const profits = createdDailyProfits
+        .filter(dp => dp.userInvestment.toString() === inv._id.toString())
+        .reduce((sum, dp) => sum + dp.profitAmount, 0);
+      return profits > 100; // At least $100 in profits
     });
 
-    createdWithdrawals.push(withdrawal);
+    // Limit withdrawals - only some people withdraw (not everyone)
+    const actualWithdrawalsCount = Math.min(withdrawalsCount, Math.floor(investmentsWithAvailableProfits.length * 0.5)); // Only 50% withdraw
 
-    // Update investment's withdrawal tracking
-    await UserInvestment.findByIdAndUpdate(sourceInvestment._id, {
-      $inc: {
-        totalWithdrawn: amount,
-        profitsWithdrawn: amount
-      }
-    });
+    for (let i = 0; i < actualWithdrawalsCount; i++) {
+      // Pick an investment with available profits
+      const sourceInvestment = investmentsWithAvailableProfits[i % investmentsWithAvailableProfits.length];
 
-    // Create activity history record
-    activities.push({
-      userId: new mongoose.Types.ObjectId(userId),
-      activityType: 'withdrawal',
-      date: withdrawalDate,
-      description: `Withdrawal to bank account`,
-      amount,
-      currency: 'USD',
-      transactionId: `TXN-WTH-${withdrawal._id}`,
-      status: 'completed',
-      paymentMethod: 'bank_transfer',
-      isGenerated: true,
-      generatedAt: now
-    });
-  }
+      // Calculate available profits for this investment
+      const availableProfits = createdDailyProfits
+        .filter(dp => dp.userInvestment.toString() === sourceInvestment._id.toString())
+        .reduce((sum, dp) => sum + dp.profitAmount, 0);
 
-  // Generate Referrals with real Referral records
-  const firstNames = ['James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth', 'David', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen', 'Christopher', 'Nancy', 'Daniel', 'Lisa', 'Matthew', 'Betty'];
-  const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez'];
+      // Withdraw only a portion of available profits (30-70%)
+      const withdrawalPercentage = 0.3 + Math.random() * 0.4; // 30% to 70%
+      const amount = Math.round((availableProfits * withdrawalPercentage) / 10) * 10; // Round to tens
 
-  let totalReferralPoints = 0;
+      totalWithdrawn += amount;
+      const withdrawalDate = getUniqueDate(new Date(sourceInvestment.startDate), now);
 
-  for (let i = 0; i < referralsCount; i++) {
-    const bonus = randomAmount(50, 300); // Rounded to tens
-    const pointsEarned = Math.floor(bonus / 10); // 10 points per dollar
-    totalReferralPoints += pointsEarned;
+      // Create real Withdrawal record
+      const withdrawal = await Withdrawal.create({
+        user: new mongoose.Types.ObjectId(userId),
+        userInvestment: sourceInvestment?._id || new mongoose.Types.ObjectId(),
+        amount,
+        type: 'profits_only',
+        status: 'completed',
+        requestedAt: withdrawalDate,
+        reviewedAt: withdrawalDate,
+        processedAt: withdrawalDate,
+        transactionId: `TXN-WTH-${Date.now()}-${i}`,
+        paymentMethod: 'bank_transfer',
+        principalAmount: 0,
+        profitAmount: amount,
+        totalFees: amount * 0.01, // 1% fee
+        netAmount: amount * 0.99,
+        adminNotes: 'Withdrawal processed successfully',
+        createdAt: withdrawalDate,
+        updatedAt: withdrawalDate
+      });
 
-    const referralDate = getUniqueDate(startDate, now);
+      createdWithdrawals.push(withdrawal);
 
-    // Generate realistic fake user data
-    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Math.floor(Math.random() * 999)}@${['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com', 'hotmail.com'][Math.floor(Math.random() * 5)]}`;
-    const referredUserName = `${firstName} ${lastName}`;
-
-    // Generate unique referral code for each referral
-    const uniqueReferralCode = `${user.referralCode || 'REF' + userId.substring(0, 8).toUpperCase()}-${Date.now()}-${i}`;
-
-    // Create Referral record with metadata storing the fake user info
-    const referral = await Referral.create({
-      referrer: new mongoose.Types.ObjectId(userId),
-      referred: new mongoose.Types.ObjectId(), // Dummy ID for demo
-      referralCode: uniqueReferralCode,
-      status: 'rewarded',
-      pointsEarned: pointsEarned,
-      qualifyingInvestment: bonus * 10, // Assume referred user invested 10x the bonus
-      signupDate: referralDate,
-      qualificationDate: referralDate,
-      rewardDate: referralDate,
-      metadata: {
-        ipAddress: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-        source: 'direct',
-        campaign: 'demo-generated',
-        // Store fake user info in metadata so it can be displayed
-        fakeUserInfo: {
-          firstName,
-          lastName,
-          email
+      // Update investment's withdrawal tracking
+      await UserInvestment.findByIdAndUpdate(sourceInvestment._id, {
+        $inc: {
+          totalWithdrawn: amount,
+          profitsWithdrawn: amount
         }
-      },
-      createdAt: referralDate,
-      updatedAt: referralDate
-    });
+      });
 
-    // Create activity history record
+      // Create activity history record
+      activities.push({
+        userId: new mongoose.Types.ObjectId(userId),
+        activityType: 'withdrawal',
+        date: withdrawalDate,
+        description: `Withdrawal to bank account`,
+        amount,
+        currency: 'USD',
+        transactionId: `TXN-WTH-${withdrawal._id}`,
+        status: 'completed',
+        paymentMethod: 'bank_transfer',
+        isGenerated: true,
+        generatedAt: now
+      });
+    }
+  }
+
+  // Generate Referrals with real Referral records - only if enabled
+  if (activityConfig?.referrals?.enabled !== false) {
+    const firstNames = ['James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth', 'David', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen', 'Christopher', 'Nancy', 'Daniel', 'Lisa', 'Matthew', 'Betty'];
+    const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez'];
+
+    // totalReferralPoints already declared at the top
+
+    for (let i = 0; i < referralsCount; i++) {
+      // Increased bonus range to give more points per referral (500-3000 points per referral)
+      const bonus = randomAmount(5000, 30000); // $5K-$30K investment
+      const pointsEarned = Math.floor(bonus / 10); // 10 points per dollar = 500-3000 points
+      totalReferralPoints += pointsEarned;
+
+      const referralDate = getUniqueDate(startDate, now);
+
+      // Generate realistic fake user data
+      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+      const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Math.floor(Math.random() * 999)}@${['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com', 'hotmail.com'][Math.floor(Math.random() * 5)]}`;
+      const referredUserName = `${firstName} ${lastName}`;
+
+      // Generate unique referral code for each referral
+      const uniqueReferralCode = `${user.referralCode || 'REF' + userId.substring(0, 8).toUpperCase()}-${Date.now()}-${i}`;
+
+      // Create Referral record with metadata storing the fake user info
+      const referral = await Referral.create({
+        referrer: new mongoose.Types.ObjectId(userId),
+        referred: new mongoose.Types.ObjectId(), // Dummy ID for demo
+        referralCode: uniqueReferralCode,
+        status: 'rewarded',
+        pointsEarned: pointsEarned,
+        qualifyingInvestment: bonus * 10, // Assume referred user invested 10x the bonus
+        signupDate: referralDate,
+        qualificationDate: referralDate,
+        rewardDate: referralDate,
+        metadata: {
+          ipAddress: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+          source: 'direct',
+          campaign: 'demo-generated',
+          // Store fake user info in metadata so it can be displayed
+          fakeUserInfo: {
+            firstName,
+            lastName,
+            email
+          }
+        },
+        createdAt: referralDate,
+        updatedAt: referralDate
+      });
+
+      // Create activity history record
+      activities.push({
+        userId: new mongoose.Types.ObjectId(userId),
+        activityType: 'referral',
+        date: referralDate,
+        description: `Referral bonus for inviting ${referredUserName}`,
+        amount: bonus,
+        currency: 'USD',
+        referredUserName,
+        referredUserEmail: email,
+        referralBonus: bonus,
+        status: 'completed',
+        isGenerated: true,
+        generatedAt: now
+      });
+    }
+
+    // Update user's referral points
+    await User.findByIdAndUpdate(userId, {
+      $inc: { referralPoints: totalReferralPoints }
+    });
+  }
+
+  // Generate Logins (SPARSE - logins can be on same day, so not using getUniqueDate) - only if enabled
+  if (activityConfig?.logins?.enabled !== false) {
+    const locations = ['New York, US', 'Los Angeles, US', 'Chicago, US', 'Houston, US', 'Miami, US'];
+    const devices = ['Chrome on Windows', 'Safari on MacOS', 'Chrome on Android', 'Safari on iOS', 'Firefox on Windows'];
+
+    for (let i = 0; i < loginsCount; i++) {
+      activities.push({
+        userId: new mongoose.Types.ObjectId(userId),
+        activityType: 'login',
+        date: randomDate(startDate, now),
+        description: `User logged in`,
+        status: 'completed',
+        ipAddress: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+        device: devices[Math.floor(Math.random() * devices.length)],
+        location: locations[Math.floor(Math.random() * locations.length)],
+        isGenerated: true,
+        generatedAt: now
+      });
+    }
+  }
+
+  // Generate KYC milestone - only if enabled
+  if (activityConfig?.kycUpdates?.enabled !== false) {
+    const kycDate = new Date(startDate.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days after start
     activities.push({
       userId: new mongoose.Types.ObjectId(userId),
-      activityType: 'referral',
-      date: referralDate,
-      description: `Referral bonus for inviting ${referredUserName}`,
-      amount: bonus,
-      currency: 'USD',
-      referredUserName,
-      referredUserEmail: email,
-      referralBonus: bonus,
+      activityType: 'kyc_update',
+      date: kycDate,
+      description: 'KYC verification approved',
       status: 'completed',
+      kycStatus: 'approved',
       isGenerated: true,
       generatedAt: now
     });
   }
-
-  // Generate Logins (SPARSE - logins can be on same day, so not using getUniqueDate)
-  const locations = ['New York, US', 'Los Angeles, US', 'Chicago, US', 'Houston, US', 'Miami, US'];
-  const devices = ['Chrome on Windows', 'Safari on MacOS', 'Chrome on Android', 'Safari on iOS', 'Firefox on Windows'];
-
-  for (let i = 0; i < loginsCount; i++) {
-    activities.push({
-      userId: new mongoose.Types.ObjectId(userId),
-      activityType: 'login',
-      date: randomDate(startDate, now),
-      description: `User logged in`,
-      status: 'completed',
-      ipAddress: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-      device: devices[Math.floor(Math.random() * devices.length)],
-      location: locations[Math.floor(Math.random() * locations.length)],
-      isGenerated: true,
-      generatedAt: now
-    });
-  }
-
-  // Generate KYC milestone
-  const kycDate = new Date(startDate.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days after start
-  activities.push({
-    userId: new mongoose.Types.ObjectId(userId),
-    activityType: 'kyc_update',
-    date: kycDate,
-    description: 'KYC verification approved',
-    status: 'completed',
-    kycStatus: 'approved',
-    isGenerated: true,
-    generatedAt: now
-  });
 
   // Generate Portfolio changes
   const portfolioTypes = ['Conservative Growth', 'Balanced Portfolio', 'Aggressive Growth', 'Income Focus', 'Diversified'];
