@@ -30,13 +30,13 @@ export default function AccountType() {
       {
         id: "general",
         title: "General investing account",
-        min: "$500 minimum",
+        min: "$3000 minimum",
         desc: "A flexible investing account created to help you build long-term wealth.",
       },
       {
         id: "retirement",
         title: "Retirement account",
-        min: "$1,000 minimum",
+        min: "$10,000 minimum",
         desc: "Transfer, rollover, or start a new IRA with tax benefits for your retirement.",
       },
     ];
