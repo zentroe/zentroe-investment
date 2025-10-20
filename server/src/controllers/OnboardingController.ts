@@ -27,6 +27,34 @@ export const getUserOnboardingData = async (req: AuthenticatedRequest, res: Resp
       return;
     }
 
+    // Debug: Log selected investment plan
+    console.log('🔍 getUserOnboardingData - selectedInvestmentPlan:', user.selectedInvestmentPlan);
+    if (user.selectedInvestmentPlan) {
+      const plan = user.selectedInvestmentPlan as any;
+      console.log('📊 Plan details from DB:', {
+        _id: plan._id,
+        name: plan.name,
+        minInvestment: plan.minInvestment,
+        maxInvestment: plan.maxInvestment,
+        profitPercentage: plan.profitPercentage,
+        duration: plan.duration
+      });
+    }
+
+    // Ensure selectedInvestmentPlan is properly serialized
+    const selectedPlanData = user.selectedInvestmentPlan ? {
+      _id: (user.selectedInvestmentPlan as any)._id,
+      name: (user.selectedInvestmentPlan as any).name,
+      description: (user.selectedInvestmentPlan as any).description,
+      category: (user.selectedInvestmentPlan as any).category,
+      profitPercentage: (user.selectedInvestmentPlan as any).profitPercentage,
+      duration: (user.selectedInvestmentPlan as any).duration,
+      minInvestment: (user.selectedInvestmentPlan as any).minInvestment,
+      maxInvestment: (user.selectedInvestmentPlan as any).maxInvestment
+    } : undefined;
+
+    console.log('📤 Sending selectedPlanData to frontend:', selectedPlanData);
+
     res.status(200).json({
       message: "User onboarding data retrieved successfully",
       user: {
@@ -44,7 +72,7 @@ export const getUserOnboardingData = async (req: AuthenticatedRequest, res: Resp
         annualInvestmentAmount: user.annualInvestmentAmount,
         referralSource: user.referralSource,
         recommendedPortfolio: user.recommendedPortfolio,
-        selectedInvestmentPlan: user.selectedInvestmentPlan,
+        selectedInvestmentPlan: selectedPlanData,
 
         // Investment Setup
         initialInvestmentAmount: user.initialInvestmentAmount,
