@@ -212,7 +212,7 @@ export default function RecurringPage() {
                       <div>
                         <h4 className="font-semibold text-gray-900">{investment.name}</h4>
                         <p className="text-sm text-gray-500 mt-1">
-                          ${investment.amount} • {investment.frequency} • Next: {investment.nextDate}
+                          {investment.frequency} • Next: {investment.nextDate}
                         </p>
                       </div>
                     </div>
@@ -239,12 +239,12 @@ export default function RecurringPage() {
                         </p>
                       </div>
 
-                      <div>
+                      {/* <div>
                         <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Monthly Est.</p>
                         <p className="text-sm font-semibold text-gray-900 mt-1">
                           ${(investment.amount * (investment.frequency === "Monthly" ? 1 : investment.frequency === "Bi-weekly" ? 2 : investment.frequency === "Weekly" ? 4 : 1)).toLocaleString()}
                         </p>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
 

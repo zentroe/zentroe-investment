@@ -19,8 +19,14 @@ import {
   DollarSign,
   Users,
   Activity,
-  Trash2
+  Trash2,
+  Edit2,
+  Calendar,
+  Check,
+  X
 } from 'lucide-react';
+import { updateUserInvestmentDetails } from '@/services/adminService';
+import { toast } from 'sonner';
 
 interface Investment {
   _id: string;
@@ -49,6 +55,9 @@ export default function AdminInvestmentManagement() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
+  const [editedStartDate, setEditedStartDate] = useState('');
+  const [editedProfits, setEditedProfits] = useState('');
 
   useEffect(() => {
     fetchInvestments();
@@ -121,6 +130,68 @@ export default function AdminInvestmentManagement() {
     } catch (error) {
       console.error('Failed to delete investment:', error);
       alert('Failed to delete investment. Please try again.');
+    }
+  };
+
+  const startEditingInvestment = (investment: Investment) => {
+    setEditingInvestment(investment);
+
+    // Format the date for the datetime-local input
+    const date = new Date(investment.startDate);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+    setEditedStartDate(formattedDate);
+    setEditedProfits(investment.totalProfitsEarned.toString());
+  };
+
+  const cancelEditingInvestment = () => {
+    setEditingInvestment(null);
+    setEditedStartDate('');
+    setEditedProfits('');
+  };
+
+  const handleUpdateInvestment = async () => {
+    if (!editingInvestment) return;
+
+    try {
+      const updateData: { startDate?: string; totalProfitsEarned?: number } = {};
+
+      // Check if start date changed
+      const originalDate = new Date(editingInvestment.startDate);
+      const newDate = new Date(editedStartDate);
+      if (editedStartDate && newDate.getTime() !== originalDate.getTime()) {
+        updateData.startDate = editedStartDate;
+      }
+
+      // Check if profits changed
+      const newProfits = parseFloat(editedProfits);
+      if (!isNaN(newProfits) && newProfits !== editingInvestment.totalProfitsEarned) {
+        updateData.totalProfitsEarned = newProfits;
+      }
+
+      // Only make the API call if something changed
+      if (Object.keys(updateData).length === 0) {
+        toast.info('No changes detected');
+        cancelEditingInvestment();
+        return;
+      }
+
+      await updateUserInvestmentDetails(editingInvestment._id, updateData);
+      toast.success('Investment updated successfully!');
+
+      // Refresh the investments list to get the updated end date
+      await fetchInvestments();
+
+      cancelEditingInvestment();
+    } catch (error: any) {
+      console.error('Failed to update investment:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update investment';
+      toast.error(`Error: ${errorMessage}`);
     }
   };
 
@@ -309,6 +380,15 @@ export default function AdminInvestmentManagement() {
                       </div>
 
                       <div className="flex flex-col gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => startEditingInvestment(investment)}
+                          className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                          Edit
+                        </Button>
+
                         {investment.status === 'active' && (
                           <Button
                             variant="outline"
@@ -355,25 +435,28 @@ export default function AdminInvestmentManagement() {
 
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-4 border-t bg-gray-50 -mx-6 -mb-6 px-6 pb-6 rounded-b-lg">
                     <div>
-                      <p className="text-sm text-gray-600">Start Date</p>
-                      <p className="font-medium">{formatDate(investment.startDate)}</p>
+                      <p className="text-sm text-gray-600 mb-1">Start Date</p>
+                      <p className="font-medium flex items-center gap-1">
+                        <Calendar className="h-3 w-3 text-gray-400" />
+                        {formatDate(investment.startDate)}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">End Date</p>
+                      <p className="text-sm text-gray-600 mb-1">End Date</p>
                       <p className="font-medium">{formatDate(investment.endDate)}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Profits Earned</p>
+                      <p className="text-sm text-gray-600 mb-1">Profits Earned</p>
                       <p className="font-medium text-green-600">
                         {formatCurrency(investment.totalProfitsEarned)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Daily Rate</p>
+                      <p className="text-sm text-gray-600 mb-1">Daily Rate</p>
                       <p className="font-medium">{investment.dailyProfitRate.toFixed(4)}%</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Duration</p>
+                      <p className="text-sm text-gray-600 mb-1">Duration</p>
                       <p className="font-medium">{investment.investmentPlan.duration} days</p>
                     </div>
                   </div>
@@ -383,6 +466,128 @@ export default function AdminInvestmentManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Investment Modal */}
+      {editingInvestment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Edit Investment Details</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {editingInvestment.user.firstName} {editingInvestment.user.lastName} - {editingInvestment.investmentPlan.name}
+                </p>
+              </div>
+              <button
+                onClick={cancelEditingInvestment}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-6">
+              {/* Investment Summary */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-2">Investment Summary</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-blue-700">Investment Amount</p>
+                    <p className="font-bold text-blue-900">{formatCurrency(editingInvestment.amount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700">Status</p>
+                    <Badge className={getStatusColor(editingInvestment.status)}>
+                      {editingInvestment.status.charAt(0).toUpperCase() + editingInvestment.status.slice(1)}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-blue-700">Plan</p>
+                    <p className="font-medium text-blue-900">{editingInvestment.investmentPlan.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700">Duration</p>
+                    <p className="font-medium text-blue-900">{editingInvestment.investmentPlan.duration} days</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Editable Fields */}
+              <div className="space-y-4">
+                {/* Start Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="h-4 w-4 inline mr-2" />
+                    Start Date
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={editedStartDate}
+                    onChange={(e) => setEditedStartDate(e.target.value)}
+                    max={new Date().toISOString().slice(0, 16)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Current: {formatDate(editingInvestment.startDate)}
+                  </p>
+                  <p className="text-xs text-amber-600 mt-1">
+                    ⚠️ Note: Changing the start date will automatically recalculate the end date based on the plan duration ({editingInvestment.investmentPlan.duration} days)
+                  </p>
+                </div>
+
+                {/* Total Profits */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <DollarSign className="h-4 w-4 inline mr-2" />
+                    Total Profits Earned
+                  </label>
+                  <Input
+                    type="number"
+                    value={editedProfits}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditedProfits(e.target.value)}
+                    min="0"
+                    step="0.01"
+                    className="w-full"
+                    placeholder="Enter total profits"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Current: {formatCurrency(editingInvestment.totalProfitsEarned)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Warning */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-sm text-amber-800">
+                  <strong>⚠️ Warning:</strong> These changes will directly affect the user's investment.
+                  Make sure you have verified the information before saving.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
+              <Button
+                onClick={cancelEditingInvestment}
+                variant="outline"
+                className="border-gray-300"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdateInvestment}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

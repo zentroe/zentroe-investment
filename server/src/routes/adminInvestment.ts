@@ -7,6 +7,7 @@ import {
   resumeUserInvestment,
   completeUserInvestment,
   deleteUserInvestment,
+  updateInvestmentDetails,
 
   // Profit Management
   getDailyProfitOverview,
@@ -63,6 +64,14 @@ router.put('/investments/:id/resume', resumeUserInvestment as any);
  * @access  Admin
  */
 router.put('/investments/:id/complete', completeUserInvestment as any);
+
+/**
+ * @route   PUT /api/admin/investments/:id
+ * @desc    Update investment details (date, profits, etc.)
+ * @access  Admin
+ * @body    { startDate?: string, totalProfitsEarned?: number }
+ */
+router.put('/investments/:id', updateInvestmentDetails as any);
 
 /**
  * @route   DELETE /api/admin/investments/:id

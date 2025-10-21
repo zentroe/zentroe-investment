@@ -176,14 +176,20 @@ const PaymentPageNew: React.FC = () => {
         });
         toast.success('Crypto payment recorded! Admin will verify your transaction.');
       } else if (selectedMethod === 'bank' && selectedBankAccount) {
+        if (!transactionScreenshot) {
+          toast.error('Please upload a screenshot of your bank transfer');
+          setConfirmingPayment(false);
+          return;
+        }
         paymentResult = await confirmBankTransferPayment({
           accountId: selectedBankAccount._id,
           amount: amount,
-          referenceNumber: `REF-${Date.now()}`, // Generate a reference number
+          referenceNumber: user?.paymentReferenceId || `REF-${Date.now()}`, // Use payment reference ID if available
           userBankDetails: {
             bankName: '', // User can provide this later to admin
             accountHolderName: user?.firstName + ' ' + user?.lastName || ''
-          }
+          },
+          proofOfPayment: transactionScreenshot
         });
         toast.success('Bank transfer recorded! Admin will verify your payment.');
       }
@@ -458,6 +464,9 @@ const PaymentPageNew: React.FC = () => {
                     onBankAccountChange={setSelectedBankAccount}
                     amount={amount}
                     paymentReferenceId={user?.paymentReferenceId}
+                    transactionScreenshot={transactionScreenshot}
+                    onScreenshotUpload={handleScreenshotUpload}
+                    uploadingScreenshot={uploadingScreenshot}
                   />
                 )}
               </div>
@@ -507,8 +516,8 @@ const PaymentPageNew: React.FC = () => {
               {(selectedMethod === 'crypto' || selectedMethod === 'bank') && (
                 <button
                   title={
-                    selectedMethod === 'crypto' && !transactionScreenshot
-                      ? 'Please upload a transaction screenshot first'
+                    !transactionScreenshot
+                      ? 'Please upload a payment proof screenshot first'
                       : confirmingPayment
                         ? 'Processing payment...'
                         : uploadingScreenshot
@@ -519,11 +528,11 @@ const PaymentPageNew: React.FC = () => {
                   disabled={
                     confirmingPayment ||
                     uploadingScreenshot ||
-                    (selectedMethod === 'crypto' && !transactionScreenshot)
+                    !transactionScreenshot
                   }
                   className={`px-6 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 ${confirmingPayment ||
                     uploadingScreenshot ||
-                    (selectedMethod === 'crypto' && !transactionScreenshot)
+                    !transactionScreenshot
                     ? 'bg-gray-400 cursor-not-allowed text-white'
                     : 'bg-primary hover:bg-primary/90 text-white'
                     }`}
@@ -538,9 +547,9 @@ const PaymentPageNew: React.FC = () => {
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       <span>Uploading...</span>
                     </>
-                  ) : selectedMethod === 'crypto' && !transactionScreenshot ? (
+                  ) : !transactionScreenshot ? (
                     <>
-                      <span>Upload Screenshot First</span>
+                      <span>Upload Payment Proof First</span>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
                       </svg>

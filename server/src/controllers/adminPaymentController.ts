@@ -502,6 +502,48 @@ export const updateDepositStatus = async (req: Request, res: Response): Promise<
   }
 };
 
+// Update Deposit Date (Admin only - for backdating)
+export const updateDepositDate = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { createdAt } = req.body;
+
+    if (!createdAt) {
+      res.status(400).json({ message: 'Created date is required' });
+      return;
+    }
+
+    const newDate = new Date(createdAt);
+    if (isNaN(newDate.getTime())) {
+      res.status(400).json({ message: 'Invalid date format' });
+      return;
+    }
+
+    // Don't allow future dates
+    if (newDate > new Date()) {
+      res.status(400).json({ message: 'Cannot set deposit date to future' });
+      return;
+    }
+
+    const deposit = await Deposit.findByIdAndUpdate(
+      id,
+      { createdAt: newDate },
+      { new: true }
+    ).populate('userId', 'firstName lastName email');
+
+    if (!deposit) {
+      res.status(404).json({ message: 'Deposit not found' });
+      return;
+    }
+
+    console.log(`✅ Deposit ${id} date updated to ${newDate.toISOString()}`);
+    res.json({ message: 'Deposit date updated successfully', deposit });
+  } catch (error) {
+    console.error('Update deposit date error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // Delete Deposit (Admin only)
 export const deleteDeposit = async (req: Request, res: Response): Promise<void> => {
   try {

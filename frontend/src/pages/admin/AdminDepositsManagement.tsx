@@ -13,9 +13,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Play,
-  Trash2
+  Trash2,
+  Edit2,
+  Calendar
 } from 'lucide-react';
-import { getAllDeposits, updateDepositStatus, startInvestmentFromDeposit, deleteDeposit } from '@/services/adminService';
+import { getAllDeposits, updateDepositStatus, startInvestmentFromDeposit, deleteDeposit, updateDepositDate } from '@/services/adminService';
 import { toast } from 'sonner';
 
 interface Deposit {
@@ -57,6 +59,8 @@ const AdminDepositsManagement: React.FC = () => {
   const [methodFilter, setMethodFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [isEditingDate, setIsEditingDate] = useState(false);
+  const [editedDate, setEditedDate] = useState('');
 
   useEffect(() => {
     fetchDeposits();
@@ -150,6 +154,54 @@ const AdminDepositsManagement: React.FC = () => {
       const errorMessage = error.response?.data?.message || 'Failed to delete deposit';
       toast.error(`Error: ${errorMessage}`);
     }
+  };
+
+  const handleUpdateDate = async () => {
+    if (!selectedDeposit || !editedDate) return;
+
+    try {
+      await updateDepositDate(selectedDeposit._id, editedDate);
+      toast.success('Deposit date updated successfully!');
+
+      // Update the selected deposit
+      setSelectedDeposit({
+        ...selectedDeposit,
+        createdAt: editedDate
+      });
+
+      // Update in the deposits list
+      setDeposits(deposits.map(d =>
+        d._id === selectedDeposit._id ? { ...d, createdAt: editedDate } : d
+      ));
+
+      setIsEditingDate(false);
+      setEditedDate('');
+    } catch (error: any) {
+      console.error('Failed to update deposit date:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update deposit date';
+      toast.error(`Error: ${errorMessage}`);
+    }
+  };
+
+  const startEditingDate = () => {
+    if (selectedDeposit) {
+      // Format the date for the datetime-local input
+      const date = new Date(selectedDeposit.createdAt);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+      setEditedDate(formattedDate);
+      setIsEditingDate(true);
+    }
+  };
+
+  const cancelEditingDate = () => {
+    setIsEditingDate(false);
+    setEditedDate('');
   };
 
   const getMethodIcon = (method: string) => {
@@ -492,7 +544,11 @@ const AdminDepositsManagement: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">Deposit Details</h3>
                 <button
-                  onClick={() => setSelectedDeposit(null)}
+                  onClick={() => {
+                    setSelectedDeposit(null);
+                    setIsEditingDate(false);
+                    setEditedDate('');
+                  }}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="h-6 w-6" />
@@ -520,8 +576,49 @@ const AdminDepositsManagement: React.FC = () => {
                     </span>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Date</label>
-                    <p className="mt-1 text-sm text-gray-900">{formatDate(selectedDeposit.createdAt)}</p>
+                    <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-1">
+                      <span>Date</span>
+                      {!isEditingDate && (
+                        <button
+                          onClick={startEditingDate}
+                          className="text-blue-600 hover:text-blue-800 flex items-center text-xs"
+                          title="Edit date"
+                        >
+                          <Edit2 className="h-3 w-3 mr-1" />
+                          Edit
+                        </button>
+                      )}
+                    </label>
+                    {isEditingDate ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="datetime-local"
+                          value={editedDate}
+                          onChange={(e) => setEditedDate(e.target.value)}
+                          max={new Date().toISOString().slice(0, 16)}
+                          className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <button
+                          onClick={handleUpdateDate}
+                          className="text-green-600 hover:text-green-800 p-1"
+                          title="Save"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={cancelEditingDate}
+                          className="text-red-600 hover:text-red-800 p-1"
+                          title="Cancel"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <p className="text-sm text-gray-900">{formatDate(selectedDeposit.createdAt)}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -23,6 +23,9 @@ interface BankTransferDisplayProps {
   onBankAccountChange: (account: BankAccount) => void;
   amount: number;
   paymentReferenceId?: string; // User's unique payment reference
+  transactionScreenshot?: string;
+  onScreenshotUpload?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  uploadingScreenshot?: boolean;
 }
 
 const BankTransferDisplay: React.FC<BankTransferDisplayProps> = ({
@@ -31,6 +34,9 @@ const BankTransferDisplay: React.FC<BankTransferDisplayProps> = ({
   onBankAccountChange,
   amount,
   paymentReferenceId,
+  transactionScreenshot,
+  onScreenshotUpload,
+  uploadingScreenshot = false,
 }) => {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -252,9 +258,39 @@ const BankTransferDisplay: React.FC<BankTransferDisplayProps> = ({
             <li>3. <strong className="text-red-600">IMPORTANT:</strong> Include your reference ID in the transfer description</li>
           )}
           <li>{paymentReferenceId ? '4' : '3'}. Save your transfer receipt for verification</li>
-          <li>{paymentReferenceId ? '5' : '4'}. Processing time: 1-3 business days</li>
+          <li>{paymentReferenceId ? '5' : '4'}. Upload proof of transfer below</li>
+          <li>{paymentReferenceId ? '6' : '5'}. Processing time: 1-3 business days</li>
         </ol>
       </div>
+
+      {/* Upload Payment Proof */}
+      {onScreenshotUpload && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Upload Payment Proof *
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={onScreenshotUpload}
+            disabled={uploadingScreenshot}
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Upload a screenshot or photo of your bank transfer receipt
+          </p>
+          {transactionScreenshot && (
+            <div className="mt-3">
+              <p className="text-xs font-medium text-gray-700 mb-2">Preview:</p>
+              <img
+                src={transactionScreenshot}
+                alt="Payment proof"
+                className="max-h-48 rounded border border-gray-300 shadow-sm"
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Payment Reference ID - Minimalistic */}
       {paymentReferenceId ? (

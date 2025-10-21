@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { AuthenticatedAdminRequest } from '../middleware/adminAuth';
 import { UserInvestment } from '../models/UserInvestment';
 import { DailyProfit } from '../models/DailyProfit';
@@ -318,6 +319,79 @@ export const manualProfitUpdate = async (req: AuthenticatedAdminRequest, res: Re
     });
   } catch (error) {
     console.error('Manual profit update error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+/**
+ * Update investment details (date, profits, etc.) - Admin only
+ */
+export const updateInvestmentDetails = async (req: AuthenticatedAdminRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { startDate, totalProfitsEarned } = req.body;
+
+    const investment = await UserInvestment.findById(id);
+
+    if (!investment) {
+      res.status(404).json({ message: 'Investment not found' });
+      return;
+    }
+
+    // Update start date if provided
+    if (startDate) {
+      const newStartDate = new Date(startDate);
+
+      // Validate date
+      if (isNaN(newStartDate.getTime())) {
+        res.status(400).json({ message: 'Invalid start date format' });
+        return;
+      }
+
+      // Don't allow future dates
+      if (newStartDate > new Date()) {
+        res.status(400).json({ message: 'Cannot set start date to future' });
+        return;
+      }
+
+      // Update start date
+      investment.startDate = newStartDate;
+
+      // Recalculate end date based on investment plan duration
+      const plan = await mongoose.model('InvestmentPlan').findById(investment.investmentPlan);
+      if (plan) {
+        const duration = (plan as any).duration || 365;
+        investment.endDate = new Date(newStartDate.getTime() + duration * 24 * 60 * 60 * 1000);
+      }
+
+      console.log(`📅 Investment ${id} start date updated to ${newStartDate.toISOString()}`);
+    }
+
+    // Update total profits if provided
+    if (totalProfitsEarned !== undefined) {
+      if (typeof totalProfitsEarned !== 'number' || totalProfitsEarned < 0) {
+        res.status(400).json({ message: 'Total profits must be a non-negative number' });
+        return;
+      }
+
+      investment.totalProfitsEarned = totalProfitsEarned;
+      console.log(`💰 Investment ${id} total profits updated to ${totalProfitsEarned}`);
+    }
+
+    // Save the changes
+    await investment.save();
+
+    // Populate and return the updated investment
+    const updatedInvestment = await UserInvestment.findById(id)
+      .populate('user', 'firstName lastName email')
+      .populate('investmentPlan', 'name profitPercentage duration');
+
+    res.json({
+      message: 'Investment details updated successfully',
+      investment: updatedInvestment
+    });
+  } catch (error) {
+    console.error('Update investment details error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };

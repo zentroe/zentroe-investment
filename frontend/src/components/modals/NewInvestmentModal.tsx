@@ -736,25 +736,10 @@ export default function NewInvestmentModal({ isOpen, onClose, onSuccess }: NewIn
                             onBankAccountChange={setSelectedBankAccount}
                             amount={Number(amount.trim().replace(/[^0-9.]/g, ''))}
                             paymentReferenceId={user?.paymentReferenceId}
+                            transactionScreenshot={transactionScreenshot}
+                            onScreenshotUpload={handleScreenshotUpload}
+                            uploadingScreenshot={uploadingScreenshot}
                           />
-
-                          <div className="space-y-2">
-                            <label className="block text-sm font-medium text-gray-700">
-                              Upload Payment Proof *
-                            </label>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleScreenshotUpload}
-                              disabled={uploadingScreenshot}
-                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
-                            />
-                            {transactionScreenshot && (
-                              <div className="mt-2">
-                                <img src={transactionScreenshot} alt="Payment proof" className="max-h-40 rounded border" />
-                              </div>
-                            )}
-                          </div>
 
                           <div className="flex gap-3 pt-4">
                             <Button onClick={() => setStage('enter-amount')} variant="outline" className="flex-1">

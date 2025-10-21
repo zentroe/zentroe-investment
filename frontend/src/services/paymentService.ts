@@ -253,6 +253,7 @@ export const confirmBankTransferPayment = async (paymentData: {
     swiftCode?: string;
   };
   referenceNumber?: string;
+  proofOfPayment?: string;
 }) => {
   try {
     console.log('🏦 Confirming bank transfer payment via API:', paymentData);

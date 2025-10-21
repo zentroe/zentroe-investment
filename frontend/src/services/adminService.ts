@@ -238,6 +238,16 @@ export const updateDepositStatus = async (id: string, statusData: {
   }
 };
 
+export const updateDepositDate = async (id: string, createdAt: string) => {
+  try {
+    const response = await axios.put(`/admin/payments/deposits/${id}/date`, { createdAt });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating deposit date:', error);
+    throw error;
+  }
+};
+
 export const deleteDeposit = async (id: string) => {
   try {
     const response = await axios.delete(`/admin/payments/deposits/${id}`);
@@ -464,6 +474,21 @@ export const toggleInvestmentPlanStatus = async (id: string) => {
     return response.data;
   } catch (error) {
     console.error('Error toggling investment plan status:', error);
+    throw error;
+  }
+};
+
+// ===== USER INVESTMENT MANAGEMENT =====
+
+export const updateUserInvestmentDetails = async (
+  id: string,
+  data: { startDate?: string; totalProfitsEarned?: number }
+) => {
+  try {
+    const response = await axios.put(`/admin/investments/${id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating user investment details:', error);
     throw error;
   }
 };
