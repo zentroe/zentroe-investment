@@ -16,7 +16,7 @@ export default function MorePersonalInfo() {
   });
   const [loading, setLoading] = useState(false);
 
-  const { data, loading: contextLoading, updateLocalData, updateStatus } = useOnboarding();
+  const { data, loading: contextLoading, updateLocalData, updateStatus, refreshData } = useOnboarding();
 
   // Pre-populate from context data
   useEffect(() => {
@@ -100,12 +100,18 @@ export default function MorePersonalInfo() {
       });
 
       // Update onboarding status to 'basicInfo' since personal details are complete
+      console.log('🔄 [MorePersonalInfo] Updating status to basicInfo...');
       await updateStatus("basicInfo");
+
+      // Refresh onboarding data to ensure context has the latest status
+      console.log('🔄 [MorePersonalInfo] Refreshing onboarding data after status update...');
+      await refreshData();
+      console.log('✅ [MorePersonalInfo] Data refreshed, navigating to invest intro');
 
       toast.success("Identity information saved.");
       navigate("/invest/intro");
     } catch (error) {
-      console.error("Error saving identity information:", error);
+      console.error("❌ [MorePersonalInfo] Error saving identity information:", error);
       toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);

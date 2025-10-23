@@ -117,11 +117,11 @@ const AdminCryptoPayments: React.FC = () => {
 
   const filteredPayments = payments.filter(payment => {
     const matchesSearch =
-      payment.userId.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.userId.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.userId.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.transactionHash.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.cryptocurrency.toLowerCase().includes(searchTerm.toLowerCase());
+      payment.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.userId?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.userId?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.transactionHash?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.cryptocurrency?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
 
@@ -258,9 +258,9 @@ const AdminCryptoPayments: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {payment.userId.firstName} {payment.userId.lastName}
+                          {payment.userId ? `${payment.userId.firstName} ${payment.userId.lastName}` : 'Unknown User'}
                         </div>
-                        <div className="text-sm text-gray-500">{payment.userId.email}</div>
+                        <div className="text-sm text-gray-500">{payment.userId?.email || 'N/A'}</div>
                         <div className="text-sm font-semibold text-green-600">
                           ${payment.fiatAmount.toLocaleString()} {payment.fiatCurrency}
                         </div>

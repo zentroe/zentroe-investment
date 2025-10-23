@@ -147,8 +147,8 @@ export default function PasswordSetup() {
 
         <p className="text-sm text-gray-500 mt-6 text-center">
           By continuing you indicate you have reviewed and agree to the {" "}
-          <a href="#" className="underline">Terms of Service</a> and {" "}
-          <a href="#" className="underline">Privacy Policy</a>.
+          <a href="/terms" target="_blank" className="underline text-primary hover:text-primary/80">Terms of Service</a> and {" "}
+          <a href="/privacy" target="_blank" className="underline text-primary hover:text-primary/80">Privacy Policy</a>.
         </p>
       </div>
     </OnboardingLayout>

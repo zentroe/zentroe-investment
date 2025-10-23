@@ -8,8 +8,8 @@ import {
   Wallet,
   Building2,
   Users,
-  FileText,
-  BarChart3,
+  // FileText,
+  // BarChart3,
   Menu,
   X,
   LogOut,
@@ -111,18 +111,6 @@ const AdminLayout: React.FC = () => {
       label: 'Investment Plans',
       icon: Target,
       path: '/x-admin/dashboard/investment-plans'
-    },
-    {
-      id: 'reports',
-      label: 'Reports',
-      icon: BarChart3,
-      path: '/x-admin/dashboard/reports'
-    },
-    {
-      id: 'logs',
-      label: 'Activity Logs',
-      icon: FileText,
-      path: '/x-admin/dashboard/logs'
     }
   ];
 

@@ -614,6 +614,12 @@ export const updateOnboardingStatus = async (req: AuthenticatedRequest, res: Res
     const userId = req.user?.userId;
     const { status } = req.body;
 
+    console.log('🔄 [updateOnboardingStatus] Attempting to update status:', {
+      userId,
+      newStatus: status,
+      timestamp: new Date().toISOString()
+    });
+
     if (!userId) {
       res.status(401).json({ message: "User not authenticated" });
       return;
@@ -622,6 +628,7 @@ export const updateOnboardingStatus = async (req: AuthenticatedRequest, res: Res
     // Validate onboarding status
     const validStatuses = ['started', 'basicInfo', 'investmentProfile', 'verification', 'bankConnected', 'completed'];
     if (!status || !validStatuses.includes(status)) {
+      console.error('❌ [updateOnboardingStatus] Invalid status:', status);
       res.status(400).json({
         message: "Invalid onboarding status",
         validStatuses
@@ -629,15 +636,72 @@ export const updateOnboardingStatus = async (req: AuthenticatedRequest, res: Res
       return;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
+    // First, get the current user to log their current status
+    const currentUser = await User.findById(userId);
+    console.log('📊 [updateOnboardingStatus] Current user status:', {
       userId,
-      { onboardingStatus: status },
-      { new: true, runValidators: true }
-    );
+      currentStatus: currentUser?.onboardingStatus,
+      newStatus: status
+    });
 
-    if (!updatedUser) {
+    if (!currentUser) {
+      console.error('❌ [updateOnboardingStatus] User not found:', userId);
       res.status(404).json({ message: "User not found" });
       return;
+    }
+
+    // Use atomic $set operation with explicit field update
+    // This is more reliable than findByIdAndUpdate for race conditions
+    const updateResult = await User.updateOne(
+      { _id: userId },
+      {
+        $set: {
+          onboardingStatus: status
+        },
+        $currentDate: { updatedAt: true }
+      },
+      {
+        runValidators: true
+      }
+    );
+
+    console.log('📝 [updateOnboardingStatus] Update operation result:', {
+      matchedCount: updateResult.matchedCount,
+      modifiedCount: updateResult.modifiedCount,
+      acknowledged: updateResult.acknowledged
+    });
+
+    if (updateResult.matchedCount === 0) {
+      console.error('❌ [updateOnboardingStatus] User not found during update:', userId);
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Fetch the updated user to verify
+    const updatedUser = await User.findById(userId);
+
+    if (!updatedUser) {
+      console.error('❌ [updateOnboardingStatus] User not found after update:', userId);
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    console.log('✅ [updateOnboardingStatus] Successfully updated:', {
+      userId,
+      previousStatus: currentUser?.onboardingStatus,
+      newStatus: updatedUser.onboardingStatus,
+      statusActuallyChanged: currentUser?.onboardingStatus !== updatedUser.onboardingStatus,
+      modifiedCount: updateResult.modifiedCount
+    });
+
+    // Verify the update actually persisted
+    if (updatedUser.onboardingStatus !== status) {
+      console.error('⚠️ [updateOnboardingStatus] Status mismatch after update!', {
+        userId,
+        requestedStatus: status,
+        actualStatus: updatedUser.onboardingStatus,
+        updateWasModified: updateResult.modifiedCount > 0
+      });
     }
 
     res.status(200).json({
@@ -648,7 +712,7 @@ export const updateOnboardingStatus = async (req: AuthenticatedRequest, res: Res
       },
     });
   } catch (error) {
-    console.error("Error updating onboarding status:", error);
+    console.error("❌ [updateOnboardingStatus] Error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

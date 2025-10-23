@@ -8,15 +8,21 @@ import { useOnboarding } from "@/context/OnboardingContext";
 
 export default function Success() {
   const navigate = useNavigate();
-  const { updateStatus } = useOnboarding();
+  const { updateStatus, refreshData } = useOnboarding();
 
   useEffect(() => {
     // Set onboarding status to "started" when user reaches success page
     const initializeOnboarding = async () => {
       try {
+        console.log('🔄 [Success] Initializing onboarding status to started...');
         await updateStatus('started');
+
+        // Refresh data to ensure context is synced
+        console.log('🔄 [Success] Refreshing onboarding data...');
+        await refreshData();
+        console.log('✅ [Success] Onboarding initialized and data refreshed');
       } catch (error) {
-        console.error('Failed to update onboarding status:', error);
+        console.error('❌ [Success] Failed to update onboarding status:', error);
         // Don't block the flow if status update fails
       }
     };
@@ -29,7 +35,7 @@ export default function Success() {
     }, 3000);
 
     return () => clearTimeout(timeout);
-  }, [navigate, updateStatus]);
+  }, [navigate, updateStatus, refreshData]);
 
   return (
     <OnboardingLayout>

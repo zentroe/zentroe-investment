@@ -9,7 +9,7 @@ export const createConfirmationEmailTemplate = (
         </div>
         <div style="padding: 30px; color: #251c15;">
           <p style="font-size: 15px; color: #4b3a32;">
-            Thank you for joining <strong>Zentroe</strong> — a platform designed to help you grow your wealth through secure investments in Real Estate, Agriculture, and Venture Capital.
+            Thank you for joining <strong>Zentroe</strong>, a platform designed to help you grow your wealth through secure investments in Real Estate, Agriculture, and Venture Capital.
           </p>
           <p style="font-size: 15px; color: #4b3a32;">
             Please confirm your email address to activate your account and start investing in vetted opportunities curated just for you.

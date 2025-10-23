@@ -1,16 +1,38 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import OnboardingLayout from "./OnboardingLayout";
 import { Button } from "@/components/ui/button";
 import { useOnboarding } from "@/context/OnboardingContext";
+import { toast } from "sonner";
 
 export default function FinishUpAndInvest() {
   const navigate = useNavigate();
-  const { updateStatus } = useOnboarding();
+  const { updateStatus, refreshData } = useOnboarding();
+  const [loading, setLoading] = useState(false);
 
   const handleContinue = async () => {
-    await updateStatus("basicInfo");
-    navigate("/invest/payment-amount"); // Adjust route as needed
+    try {
+      setLoading(true);
+      console.log('🔄 [FinishUpAndInvest] Updating status and refreshing data...');
+
+      // Update the onboarding status
+      await updateStatus("basicInfo");
+
+      // Refresh the onboarding data to ensure we have the latest selected investment plan
+      console.log('🔄 [FinishUpAndInvest] Refreshing onboarding data before navigation...');
+      await refreshData();
+
+      console.log('✅ [FinishUpAndInvest] Data refreshed, navigating to investment amount page');
+
+      // Navigate to the investment amount page
+      navigate("/invest/payment-amount");
+    } catch (error) {
+      console.error('❌ [FinishUpAndInvest] Error during continue:', error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -37,9 +59,10 @@ export default function FinishUpAndInvest() {
 
         <Button
           onClick={handleContinue}
-          className="text-sm text-white bg-primary hover:bg-[#8c391e]"
+          disabled={loading}
+          className="text-sm text-white bg-primary hover:bg-[#8c391e] disabled:opacity-50"
         >
-          Continue
+          {loading ? "Loading..." : "Continue"}
         </Button>
       </div>
     </OnboardingLayout>

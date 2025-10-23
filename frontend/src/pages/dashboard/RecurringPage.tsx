@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
 import { Play, Pause, Edit, Calendar, DollarSign } from "lucide-react";
 import { useUser } from "@/context/UserContext";
+import SetupRecurringModal from "@/components/dashboard/SetupRecurringModal";
+import { mapBackendFrequencyToDisplay } from "@/utils/recurringInvestmentHelpers";
 
 export default function RecurringPage() {
-  const { user, investments, loading } = useUser();
+  const { user, investments, loading, refreshUser } = useUser();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRecurring, setEditingRecurring] = useState<any>(null);
 
   // Generate recurring investment data based on user's actual data
   const generateRecurringData = () => {
@@ -86,6 +90,35 @@ export default function RecurringPage() {
         ? { ...inv, status: inv.status === "Active" ? "Paused" : "Active" }
         : inv
     ));
+  };
+
+  // Handler for setting up new recurring investment
+  const handleSetupRecurring = () => {
+    setEditingRecurring(null); // Clear any existing data
+    setIsModalOpen(true);
+  };
+
+  // Handler for editing existing recurring investment
+  const handleEditRecurring = () => {
+    if (user?.recurringInvestment && user?.recurringAmount && user?.recurringFrequency) {
+      // Map backend frequency to display format
+      const displayFrequency = mapBackendFrequencyToDisplay(user.recurringFrequency);
+
+      setEditingRecurring({
+        frequency: displayFrequency,
+        investmentDay: user.recurringDay || "1st",
+        amount: user.recurringAmount,
+        isActive: true,
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  // Handler for successful save
+  const handleRecurringSuccess = async () => {
+    console.log("🔄 Recurring investment saved, refreshing user data...");
+    await refreshUser();
+    console.log("✅ User data refreshed");
   };
 
   // Calculate metrics
@@ -262,7 +295,11 @@ export default function RecurringPage() {
                         )}
                       </button>
                     )}
-                    <button className="p-2 hover:bg-gray-100 rounded-lg" title="Edit">
+                    <button
+                      onClick={investment.status === "Setup Required" ? handleSetupRecurring : handleEditRecurring}
+                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      title={investment.status === "Setup Required" ? "Set Up" : "Edit"}
+                    >
                       <Edit size={20} className="text-gray-600" />
                     </button>
                   </div>
@@ -277,7 +314,10 @@ export default function RecurringPage() {
             <p className="text-gray-500 mb-6">
               Set up automated investing to build your portfolio consistently over time.
             </p>
-            <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+            <button
+              onClick={handleSetupRecurring}
+              className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+            >
               Set Up Recurring Investment
             </button>
           </div>
@@ -311,6 +351,18 @@ export default function RecurringPage() {
           </div>
         </div>
       </div> */}
+
+      {/* Setup Recurring Modal */}
+      <SetupRecurringModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingRecurring(null);
+        }}
+        onSuccess={handleRecurringSuccess}
+        annualInvestmentAmount={user?.annualInvestmentAmount}
+        existingRecurring={editingRecurring}
+      />
     </div>
   );
 }

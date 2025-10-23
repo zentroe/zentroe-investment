@@ -9,6 +9,7 @@ import PlanPreviewModal from "./components/PlanPreviewModal";
 import { useNavigate } from "react-router-dom";
 import { saveRecommendedPortfolio, getInvestmentPlans, getUserOnboardingData, type InvestmentPlan } from "@/services/onboardingService";
 import { toast } from "sonner";
+import { useOnboarding } from "@/context/OnboardingContext";
 
 // New recommendation logic using database plans
 function getRecommendedPlan(userData: any, investmentPlans: InvestmentPlan[]): InvestmentPlan | null {
@@ -208,6 +209,7 @@ function getRecommendedPlan(userData: any, investmentPlans: InvestmentPlan[]): I
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const navigate = useNavigate();
+  const { refreshData } = useOnboarding();
 
   // Fetch user data to determine recommendation
   useEffect(() => {
@@ -284,6 +286,12 @@ function getRecommendedPlan(userData: any, investmentPlans: InvestmentPlan[]): I
     try {
       await saveRecommendedPortfolio(recommendedPlan._id);
       toast.success("Investment recommendation saved");
+
+      // Refresh onboarding data to ensure context has the latest selected plan
+      console.log('🔄 [InvestmentRecommend] Refreshing onboarding data after saving plan...');
+      await refreshData();
+      console.log('✅ [InvestmentRecommend] Data refreshed, navigating...');
+
       navigate("/onboarding/personal-intro");
     } catch (error) {
       console.error("Failed to save investment recommendation:", error);
@@ -309,6 +317,12 @@ function getRecommendedPlan(userData: any, investmentPlans: InvestmentPlan[]): I
     try {
       await saveRecommendedPortfolio(plan._id);
       toast.success("Investment plan selected successfully");
+
+      // Refresh onboarding data to ensure context has the latest selected plan
+      console.log('🔄 [InvestmentRecommend] Refreshing onboarding data after selecting plan from modal...');
+      await refreshData();
+      console.log('✅ [InvestmentRecommend] Data refreshed, navigating...');
+
       navigate("/onboarding/personal-intro");
     } catch (error) {
       console.error("Failed to save selected investment plan:", error);

@@ -52,7 +52,7 @@ interface PaymentOptions {
 const PaymentPageNew: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { data: userData, loading: contextLoading, updateStatus } = useOnboarding();
+  const { data: userData, loading: contextLoading, updateStatus, refreshData } = useOnboarding();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,11 +130,19 @@ const PaymentPageNew: React.FC = () => {
 
   const handlePaymentSuccess = async (data: any) => {
     try {
+      console.log('✅ [PaymentPageNew] Payment successful, updating status to completed...');
+
       // Update onboarding status to completed since payment is successful/pending
       await updateStatus('completed');
+
+      // Refresh onboarding data to ensure context has the latest status
+      console.log('🔄 [PaymentPageNew] Refreshing onboarding data after status update...');
+      await refreshData();
+      console.log('✅ [PaymentPageNew] Data refreshed, navigating to success page');
+
       toast.success('Payment submitted successfully! Welcome to your dashboard!');
     } catch (error) {
-      console.error('❌ Error updating onboarding status:', error);
+      console.error('❌ [PaymentPageNew] Error updating onboarding status:', error);
       // Still show success for payment even if status update fails
       toast.success('Payment submitted successfully!');
     }
@@ -195,7 +203,13 @@ const PaymentPageNew: React.FC = () => {
       }
 
       // Update onboarding status to completed
+      console.log('✅ [PaymentPageNew] Manual payment confirmed, updating status to completed...');
       await updateStatus('completed');
+
+      // Refresh onboarding data to ensure context has the latest status
+      console.log('🔄 [PaymentPageNew] Refreshing onboarding data after manual payment...');
+      await refreshData();
+      console.log('✅ [PaymentPageNew] Data refreshed, navigating to success page');
 
       // Navigate to success page
       navigate('/payment/success', {
@@ -212,7 +226,9 @@ const PaymentPageNew: React.FC = () => {
 
       // Still try to update onboarding status even if payment record fails
       try {
+        console.log('⚠️ [PaymentPageNew] Payment error, still updating status to completed...');
         await updateStatus('completed');
+        await refreshData(); // Refresh even in error case
         toast.success('Payment instructions noted. Please contact admin if needed.');
         navigate('/dashboard');
       } catch (statusError) {

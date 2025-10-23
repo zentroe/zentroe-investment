@@ -39,6 +39,8 @@ import AgriculturePage from "@/pages/agriculture/AgriculturePage";
 import PrivateCreditPage from "@/pages/private-credit/PrivateCreditPage";
 import VenturePage from "@/pages/venture/VenturePage";
 import AboutPage from "@/pages/about/AboutPage";
+import TermsOfService from "@/pages/legal/TermsOfService";
+import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
 import PaymentPageNew from "@/pages/payment/PaymentPageNew";
 import PaymentSuccessPage from "@/pages/payment/PaymentSuccessPage";
 import PaymentStatusPage from "@/pages/payment/PaymentStatusPage";
@@ -73,6 +75,10 @@ export default function AppRoutes() {
       <Route path="/venture" element={<VenturePage />} />
 
       <Route path="/about" element={<AboutPage />} />
+
+      {/* Legal Pages */}
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
 
       <Route path="/signup" element={<EmailSetup />} />
       <Route path="/onboarding/password" element={<PasswordSetup />} />

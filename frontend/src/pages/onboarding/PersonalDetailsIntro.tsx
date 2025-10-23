@@ -1,22 +1,36 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import OnboardingLayout from "./OnboardingLayout";
 import { Button } from "@/components/ui/button";
 import { useOnboarding } from "@/context/OnboardingContext";
+import { toast } from "sonner";
 
 export default function PersonalDetailsIntro() {
   const navigate = useNavigate();
-  const { updateStatus } = useOnboarding();
-
+  const { updateStatus, refreshData } = useOnboarding();
+  const [loading, setLoading] = useState(false);
 
   const handleContinue = async () => {
     try {
+      setLoading(true);
+      console.log('🔄 [PersonalDetailsIntro] Updating status to investmentProfile...');
+
       await updateStatus("investmentProfile");
+
+      // Refresh onboarding data to ensure context has the latest status
+      console.log('🔄 [PersonalDetailsIntro] Refreshing onboarding data after status update...');
+      await refreshData();
+      console.log('✅ [PersonalDetailsIntro] Data refreshed, navigating to confirm residence');
+
       navigate("/onboarding/confirm-residence");
     } catch (error) {
-      console.error("Error updating onboarding status:", error);
+      console.error("❌ [PersonalDetailsIntro] Error updating onboarding status:", error);
+      toast.error("Failed to update progress. Please try again.");
       // Still navigate even if status update fails
       navigate("/onboarding/confirm-residence");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,9 +51,10 @@ export default function PersonalDetailsIntro() {
 
         <Button
           onClick={handleContinue}
-          className="bg-primary text-white w-full mt-12 mx-auto hover:bg-[#8c391e]"
+          disabled={loading}
+          className="bg-primary text-white w-full mt-12 mx-auto hover:bg-[#8c391e] disabled:opacity-50"
         >
-          Continue
+          {loading ? "Loading..." : "Continue"}
         </Button>
       </div>
     </OnboardingLayout>

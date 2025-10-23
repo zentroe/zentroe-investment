@@ -234,7 +234,7 @@ export default function RecurringInvestment() {
               className="text-sm border border-gray-400"
               onClick={() => {
                 handleSkip();
-                navigate('/dashboard');
+                // navigate('/dashboard');
               }}
               disabled={loading}
             >

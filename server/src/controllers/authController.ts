@@ -376,15 +376,53 @@ export const updateOnboarding = async (req: AuthenticatedRequest, res: Response)
     // Determine onboarding status based on completed fields
     const updateData = { ...req.body };
 
-    // Auto-update onboarding status based on progress
-    if (updateData.firstName && updateData.lastName) {
-      updateData.onboardingStatus = "basicInfo";
+    // Get current user to check existing status
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      res.status(404).json({ message: "User not found" });
+      return;
     }
-    if (updateData.investmentGoal && updateData.riskTolerance) {
-      updateData.onboardingStatus = "investmentProfile";
-    }
-    if (updateData.isAccreditedInvestor !== undefined) {
-      updateData.onboardingStatus = "verification";
+
+    const statusHierarchy = ['started', 'basicInfo', 'investmentProfile', 'verification', 'bankConnected', 'completed'];
+    const getCurrentStatusLevel = (status: string) => statusHierarchy.indexOf(status);
+
+    // ONLY auto-update onboarding status if it's not being explicitly set
+    // This prevents race conditions where updateStatus is called separately
+    if (!updateData.onboardingStatus) {
+      let suggestedStatus = currentUser.onboardingStatus || 'started';
+
+      // Only suggest status upgrades, never downgrades
+      if (updateData.firstName && updateData.lastName) {
+        const newStatusLevel = getCurrentStatusLevel('basicInfo');
+        const currentStatusLevel = getCurrentStatusLevel(suggestedStatus);
+        if (newStatusLevel > currentStatusLevel) {
+          suggestedStatus = 'basicInfo';
+        }
+      }
+      if (updateData.investmentGoal && updateData.riskTolerance) {
+        const newStatusLevel = getCurrentStatusLevel('investmentProfile');
+        const currentStatusLevel = getCurrentStatusLevel(suggestedStatus);
+        if (newStatusLevel > currentStatusLevel) {
+          suggestedStatus = 'investmentProfile';
+        }
+      }
+      if (updateData.isAccreditedInvestor !== undefined) {
+        const newStatusLevel = getCurrentStatusLevel('verification');
+        const currentStatusLevel = getCurrentStatusLevel(suggestedStatus);
+        if (newStatusLevel > currentStatusLevel) {
+          suggestedStatus = 'verification';
+        }
+      }
+
+      // Only update if status would advance
+      if (getCurrentStatusLevel(suggestedStatus) > getCurrentStatusLevel(currentUser.onboardingStatus || 'started')) {
+        updateData.onboardingStatus = suggestedStatus;
+        console.log(`📈 [updateOnboarding] Auto-upgrading status from '${currentUser.onboardingStatus}' to '${suggestedStatus}'`);
+      } else {
+        console.log(`🔒 [updateOnboarding] Preserving current status '${currentUser.onboardingStatus}' (no upgrade needed)`);
+      }
+    } else {
+      console.log("🔒 [updateOnboarding] onboardingStatus explicitly provided, not auto-updating");
     }
 
     // Update onboarding step if provided

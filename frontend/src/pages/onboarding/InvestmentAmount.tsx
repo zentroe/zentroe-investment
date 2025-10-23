@@ -18,7 +18,7 @@ export default function InvestmentAmount() {
   const [max, setMax] = useState(Infinity);
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<InvestmentPlan | null>(null);
-  const [loadingPlan, setLoadingPlan] = useState(true);
+  const [loadingPlan, setLoadingPlan] = useState(true); // Start as true, will be set to false once we know if there's a plan or not
 
   const { data, loading: contextLoading, updateLocalData } = useOnboarding();
 
@@ -36,6 +36,11 @@ export default function InvestmentAmount() {
   // Fetch the full plan details from the API (like InvestmentRecommend does)
   useEffect(() => {
     const fetchPlanDetails = async () => {
+      // Wait for context to finish loading first
+      if (contextLoading) {
+        return;
+      }
+
       if (data.selectedInvestmentPlan?._id) {
         try {
           setLoadingPlan(true);
@@ -59,12 +64,14 @@ export default function InvestmentAmount() {
           setLoadingPlan(false);
         }
       } else {
+        // No plan selected, stop loading
+        console.log('ℹ️ No investment plan selected in user data');
         setLoadingPlan(false);
       }
     };
 
     fetchPlanDetails();
-  }, [data.selectedInvestmentPlan?._id]);
+  }, [data.selectedInvestmentPlan?._id, contextLoading]);
 
   // Pre-populate from context data
   useEffect(() => {
@@ -241,7 +248,7 @@ export default function InvestmentAmount() {
             <p className="font-medium text-darkPrimary">How do redemptions work at Zentroe?</p>
             <p className="text-gray-600 mt-1">
               You can request to redeem (withdraw) from your investment plan at any time without penalty.
-              
+
             </p>
             <button
               onClick={() => setShowModal(true)}

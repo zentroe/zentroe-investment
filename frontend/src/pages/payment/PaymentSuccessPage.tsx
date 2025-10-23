@@ -1,19 +1,64 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowRight, Download, Clock } from 'lucide-react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
 import OnboardingLayout from '@/pages/onboarding/OnboardingLayout';
+import { useOnboarding } from '@/context/OnboardingContext';
 
 const PaymentSuccessPage: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const state = location.state as any;
+  const { updateStatus, refreshData } = useOnboarding();
+  const [navigatingToDashboard, setNavigatingToDashboard] = useState(false);
 
   // Get data from location state (preferred) or URL params as fallback
   const paymentId = state?.paymentId || `ZTR-${Date.now()}`;
   const amount = state?.amount || '0';
   const method = state?.method || 'unknown';
   const currency = state?.currency || 'USD';
+
+  // Safeguard: Ensure onboarding status is set to 'completed' when this page loads
+  // This is a backup in case the status wasn't properly updated before navigation
+  useEffect(() => {
+    const ensureCompletedStatus = async () => {
+      try {
+        console.log('✅ [PaymentSuccess] Safeguard: Ensuring onboarding status is completed...');
+        await updateStatus('completed');
+
+        // Refresh data to ensure UI reflects the completed status
+        console.log('🔄 [PaymentSuccess] Refreshing data to show completed status...');
+        await refreshData();
+        console.log('✅ [PaymentSuccess] Onboarding status confirmed and refreshed');
+      } catch (error) {
+        console.error('❌ [PaymentSuccess] Error in safeguard status update:', error);
+        // Don't show error to user - this is a background safeguard
+      }
+    };
+
+    ensureCompletedStatus();
+  }, [updateStatus, refreshData]);
+
+  const handleGoToDashboard = async () => {
+    try {
+      setNavigatingToDashboard(true);
+      console.log('🔄 [PaymentSuccess] Refreshing data before navigating to dashboard...');
+
+      // Refresh data to ensure dashboard has the latest information
+      await refreshData();
+      console.log('✅ [PaymentSuccess] Data refreshed, navigating to dashboard');
+
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('❌ [PaymentSuccess] Error refreshing data:', error);
+      // Still navigate even if refresh fails
+      toast.error('Could not refresh data. Please refresh dashboard manually.');
+      navigate('/dashboard');
+    } finally {
+      setNavigatingToDashboard(false);
+    }
+  };
 
   const downloadReceipt = () => {
     try {
@@ -342,13 +387,14 @@ const PaymentSuccessPage: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <Link
-              to="/dashboard"
-              className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center"
+            <button
+              onClick={handleGoToDashboard}
+              disabled={navigatingToDashboard}
+              className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Go to Dashboard
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Link>
+              {navigatingToDashboard ? 'Loading...' : 'Go to Dashboard'}
+              {!navigatingToDashboard && <ArrowRight className="w-4 h-4 ml-2" />}
+            </button>
 
             <button
               onClick={downloadReceipt}

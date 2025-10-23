@@ -133,14 +133,14 @@ export default function EmailSetup() {
         </form>
 
         <div className="text-center text-sm text-muted-foreground">
-          <p className="mt-4">
+          {/* <p className="mt-4">
             By continuing you agree to our{" "}
             <a href="/terms" className="text-primary hover:underline">Terms of Service</a> and{" "}
             <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
-          </p>
+          </p> */}
           <p className="mt-4">
             Already have an account?{" "}
-            <a href="/login" className="text-primary hover:underline">Sign in</a>
+            <a href="/auth/login" className="text-primary hover:underline">Sign in</a>
           </p>
         </div>
       </div>
