@@ -259,10 +259,73 @@ export const updateActivity = async (req: Request, res: Response): Promise<void>
           break;
         }
 
+        case 'referral': {
+          // Update the corresponding Referral record's metadata
+          // Find referral by matching the date and referrer
+          const referralDate = new Date(updateData.date || existingActivity.date);
+          const startOfDay = new Date(referralDate);
+          startOfDay.setHours(0, 0, 0, 0);
+          const endOfDay = new Date(referralDate);
+          endOfDay.setHours(23, 59, 59, 999);
+
+          // Extract names from referredUserName if provided
+          let firstName = '';
+          let lastName = '';
+          if (updateData.referredUserName) {
+            const nameParts = updateData.referredUserName.trim().split(/\s+/);
+            firstName = nameParts[0] || '';
+            lastName = nameParts.slice(1).join(' ') || '';
+          } else if (existingActivity.referredUserName) {
+            // Keep existing name if not provided in update
+            const nameParts = existingActivity.referredUserName.trim().split(/\s+/);
+            firstName = nameParts[0] || '';
+            lastName = nameParts.slice(1).join(' ') || '';
+          }
+
+          const referredEmail = updateData.referredUserEmail || existingActivity.referredUserEmail || '';
+
+          // Build update object only with fields that have values
+          const referralMetadataUpdate: any = {};
+          if (firstName) referralMetadataUpdate['metadata.fakeUserInfo.firstName'] = firstName;
+          if (lastName) referralMetadataUpdate['metadata.fakeUserInfo.lastName'] = lastName;
+          if (referredEmail) referralMetadataUpdate['metadata.fakeUserInfo.email'] = referredEmail;
+
+          // Update the Referral document's metadata
+          if (Object.keys(referralMetadataUpdate).length > 0) {
+            const referralUpdate = await Referral.findOneAndUpdate(
+              {
+                referrer: existingActivity.userId,
+                signupDate: {
+                  $gte: startOfDay,
+                  $lte: endOfDay
+                },
+                'metadata.campaign': 'demo-generated' // Only update generated referrals
+              },
+              {
+                $set: referralMetadataUpdate
+              },
+              { new: true }
+            );
+
+            if (referralUpdate) {
+              console.log(`✅ Updated Referral metadata for ${firstName} ${lastName} (${referredEmail})`);
+            } else {
+              console.log('⚠️  No matching Referral record found to update');
+            }
+          }
+          break;
+        }
+
         default:
-          // For other types (login, kyc_update, referral, etc.), just update the activity history
+          // For other types (login, kyc_update, etc.), just update the activity history
           break;
       }
+    }
+
+    // For referral activities, regenerate description if name changed
+    if ((updateData.activityType === 'referral' || existingActivity.activityType === 'referral') &&
+      updateData.referredUserName) {
+      updateData.description = `Referral bonus for inviting ${updateData.referredUserName}`;
     }
 
     // Update the ActivityHistory record
