@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {
   getUserInvestments,
   getUserInvestmentSummary,
@@ -9,6 +9,7 @@ import {
 import { getUserPaymentHistory } from '@/services/paymentService';
 import { getReferralDashboard, ReferralDashboard } from '@/services/referralService';
 import axios from '@/utils/axios';
+import { useAuth } from './AuthContext';
 
 // User Profile Interface - Comprehensive matching backend User model
 export interface UserProfile {
@@ -206,9 +207,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [referralData, setReferralData] = useState<ReferralDashboard | null>(null);
   const [loading, setLoading] = useState(initialLoading);
   const [errors, setErrors] = useState(initialErrors);
+  const { isAuthenticated } = useAuth();
 
   // Fetch User Profile
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       setLoading(prev => ({ ...prev, user: true }));
       setErrors(prev => ({ ...prev, user: null }));
@@ -221,10 +223,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, user: false }));
     }
-  };
+  }, []);
 
   // Fetch Investment Data
-  const fetchInvestments = async () => {
+  const fetchInvestments = useCallback(async () => {
     try {
       setLoading(prev => ({ ...prev, investments: true }));
       setErrors(prev => ({ ...prev, investments: null }));
@@ -246,10 +248,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, investments: false }));
     }
-  };
+  }, []);
 
   // Fetch Payment History
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     try {
       setLoading(prev => ({ ...prev, payments: true }));
       setErrors(prev => ({ ...prev, payments: null }));
@@ -262,10 +264,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, payments: false }));
     }
-  };
+  }, []);
 
   // Fetch Dashboard Stats
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = useCallback(async () => {
     try {
       setLoading(prev => ({ ...prev, dashboardStats: true }));
       setErrors(prev => ({ ...prev, dashboardStats: null }));
@@ -278,10 +280,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, dashboardStats: false }));
     }
-  };
+  }, []);
 
   // Fetch Referral Data
-  const fetchReferralData = async () => {
+  const fetchReferralData = useCallback(async () => {
     try {
       setLoading(prev => ({ ...prev, referrals: true }));
       setErrors(prev => ({ ...prev, referrals: null }));
@@ -294,30 +296,30 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, referrals: false }));
     }
-  };
+  }, []);
 
   // Refresh Functions
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     await fetchUser();
-  };
+  }, [fetchUser]);
 
-  const refreshInvestments = async () => {
+  const refreshInvestments = useCallback(async () => {
     await fetchInvestments();
-  };
+  }, [fetchInvestments]);
 
-  const refreshPayments = async () => {
+  const refreshPayments = useCallback(async () => {
     await fetchPayments();
-  };
+  }, [fetchPayments]);
 
-  const refreshDashboardStats = async () => {
+  const refreshDashboardStats = useCallback(async () => {
     await fetchDashboardStats();
-  };
+  }, [fetchDashboardStats]);
 
-  const refreshReferrals = async () => {
+  const refreshReferrals = useCallback(async () => {
     await fetchReferralData();
-  };
+  }, [fetchReferralData]);
 
-  const refreshAll = async () => {
+  const refreshAll = useCallback(async () => {
     await Promise.all([
       fetchUser(),
       fetchInvestments(),
@@ -325,7 +327,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       fetchDashboardStats(),
       fetchReferralData()
     ]);
-  };
+  }, [fetchUser, fetchInvestments, fetchPayments, fetchDashboardStats, fetchReferralData]);
 
   // Update User Profile
   // Update User Profile
@@ -340,7 +342,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   };
 
   // Clear User Data
-  const clearUserData = () => {
+  const clearUserData = useCallback(() => {
     setUser(null);
     setInvestments([]);
     setInvestmentSummary(null);
@@ -349,14 +351,20 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     setReferralData(null);
     setLoading(initialLoading);
     setErrors(initialErrors);
-  };
-
-  // Initial Data Fetch
-  useEffect(() => {
-    console.log('UserContext - Initializing, attempting to fetch data...');
-    // Always try to fetch data - let the axios instance handle authentication
-    refreshAll();
   }, []);
+
+  // Fetch data whenever authentication state changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('UserContext - Authenticated, fetching data...');
+      refreshAll().catch((error) => {
+        console.error('UserContext - Failed to refresh data after authentication:', error);
+      });
+    } else {
+      console.log('UserContext - Not authenticated, clearing cached data');
+      clearUserData();
+    }
+  }, [isAuthenticated, refreshAll, clearUserData]);
 
   // Context Value
   const contextValue: UserContextType = {

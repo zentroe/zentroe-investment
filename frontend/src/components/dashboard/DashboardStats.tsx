@@ -12,7 +12,7 @@ interface StatCard {
 }
 
 export default function DashboardStats() {
-  const { investmentSummary, investments, loading, errors } = useUser();
+  const { investmentSummary, investments, loading } = useUser();
 
   // Calculate total invested from individual investments if summary is missing it
   const calculateTotalInvested = () => {
@@ -24,38 +24,13 @@ export default function DashboardStats() {
   };
 
   const generateStats = (): StatCard[] => {
-    if (!investmentSummary && investments.length === 0) {
-      return [
-        {
-          title: "Total Invested",
-          value: "$0",
-          icon: DollarSign,
-          iconColor: "text-emerald-600",
-          isLoading: loading.investments,
-        },
-        {
-          title: "Total Profits",
-          value: "$0",
-          icon: TrendingUp,
-          iconColor: "text-blue-600",
-          isLoading: loading.investments,
-        },
-        {
-          title: "Active Investments",
-          value: "0",
-          icon: Activity,
-          iconColor: "text-orange-600",
-          isLoading: loading.investments,
-        }
-      ];
-    }
-
     return [
       {
         title: "Total Invested",
         value: `$${calculateTotalInvested()?.toLocaleString() || '0'}`,
         icon: DollarSign,
         iconColor: "text-emerald-600",
+        isLoading: loading.investments,
       },
       {
         title: "Total Profits",
@@ -64,31 +39,19 @@ export default function DashboardStats() {
         iconColor: "text-blue-600",
         change: (investmentSummary?.profitToday && investmentSummary.profitToday > 0) ? `+$${investmentSummary.profitToday}` : undefined,
         isPositive: (investmentSummary?.profitToday || 0) > 0,
+        isLoading: loading.investments,
       },
       {
         title: "Active Investments",
         value: investmentSummary?.activeInvestments?.toString() || investments.filter(inv => inv.status === 'active').length.toString() || '0',
         icon: Activity,
         iconColor: "text-orange-600",
+        isLoading: loading.investments,
       },
     ];
   };
 
   const stats = generateStats();
-
-  if (errors.investments) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="text-center py-4">
-              <p className="text-red-500 text-sm">{errors.investments}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
