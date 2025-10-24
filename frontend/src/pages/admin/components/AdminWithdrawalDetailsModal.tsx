@@ -237,8 +237,8 @@ const AdminWithdrawalDetailsModal: React.FC<AdminWithdrawalDetailsModalProps> = 
           <Button
             onClick={handleAction}
             className={`flex-1 ${actionType === 'approve' ? 'bg-green-600 hover:bg-green-700' :
-                actionType === 'reject' ? 'bg-red-600 hover:bg-red-700' :
-                  'bg-orange-600 hover:bg-orange-700'
+              actionType === 'reject' ? 'bg-red-600 hover:bg-red-700' :
+                'bg-orange-600 hover:bg-orange-700'
               }`}
           >
             {actionType === 'approve' ? 'Approve Withdrawal' :
@@ -396,27 +396,39 @@ const AdminWithdrawalDetailsModal: React.FC<AdminWithdrawalDetailsModalProps> = 
               {withdrawal.paymentDetails && (
                 <div className="bg-gray-50 p-4 rounded-lg">
                   {withdrawal.paymentMethod === 'bank_transfer' && withdrawal.paymentDetails.bankDetails && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Account Name:</span>
-                        <div className="font-medium">{withdrawal.paymentDetails.bankDetails.accountName}</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Bank Name:</span>
-                        <div className="font-medium">{withdrawal.paymentDetails.bankDetails.bankName}</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Account Number:</span>
-                        <div className="font-medium">****{withdrawal.paymentDetails.bankDetails.accountNumber.slice(-4)}</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Routing Number:</span>
-                        <div className="font-medium">{withdrawal.paymentDetails.bankDetails.routingNumber}</div>
-                      </div>
-                      {withdrawal.paymentDetails.bankDetails.swiftCode && (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-gray-600">SWIFT Code:</span>
-                          <div className="font-medium">{withdrawal.paymentDetails.bankDetails.swiftCode}</div>
+                          <span className="text-gray-600">Account Name:</span>
+                          <div className="font-medium">{withdrawal.paymentDetails.bankDetails.accountName}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Bank Name:</span>
+                          <div className="font-medium">{withdrawal.paymentDetails.bankDetails.bankName}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Account Number:</span>
+                          <div className="font-medium">****{withdrawal.paymentDetails.bankDetails.accountNumber.slice(-4)}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Routing Number:</span>
+                          <div className="font-medium">{withdrawal.paymentDetails.bankDetails.routingNumber}</div>
+                        </div>
+                        {withdrawal.paymentDetails.bankDetails.swiftCode && (
+                          <div>
+                            <span className="text-gray-600">SWIFT Code:</span>
+                            <div className="font-medium">{withdrawal.paymentDetails.bankDetails.swiftCode}</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Home/Business Address Section */}
+                      {withdrawal.paymentDetails.bankDetails.homeOrBusinessAddress && (
+                        <div className="pt-4 border-t border-gray-200">
+                          <span className="text-gray-600 font-semibold block mb-2">Home Address / Business Address:</span>
+                          <div className="font-medium text-gray-900 whitespace-pre-wrap">
+                            {withdrawal.paymentDetails.bankDetails.homeOrBusinessAddress}
+                          </div>
                         </div>
                       )}
                     </div>

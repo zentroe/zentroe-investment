@@ -28,6 +28,7 @@ export interface IWithdrawal extends Document {
       routingNumber: string;
       bankName: string;
       swiftCode?: string;
+      homeOrBusinessAddress?: string;
     };
     cryptoDetails?: {
       walletAddress: string;

@@ -8,7 +8,7 @@ import { createWithdrawalRequest, InvestmentWithWithdrawal, PaymentDetails } fro
 import { formatCurrency } from '../../../utils/formatters';
 import { toast } from 'sonner';
 import { X, AlertCircle, CreditCard, Wallet, Mail, DollarSign } from 'lucide-react';
-
+//
 interface WithdrawalRequestModalProps {
   investment: InvestmentWithWithdrawal;
   onClose: () => void;
@@ -35,7 +35,8 @@ const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
     accountNumber: '',
     routingNumber: '',
     bankName: '',
-    swiftCode: ''
+    swiftCode: '',
+    homeOrBusinessAddress: ''
   });
 
   // Crypto details
@@ -142,6 +143,10 @@ const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
           toast.error('Please fill in all required bank details');
           return false;
         }
+        if (!bankDetails.homeOrBusinessAddress || bankDetails.homeOrBusinessAddress.trim().length < 10) {
+          toast.error('Please enter a complete home or business address');
+          return false;
+        }
         break;
       case 'crypto':
         if (!cryptoDetails.walletAddress || !cryptoDetails.network || !cryptoDetails.currency) {
@@ -150,8 +155,8 @@ const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
         }
         break;
       case 'check':
-        const addr = checkDetails.mailingAddress;
-        if (!addr.street || !addr.city || !addr.state || !addr.zipCode || !addr.country) {
+        const checkAddr = checkDetails.mailingAddress;
+        if (!checkAddr.street || !checkAddr.city || !checkAddr.state || !checkAddr.zipCode || !checkAddr.country) {
           toast.error('Please fill in all required mailing address details');
           return false;
         }
@@ -451,6 +456,22 @@ const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBankDetails({ ...bankDetails, swiftCode: e.target.value })}
                   placeholder="CHASUS33"
                 />
+              </div>
+
+              {/* Home/Business Address Section */}
+              <div>
+                <Label htmlFor="homeOrBusinessAddress">Home Address or Business Address *</Label>
+                <textarea
+                  id="homeOrBusinessAddress"
+                  value={bankDetails.homeOrBusinessAddress}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBankDetails({ ...bankDetails, homeOrBusinessAddress: e.target.value })}
+                  placeholder="Enter your complete home address or business address (e.g., 123 Main Street, New York, NY 10001, United States)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 min-h-[80px] resize-none"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Please include street, city, state, ZIP code, and country
+                </p>
               </div>
             </div>
           </div>

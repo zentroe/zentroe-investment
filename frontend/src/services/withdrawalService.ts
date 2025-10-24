@@ -22,6 +22,7 @@ export interface BankDetails {
   routingNumber: string;
   bankName: string;
   swiftCode?: string;
+  homeOrBusinessAddress?: string;
 }
 
 export interface CryptoDetails {
