@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Users, Share, DollarSign, TrendingUp, Copy, Trophy, Crown, Star, Building, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Share, DollarSign, TrendingUp, Copy, Trophy, Crown, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { useUser } from '@/context/UserContext';
-import { getReferralCode, convertPointsToEquity, getTierColor, getTierIcon, formatPoints, getStatusColor } from '@/services/referralService';
+import { getReferralCode, getTierColor, getTierIcon, formatPoints, getStatusColor } from '@/services/referralService';
 
 export default function ReferralsPage() {
   const { referralData, loading } = useUser();
   const [referralLink, setReferralLink] = useState<string>('');
   const [shareMessage, setShareMessage] = useState<string>('');
-  const [conversionAmount, setConversionAmount] = useState<string>('');
-  const [isConverting, setIsConverting] = useState(false);
+  // const [conversionAmount, setConversionAmount] = useState<string>('');
+  // const [isConverting, setIsConverting] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -34,28 +34,6 @@ export default function ReferralsPage() {
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (error) {
       console.error('Failed to copy link:', error);
-    }
-  };
-
-  const handleConvertToEquity = async () => {
-    const points = parseInt(conversionAmount);
-    if (!points || points < (referralData?.equityConversion.minimumPoints || 10000)) {
-      alert(`Minimum ${referralData?.equityConversion.minimumPoints || 10000} points required`);
-      return;
-    }
-
-    setIsConverting(true);
-    try {
-      await convertPointsToEquity(points);
-      alert('Equity conversion request submitted! You will receive confirmation once approved.');
-      setConversionAmount('');
-      // Refresh referral data
-      // TODO: Add refresh function
-    } catch (error) {
-      console.error('Failed to convert points:', error);
-      alert('Failed to process equity conversion. Please try again.');
-    } finally {
-      setIsConverting(false);
     }
   };
 
@@ -217,7 +195,7 @@ export default function ReferralsPage() {
       </div>
 
       {/* Equity Conversion */}
-      {stats?.availablePoints && stats.availablePoints >= (referralData?.equityConversion.minimumPoints || 50000) && (
+      {/* {stats?.availablePoints && stats.availablePoints >= (referralData?.equityConversion.minimumPoints || 50000) && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6 border border-green-200">
           <div className="flex items-center space-x-3 mb-4">
             <Building size={24} className="text-green-600" />
@@ -264,7 +242,7 @@ export default function ReferralsPage() {
             <p>• You'll receive legal documentation upon approval</p>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Tier Benefits */}
       {tierInfo && (

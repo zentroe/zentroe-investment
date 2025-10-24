@@ -4,7 +4,7 @@ import Deposit from '../models/Deposit';
 import { Withdrawal } from '../models/Withdrawal';
 import { UserInvestment } from '../models/UserInvestment';
 import { DailyProfit } from '../models/DailyProfit';
-import { Referral, ReferralPoints } from '../models/Referral';
+import { Referral, ReferralPoints, REFERRAL_TIERS } from '../models/Referral';
 import { InvestmentPlan } from '../models/InvestmentPlan';
 import mongoose from 'mongoose';
 
@@ -66,26 +66,142 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
   const now = new Date();
   const startDate = new Date(now.getFullYear() - years, now.getMonth(), now.getDate());
 
-  // Helper function to calculate referrals needed for target tier
-  const calculateReferralsForTier = (targetTier: string): number => {
-    const tierThresholds: { [key: string]: number } = {
-      bronze: 0,
-      silver: 100,
-      gold: 500,
-      platinum: 2000,
-      diamond: 10000,
-      shareholder: 50000
-    };
+  const existingReferralPointsDoc = await ReferralPoints.findOne({ user: new mongoose.Types.ObjectId(userId) });
+  const existingReferralPoints = existingReferralPointsDoc?.totalPoints ?? user.referralStats?.totalPointsEarned ?? 0;
+  const existingReferralStats = {
+    totalReferred: user.referralStats?.totalReferred ?? existingReferralPointsDoc?.lifetimeStats?.totalReferrals ?? 0,
+    qualifiedReferrals: user.referralStats?.qualifiedReferrals ?? existingReferralPointsDoc?.lifetimeStats?.qualifiedReferrals ?? 0,
+    totalPointsEarned: user.referralStats?.totalPointsEarned ?? existingReferralPoints,
+    currentTier: user.referralStats?.currentTier ?? existingReferralPointsDoc?.tier ?? 'bronze'
+  };
+  const existingLifetimeStats = {
+    totalPointsEarned: existingReferralPointsDoc?.lifetimeStats?.totalPointsEarned ?? existingReferralStats.totalPointsEarned,
+    totalReferrals: existingReferralPointsDoc?.lifetimeStats?.totalReferrals ?? existingReferralStats.totalReferred,
+    qualifiedReferrals: existingReferralPointsDoc?.lifetimeStats?.qualifiedReferrals ?? existingReferralStats.qualifiedReferrals,
+    totalInvestmentGenerated: existingReferralPointsDoc?.lifetimeStats?.totalInvestmentGenerated ?? 0
+  };
+  const existingUsedPoints = existingReferralPointsDoc?.usedPoints ?? 0;
 
-    const targetPoints = tierThresholds[targetTier.toLowerCase()] || 100;
-    // Start from 0 as we don't have referralPoints in User model yet
-    const currentPoints = 0;
-    const pointsNeeded = Math.max(0, targetPoints - currentPoints);
+  const tierOrder: Array<keyof typeof REFERRAL_TIERS> = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'shareholder'];
 
-    // Average points per referral: bonus $5K-$30K / 10 = 500-3000 points, avg ~1750 points
-    const avgPointsPerReferral = 1750;
-    return Math.ceil(pointsNeeded / avgPointsPerReferral);
-  };  // Calculate number of activities based on config or default (SPARSE - not too many!)
+  const determineTierFromPoints = (points: number): keyof typeof REFERRAL_TIERS => {
+    let resolvedTier: keyof typeof REFERRAL_TIERS = 'bronze';
+    for (const tierKey of tierOrder) {
+      const config = REFERRAL_TIERS[tierKey];
+      if (points >= config.minPoints && points <= config.maxPoints) {
+        resolvedTier = tierKey;
+      }
+      if (!Number.isFinite(config.maxPoints) && points >= config.minPoints) {
+        resolvedTier = tierKey;
+      }
+    }
+    return resolvedTier;
+  };
+
+  const calculatePointsToNextTier = (tierKey: keyof typeof REFERRAL_TIERS, points: number) => {
+    const currentIndex = tierOrder.indexOf(tierKey);
+    if (currentIndex === -1 || currentIndex === tierOrder.length - 1) {
+      return 0;
+    }
+    const nextTierKey = tierOrder[currentIndex + 1];
+    const nextTierConfig = REFERRAL_TIERS[nextTierKey];
+    return Math.max(0, nextTierConfig.minPoints - points);
+  };
+
+  const buildReferralPlan = (targetTier?: string) => {
+    const fallbackTier = determineTierFromPoints(existingReferralPoints);
+
+    if (!targetTier) {
+      return {
+        tierKey: fallbackTier,
+        targetTotalPoints: existingReferralPoints,
+        pointsToGenerate: 0,
+        referralsToCreate: 0
+      };
+    }
+
+    const tierKey = targetTier.toLowerCase() as keyof typeof REFERRAL_TIERS;
+    const tierConfig = REFERRAL_TIERS[tierKey];
+
+    if (!tierConfig) {
+      return {
+        tierKey: fallbackTier,
+        targetTotalPoints: existingReferralPoints,
+        pointsToGenerate: 0,
+        referralsToCreate: 0
+      };
+    }
+
+    const safeMin = Math.max(existingReferralPoints, tierConfig.minPoints);
+    let safeMax = tierConfig.maxPoints;
+
+    if (!Number.isFinite(safeMax)) {
+      const baseline = Math.max(safeMin, tierConfig.minPoints);
+      safeMax = baseline + tierConfig.pointsPerReferral * 10;
+    }
+
+    if (safeMin > safeMax) {
+      safeMax = safeMin;
+    }
+
+    const targetTotalPoints = safeMin === safeMax
+      ? safeMin
+      : Math.floor(Math.random() * (safeMax - safeMin + 1)) + safeMin;
+
+    const pointsToGenerate = Math.max(0, targetTotalPoints - existingReferralPoints);
+    const referralsToCreate = pointsToGenerate === 0 ? 0 : Math.max(1, Math.ceil(pointsToGenerate / 1500));
+
+    return { tierKey, targetTotalPoints, pointsToGenerate, referralsToCreate };
+  };
+
+  const distributeReferralPoints = (totalPoints: number, referralTotal: number): number[] => {
+    if (referralTotal <= 0 || totalPoints <= 0) {
+      return [];
+    }
+
+    const distribution: number[] = [];
+    let remaining = totalPoints;
+
+    for (let i = 0; i < referralTotal; i++) {
+      const referralsLeft = referralTotal - i;
+
+      if (referralsLeft === 1) {
+        distribution.push(remaining);
+        remaining = 0;
+        continue;
+      }
+
+      const average = Math.max(1, Math.floor(remaining / referralsLeft));
+      const variance = Math.max(1, Math.floor(average * 0.3));
+      const minPoints = Math.max(1, average - variance);
+      const maxPoints = Math.max(minPoints, average + variance);
+      const maxAssignable = remaining - (referralsLeft - 1);
+      const upperBound = Math.max(minPoints, Math.min(maxPoints, maxAssignable));
+      const randomPoints = Math.floor(Math.random() * (upperBound - minPoints + 1)) + minPoints;
+      const assigned = Math.max(1, Math.min(upperBound, randomPoints));
+
+      distribution.push(assigned);
+      remaining -= assigned;
+    }
+
+    if (remaining > 0 && distribution.length > 0) {
+      distribution[distribution.length - 1] += remaining;
+    }
+
+    while (distribution.length < referralTotal) {
+      distribution.push(0);
+    }
+
+    return distribution;
+  };
+
+  const referralsEnabled = activityConfig?.referrals?.enabled !== false;
+  const referralPlan = referralsEnabled ? buildReferralPlan(activityConfig?.referrals?.targetTier) : buildReferralPlan(undefined);
+
+  // Determine how many referrals we need to create to reach the requested tier range
+  let referralsCount = referralsEnabled && referralPlan.pointsToGenerate > 0
+    ? referralPlan.referralsToCreate
+    : 0;
   const depositsCount = activityConfig?.deposits?.enabled
     ? activityConfig.deposits.count
     : Math.floor(years * 3);
@@ -95,9 +211,6 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
   const investmentsCount = activityConfig?.investments?.enabled
     ? activityConfig.investments.count
     : Math.floor(years * 2.5);
-  const referralsCount = activityConfig?.referrals?.enabled
-    ? calculateReferralsForTier(activityConfig.referrals.targetTier)
-    : Math.floor(years * 1.5);
   const loginsCount = activityConfig?.logins?.enabled
     ? activityConfig.logins.count
     : Math.floor(years * 30);
@@ -107,7 +220,7 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
   let totalInvested = 0;
   let totalReturns = 0;
   let totalWithdrawn = 0;
-  let totalReferralPoints = 0; // Declare here so it's accessible outside the if block
+  let generatedReferralPoints = 0; // Track points generated during this operation
 
   // Arrays to store created records
   const createdDeposits: any[] = [];
@@ -441,18 +554,21 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
   }
 
   // Generate Referrals with real Referral records - only if enabled
-  if (activityConfig?.referrals?.enabled !== false) {
+  if (referralsEnabled && referralsCount > 0) {
+    const plannedReferralsCount = referralsCount;
+    const pointsDistribution = distributeReferralPoints(referralPlan.pointsToGenerate, plannedReferralsCount);
     const firstNames = ['James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth', 'David', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen', 'Christopher', 'Nancy', 'Daniel', 'Lisa', 'Matthew', 'Betty'];
     const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez'];
 
-    // totalReferralPoints already declared at the top
+    let createdReferrals = 0;
 
-    for (let i = 0; i < referralsCount; i++) {
-      // Increased bonus range to give more points per referral (500-3000 points per referral)
-      const bonus = randomAmount(5000, 30000); // $5K-$30K investment
-      const pointsEarned = Math.floor(bonus / 10); // 10 points per dollar = 500-3000 points
-      totalReferralPoints += pointsEarned;
+    for (let i = 0; i < plannedReferralsCount; i++) {
+      const pointsEarned = pointsDistribution[i] ?? 0;
+      if (pointsEarned <= 0) {
+        continue;
+      }
 
+      const bonus = pointsEarned * 10;
       const referralDate = getUniqueDate(startDate, now);
 
       // Generate realistic fake user data
@@ -464,14 +580,13 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
       // Generate unique referral code for each referral
       const uniqueReferralCode = `${user.referralCode || 'REF' + userId.substring(0, 8).toUpperCase()}-${Date.now()}-${i}`;
 
-      // Create Referral record with metadata storing the fake user info
-      const referral = await Referral.create({
+      await Referral.create({
         referrer: new mongoose.Types.ObjectId(userId),
-        referred: new mongoose.Types.ObjectId(), // Dummy ID for demo
+        referred: new mongoose.Types.ObjectId(),
         referralCode: uniqueReferralCode,
         status: 'rewarded',
-        pointsEarned: pointsEarned,
-        qualifyingInvestment: bonus * 10, // Assume referred user invested 10x the bonus
+        pointsEarned,
+        qualifyingInvestment: bonus * 10,
         signupDate: referralDate,
         qualificationDate: referralDate,
         rewardDate: referralDate,
@@ -479,7 +594,6 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
           ipAddress: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
           source: 'direct',
           campaign: 'demo-generated',
-          // Store fake user info in metadata so it can be displayed
           fakeUserInfo: {
             firstName,
             lastName,
@@ -490,7 +604,9 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
         updatedAt: referralDate
       });
 
-      // Create activity history record
+      generatedReferralPoints += pointsEarned;
+      createdReferrals += 1;
+
       activities.push({
         userId: new mongoose.Types.ObjectId(userId),
         activityType: 'referral',
@@ -507,10 +623,9 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
       });
     }
 
-    // Update user's referral points
-    await User.findByIdAndUpdate(userId, {
-      $inc: { referralPoints: totalReferralPoints }
-    });
+    referralsCount = createdReferrals;
+  } else if (!referralsEnabled) {
+    referralsCount = 0;
   }
 
   // Generate Logins (SPARSE - logins can be on same day, so not using getUniqueDate) - only if enabled
@@ -570,13 +685,19 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
   // Save all activity history records to database
   const savedActivities = await ActivityHistory.insertMany(activities);
 
-  // Calculate tier based on total points
-  let currentTier = 'bronze';
-  if (totalReferralPoints >= 50000) currentTier = 'shareholder';
-  else if (totalReferralPoints >= 10000) currentTier = 'diamond';
-  else if (totalReferralPoints >= 2000) currentTier = 'platinum';
-  else if (totalReferralPoints >= 500) currentTier = 'gold';
-  else if (totalReferralPoints >= 100) currentTier = 'silver';
+  const finalReferralPoints = existingReferralPoints + generatedReferralPoints;
+  const finalTier = determineTierFromPoints(finalReferralPoints);
+  const finalPointsToNextTier = calculatePointsToNextTier(finalTier, finalReferralPoints);
+  const finalTotalReferred = existingReferralStats.totalReferred + referralsCount;
+  const finalQualifiedReferrals = existingReferralStats.qualifiedReferrals + referralsCount;
+  const finalTotalPointsEarned = existingReferralStats.totalPointsEarned + generatedReferralPoints;
+  const updatedLifetimeStats = {
+    totalPointsEarned: existingLifetimeStats.totalPointsEarned + generatedReferralPoints,
+    totalReferrals: existingLifetimeStats.totalReferrals + referralsCount,
+    qualifiedReferrals: existingLifetimeStats.qualifiedReferrals + referralsCount,
+    totalInvestmentGenerated: existingLifetimeStats.totalInvestmentGenerated
+  };
+  const availableReferralPoints = Math.max(0, finalReferralPoints - existingUsedPoints);
 
   // Update user's financial data and referral stats
   const netBalance = totalDeposited + totalReturns - totalInvested - totalWithdrawn;
@@ -586,10 +707,11 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
     totalInvested: totalInvested,
     totalDeposited: totalDeposited,
     totalWithdrawn: totalWithdrawn,
-    'referralStats.totalReferrals': referralsCount,
-    'referralStats.qualifiedReferrals': referralsCount, // All demo referrals are qualified
-    'referralStats.totalPointsEarned': totalReferralPoints,
-    'referralStats.currentTier': currentTier,
+    referralPoints: finalReferralPoints,
+    'referralStats.totalReferred': finalTotalReferred,
+    'referralStats.qualifiedReferrals': finalQualifiedReferrals,
+    'referralStats.totalPointsEarned': finalTotalPointsEarned,
+    'referralStats.currentTier': finalTier,
     lastLogin: now
   });
 
@@ -597,14 +719,16 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
   await ReferralPoints.findOneAndUpdate(
     { user: new mongoose.Types.ObjectId(userId) },
     {
-      totalPoints: totalReferralPoints,
-      availablePoints: totalReferralPoints, // All points available for demo
-      usedPoints: 0,
-      tier: currentTier,
+      totalPoints: finalReferralPoints,
+      availablePoints: availableReferralPoints,
+      usedPoints: existingUsedPoints,
+      tier: finalTier,
+      pointsToNextTier: finalPointsToNextTier,
       lifetimeStats: {
-        totalEarned: totalReferralPoints,
-        totalReferred: referralsCount,
-        qualifiedReferrals: referralsCount
+        totalPointsEarned: updatedLifetimeStats.totalPointsEarned,
+        totalReferrals: updatedLifetimeStats.totalReferrals,
+        qualifiedReferrals: updatedLifetimeStats.qualifiedReferrals,
+        totalInvestmentGenerated: updatedLifetimeStats.totalInvestmentGenerated
       }
     },
     { upsert: true, new: true }
@@ -627,8 +751,8 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
       totalInvestments: investmentsCount,
       totalReturns: createdDailyProfits.length,
       totalReferrals: referralsCount,
-      totalReferralPoints: totalReferralPoints,
-      currentTier: currentTier,
+      totalReferralPoints: finalReferralPoints,
+      currentTier: finalTier,
       totalLogins: loginsCount,
       totalAmountDeposited: totalDeposited.toFixed(2),
       totalAmountInvested: totalInvested.toFixed(2),
