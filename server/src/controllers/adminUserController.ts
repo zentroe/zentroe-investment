@@ -7,12 +7,15 @@ import Deposit from '../models/Deposit';
 import { Withdrawal } from '../models/Withdrawal';
 import { UserInvestment } from '../models/UserInvestment';
 import { DailyProfit } from '../models/DailyProfit';
-import { Referral, ReferralPoints, PointsTransaction } from '../models/Referral';
+import { Referral, ReferralPoints, PointsTransaction, EquityTransaction } from '../models/Referral';
 import { KYC } from '../models/KYC';
 import BankAccount from '../models/BankAccount';
 import CryptoWallet from '../models/CryptoWallet';
 import { CardPayment } from '../models/CardPayment';
 import OnboardingProgress from '../models/OnboardingProgress';
+import { BankTransferPayment, CryptoPayment } from '../models/PaymentModels';
+import { Transaction } from '../models/Transaction';
+import { SimpleCardPayment } from '../models/SimpleCardPayment';
 import bcrypt from 'bcryptjs';
 
 // Get complete user details
@@ -465,50 +468,55 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
     const userInvestments = await UserInvestment.find({ user: userId }).select('_id');
     const investmentIds = userInvestments.map(inv => inv._id);
 
-    // Delete all user-related data from all collections
-    const deletionResults = await Promise.all([
-      // 1. User's activity history
-      ActivityHistory.deleteMany({ userId }),
+    // Delete all user-related data from all collections sequentially to avoid connection saturation
+    const deletionOperations = [
+      { key: 'activityHistory', execute: () => ActivityHistory.deleteMany({ userId }) },
+      { key: 'deposits', execute: () => Deposit.deleteMany({ userId }) },
+      { key: 'withdrawals', execute: () => Withdrawal.deleteMany({ user: userId }) },
+      { key: 'investments', execute: () => UserInvestment.deleteMany({ user: userId }) },
+      { key: 'dailyProfits', execute: () => DailyProfit.deleteMany({ user: userId }) },
+      { key: 'referralsAsReferrer', execute: () => Referral.deleteMany({ referrer: userId }) },
+      { key: 'referralsAsReferred', execute: () => Referral.deleteMany({ referred: userId }) },
+      { key: 'referralPoints', execute: () => ReferralPoints.deleteMany({ user: userId }) },
+      { key: 'pointsTransactions', execute: () => PointsTransaction.deleteMany({ user: userId }) },
+      { key: 'equityTransactions', execute: () => EquityTransaction.deleteMany({ user: userId }) },
+      { key: 'kycDocuments', execute: () => KYC.deleteMany({ user: userId }) },
+      { key: 'bankAccounts', execute: () => BankAccount.deleteMany({ user: userId }) },
+      { key: 'cryptoWallets', execute: () => CryptoWallet.deleteMany({ user: userId }) },
+      { key: 'cardPayments', execute: () => CardPayment.deleteMany({ userId }) },
+      { key: 'onboardingProgress', execute: () => OnboardingProgress.deleteMany({ userId }) },
+      { key: 'bankTransferPayments', execute: () => BankTransferPayment.deleteMany({ userId }) },
+      { key: 'cryptoPayments', execute: () => CryptoPayment.deleteMany({ userId }) },
+      { key: 'transactions', execute: () => Transaction.deleteMany({ user: userId }) },
+      { key: 'simpleCardPayments', execute: () => SimpleCardPayment.deleteMany({ userId }) }
+    ] as const;
 
-      // 2. User's deposits
-      Deposit.deleteMany({ user: userId }),
+    const deletionSummary: Record<typeof deletionOperations[number]['key'], number> = {
+      activityHistory: 0,
+      deposits: 0,
+      withdrawals: 0,
+      investments: 0,
+      dailyProfits: 0,
+      referralsAsReferrer: 0,
+      referralsAsReferred: 0,
+      referralPoints: 0,
+      pointsTransactions: 0,
+      equityTransactions: 0,
+      kycDocuments: 0,
+      bankAccounts: 0,
+      cryptoWallets: 0,
+      cardPayments: 0,
+      onboardingProgress: 0,
+      bankTransferPayments: 0,
+      cryptoPayments: 0,
+      transactions: 0,
+      simpleCardPayments: 0
+    };
 
-      // 3. User's withdrawals
-      Withdrawal.deleteMany({ user: userId }),
-
-      // 4. User's investments
-      UserInvestment.deleteMany({ user: userId }),
-
-      // 5. Daily profits for user's investments
-      DailyProfit.deleteMany({ userInvestment: { $in: investmentIds } }),
-
-      // 6. Referrals where user is the referrer
-      Referral.deleteMany({ referrer: userId }),
-
-      // 7. Referrals where user is the referred
-      Referral.deleteMany({ referred: userId }),
-
-      // 8. User's referral points
-      ReferralPoints.deleteMany({ user: userId }),
-
-      // 9. User's points transactions
-      PointsTransaction.deleteMany({ user: userId }),
-
-      // 10. User's KYC documents
-      KYC.deleteMany({ user: userId }),
-
-      // 11. User's bank accounts
-      BankAccount.deleteMany({ user: userId }),
-
-      // 12. User's crypto wallets
-      CryptoWallet.deleteMany({ user: userId }),
-
-      // 13. User's card payments
-      CardPayment.deleteMany({ user: userId }),
-
-      // 14. User's onboarding progress
-      OnboardingProgress.deleteMany({ userId })
-    ]);
+    for (const { key, execute } of deletionOperations) {
+      const result = await execute();
+      deletionSummary[key] = result.deletedCount ?? 0;
+    }
 
     // Update other users who were referred by this user (set referredBy to null)
     await User.updateMany(
@@ -520,26 +528,31 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
     await User.findByIdAndDelete(userId);
 
     // Calculate total records deleted
-    const totalDeleted = deletionResults.reduce((sum, result) => sum + result.deletedCount, 0);
+    const totalDeleted = Object.values(deletionSummary).reduce((sum, count) => sum + count, 0);
 
     res.json({
       success: true,
       message: 'User and all associated data deleted successfully',
       deletedRecords: {
-        activityHistory: deletionResults[0].deletedCount,
-        deposits: deletionResults[1].deletedCount,
-        withdrawals: deletionResults[2].deletedCount,
-        investments: deletionResults[3].deletedCount,
-        dailyProfits: deletionResults[4].deletedCount,
-        referralsAsReferrer: deletionResults[5].deletedCount,
-        referralsAsReferred: deletionResults[6].deletedCount,
-        referralPoints: deletionResults[7].deletedCount,
-        pointsTransactions: deletionResults[8].deletedCount,
-        kycDocuments: deletionResults[9].deletedCount,
-        bankAccounts: deletionResults[10].deletedCount,
-        cryptoWallets: deletionResults[11].deletedCount,
-        cardPayments: deletionResults[12].deletedCount,
-        onboardingProgress: deletionResults[13].deletedCount,
+        activityHistory: deletionSummary.activityHistory,
+        deposits: deletionSummary.deposits,
+        withdrawals: deletionSummary.withdrawals,
+        investments: deletionSummary.investments,
+        dailyProfits: deletionSummary.dailyProfits,
+        referralsAsReferrer: deletionSummary.referralsAsReferrer,
+        referralsAsReferred: deletionSummary.referralsAsReferred,
+        referralPoints: deletionSummary.referralPoints,
+        pointsTransactions: deletionSummary.pointsTransactions,
+        equityTransactions: deletionSummary.equityTransactions,
+        kycDocuments: deletionSummary.kycDocuments,
+        bankAccounts: deletionSummary.bankAccounts,
+        cryptoWallets: deletionSummary.cryptoWallets,
+        cardPayments: deletionSummary.cardPayments,
+        onboardingProgress: deletionSummary.onboardingProgress,
+        bankTransferPayments: deletionSummary.bankTransferPayments,
+        cryptoPayments: deletionSummary.cryptoPayments,
+        transactions: deletionSummary.transactions,
+        simpleCardPayments: deletionSummary.simpleCardPayments,
         user: 1,
         total: totalDeleted + 1 // +1 for user account
       }

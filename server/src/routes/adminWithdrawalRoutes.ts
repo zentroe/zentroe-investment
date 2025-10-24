@@ -3,7 +3,9 @@ import {
   getAllWithdrawalRequests,
   reviewWithdrawalRequest,
   processWithdrawal,
-  getWithdrawalStatistics
+  getWithdrawalStatistics,
+  updateWithdrawal,
+  deleteWithdrawal
 } from '../controllers/withdrawalController';
 import { authenticateAdmin } from '../middleware/adminAuth';
 
@@ -17,5 +19,7 @@ router.get('/all', getAllWithdrawalRequests as any);
 router.patch('/review/:withdrawalId', reviewWithdrawalRequest as any);
 router.patch('/process/:withdrawalId', processWithdrawal as any);
 router.get('/statistics', getWithdrawalStatistics as any);
+router.put('/:withdrawalId', updateWithdrawal as any);
+router.delete('/:withdrawalId', deleteWithdrawal as any);
 
 export default router;

@@ -432,3 +432,155 @@ export const getWithdrawalStatistics = async (req: AuthenticatedAdminRequest, re
     });
   }
 };
+
+/**
+ * Update withdrawal (Admin)
+ */
+export const updateWithdrawal = async (req: AuthenticatedAdminRequest, res: Response): Promise<void> => {
+  try {
+    const adminId = req.admin.adminId;
+    const { withdrawalId } = req.params;
+    const { amount, requestedAt } = req.body;
+
+    const { Withdrawal } = await import('../models/Withdrawal');
+
+    const withdrawal = await Withdrawal.findById(withdrawalId);
+
+    if (!withdrawal) {
+      res.status(404).json({
+        success: false,
+        message: 'Withdrawal not found'
+      });
+      return;
+    }
+
+    // Update amount if provided
+    if (amount !== undefined) {
+      const numericAmount = parseFloat(amount);
+      if (isNaN(numericAmount) || numericAmount <= 0) {
+        res.status(400).json({
+          success: false,
+          message: 'Amount must be a positive number'
+        });
+        return;
+      }
+
+      // Recalculate fees and net amount based on new amount
+      const feePercentage = 0.02; // 2% fee
+      const fees = numericAmount * feePercentage;
+      const netAmount = numericAmount - fees;
+
+      withdrawal.amount = numericAmount;
+      withdrawal.fees = fees;
+      withdrawal.netAmount = netAmount;
+    }
+
+    // Update requested date if provided
+    if (requestedAt !== undefined) {
+      const newDate = new Date(requestedAt);
+      if (isNaN(newDate.getTime())) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid date format'
+        });
+        return;
+      }
+      withdrawal.requestedAt = newDate;
+    }
+
+    await withdrawal.save();
+
+    // Log activity
+    try {
+      await ActivityHistory.create({
+        user: withdrawal.user,
+        action: 'withdrawal_updated',
+        description: `Withdrawal ${withdrawalId} updated by admin`,
+        performedBy: adminId,
+        metadata: {
+          withdrawalId,
+          newAmount: amount,
+          newRequestedAt: requestedAt
+        }
+      });
+    } catch (activityError) {
+      console.error('Error logging activity:', activityError);
+    }
+
+    const populatedWithdrawal = await Withdrawal.findById(withdrawalId)
+      .populate('user', 'firstName lastName email')
+      .populate('userInvestment')
+      .populate('reviewedBy', 'firstName lastName email');
+
+    res.status(200).json({
+      success: true,
+      message: 'Withdrawal updated successfully',
+      data: populatedWithdrawal
+    });
+  } catch (error) {
+    console.error('Update withdrawal error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update withdrawal',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Delete withdrawal (Admin)
+ */
+export const deleteWithdrawal = async (req: AuthenticatedAdminRequest, res: Response): Promise<void> => {
+  try {
+    const adminId = req.admin.adminId;
+    const { withdrawalId } = req.params;
+
+    const { Withdrawal } = await import('../models/Withdrawal');
+
+    const withdrawal = await Withdrawal.findById(withdrawalId);
+
+    if (!withdrawal) {
+      res.status(404).json({
+        success: false,
+        message: 'Withdrawal not found'
+      });
+      return;
+    }
+
+    // Store info for activity log before deletion
+    const withdrawalUserId = withdrawal.user;
+    const withdrawalAmount = withdrawal.amount;
+    const withdrawalStatus = withdrawal.status;
+
+    await Withdrawal.findByIdAndDelete(withdrawalId);
+
+    // Log activity
+    try {
+      await ActivityHistory.create({
+        user: withdrawalUserId,
+        action: 'withdrawal_deleted',
+        description: `Withdrawal ${withdrawalId} deleted by admin`,
+        performedBy: adminId,
+        metadata: {
+          withdrawalId,
+          amount: withdrawalAmount,
+          status: withdrawalStatus
+        }
+      });
+    } catch (activityError) {
+      console.error('Error logging activity:', activityError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Withdrawal deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete withdrawal error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete withdrawal',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};

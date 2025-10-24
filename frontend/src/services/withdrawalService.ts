@@ -276,3 +276,34 @@ export const getWithdrawalStatistics = async (): Promise<WithdrawalStatistics> =
     throw error;
   }
 };
+
+/**
+ * Update withdrawal (Admin)
+ */
+export const updateWithdrawal = async (
+  withdrawalId: string,
+  data: {
+    amount?: number;
+    requestedAt?: string;
+  }
+): Promise<Withdrawal> => {
+  try {
+    const response = await axios.put(`/admin/withdrawals/${withdrawalId}`, data);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error updating withdrawal:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete withdrawal (Admin)
+ */
+export const deleteWithdrawal = async (withdrawalId: string): Promise<void> => {
+  try {
+    await axios.delete(`/admin/withdrawals/${withdrawalId}`);
+  } catch (error) {
+    console.error('Error deleting withdrawal:', error);
+    throw error;
+  }
+};

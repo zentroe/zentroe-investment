@@ -23,7 +23,7 @@ export default function RewardsSection() {
             Unlock exclusive benefits when you invest $100,000 or more
           </p>
           <Link
-            to="/onboarding/intro"
+            to="/about"
             className="inline-block md:max-w-40 text-center mt-10 bg-[#c89c62] text-[#251c15] font-medium px-6 py-3 rounded-sm text-sm md:text-base hover:bg-[#b68b54] transition"
           >
             Learn more

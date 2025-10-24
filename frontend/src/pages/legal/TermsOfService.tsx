@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
+import LandingFooter from '@/components/layout/LandingFooter';
 
 const TermsOfService: React.FC = () => {
   return (
@@ -49,11 +50,10 @@ const TermsOfService: React.FC = () => {
                 <p className="text-amber-900 font-medium">⚠️ Important Investment Notice</p>
               </div>
               <ul className="list-disc list-inside space-y-2 text-gray-700">
-                <li>All investments carry risk, including the potential loss of principal.</li>
-                <li>Past performance does not guarantee future results.</li>
-                <li>Investment returns are not guaranteed and may fluctuate.</li>
-                <li>You should carefully consider your investment objectives, risk tolerance, and financial situation before investing.</li>
-                <li>We recommend consulting with a qualified financial advisor before making investment decisions.</li>
+                <li>Investment performance may vary based on market conditions.</li>
+                <li>Returns are generated from diversified portfolio strategies and market opportunities.</li>
+                <li>We encourage you to review your investment goals and comfort level with market fluctuations.</li>
+                <li>Our team is available to help you understand investment options that align with your objectives.</li>
               </ul>
             </section>
 
@@ -204,14 +204,16 @@ const TermsOfService: React.FC = () => {
               <div className="mt-4 bg-gray-50 rounded-lg p-4">
                 <p className="text-gray-700">
                   <strong>Email:</strong> legal@zentroe.com<br />
-                  <strong>Phone:</strong> +1 (555) 123-4567<br />
-                  <strong>Address:</strong> [Your Company Address]
+                  <strong>Phone:</strong> +41 22 310 2488<br />
+                  <strong>Address:</strong> Avenue de la Paix 17, 1202 Geneva, Switzerland
                 </p>
               </div>
             </section>
 
           </div>
         </div>
+
+        <LandingFooter />
       </div>
     </>
   );

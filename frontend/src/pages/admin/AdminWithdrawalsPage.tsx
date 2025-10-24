@@ -8,6 +8,8 @@ import {
   getWithdrawalStatistics,
   reviewWithdrawalRequest,
   processWithdrawal,
+  updateWithdrawal,
+  deleteWithdrawal,
   WithdrawalHistory,
   WithdrawalStatistics,
   Withdrawal
@@ -26,9 +28,11 @@ import {
   Eye,
   ThumbsUp,
   ThumbsDown,
-  Truck
+  Truck,
+  Edit
 } from 'lucide-react';
 import AdminWithdrawalDetailsModal from './components/AdminWithdrawalDetailsModal';
+import EditWithdrawalModal from './components/EditWithdrawalModal';
 
 const AdminWithdrawalsPage: React.FC = () => {
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalHistory | null>(null);
@@ -36,6 +40,7 @@ const AdminWithdrawalsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Filters and pagination
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -96,6 +101,37 @@ const AdminWithdrawalsPage: React.FC = () => {
       toast.error(error.response?.data?.message || 'Failed to process withdrawal');
     } finally {
       setProcessingAction(null);
+    }
+  };
+
+  const handleUpdateWithdrawal = async (
+    withdrawalId: string,
+    data: { amount?: number; requestedAt?: string }
+  ) => {
+    try {
+      await updateWithdrawal(withdrawalId, data);
+      toast.success('Withdrawal updated successfully');
+      setShowEditModal(false);
+      setSelectedWithdrawal(null);
+      fetchData();
+    } catch (error: any) {
+      console.error('Error updating withdrawal:', error);
+      toast.error(error.response?.data?.message || 'Failed to update withdrawal');
+      throw error;
+    }
+  };
+
+  const handleDeleteWithdrawal = async (withdrawalId: string) => {
+    try {
+      await deleteWithdrawal(withdrawalId);
+      toast.success('Withdrawal deleted successfully');
+      setShowEditModal(false);
+      setSelectedWithdrawal(null);
+      fetchData();
+    } catch (error: any) {
+      console.error('Error deleting withdrawal:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete withdrawal');
+      throw error;
     }
   };
 
@@ -303,7 +339,7 @@ const AdminWithdrawalsPage: React.FC = () => {
 
                       <div className="text-sm text-gray-600 mb-2">
                         User: {withdrawal.user ? `${withdrawal.user.firstName} ${withdrawal.user.lastName}` : 'N/A'} •
-                        Investment: {formatCurrency(withdrawal.userInvestment.amount)}
+                        Investment: {withdrawal.userInvestment ? formatCurrency(withdrawal.userInvestment.amount) : 'N/A'}
                       </div>
 
                       <div className="flex gap-4 text-sm text-gray-500">
@@ -325,6 +361,18 @@ const AdminWithdrawalsPage: React.FC = () => {
                       >
                         <Eye className="w-4 h-4" />
                         Details
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedWithdrawal(withdrawal);
+                          setShowEditModal(true);
+                        }}
+                        className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit
                       </Button>
 
                       {withdrawal.status === 'pending' && (
@@ -432,6 +480,19 @@ const AdminWithdrawalsPage: React.FC = () => {
                 handleReviewWithdrawal(selectedWithdrawal._id, action, notes, rejectionReason);
               }
             }}
+          />
+        )}
+
+        {/* Edit Modal */}
+        {showEditModal && selectedWithdrawal && (
+          <EditWithdrawalModal
+            withdrawal={selectedWithdrawal}
+            onClose={() => {
+              setShowEditModal(false);
+              setSelectedWithdrawal(null);
+            }}
+            onSave={(data) => handleUpdateWithdrawal(selectedWithdrawal._id, data)}
+            onDelete={() => handleDeleteWithdrawal(selectedWithdrawal._id)}
           />
         )}
       </div>

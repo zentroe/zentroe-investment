@@ -236,12 +236,11 @@ const PrivacyPolicy: React.FC = () => {
               <p className="text-gray-700 leading-relaxed mb-4">
                 If you have any questions or concerns about this Privacy Policy or our data practices, please contact us:
               </p>
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="mt-4 bg-gray-50 rounded-lg p-4">
                 <p className="text-gray-700">
-                  <strong>Email:</strong> privacy@zentroe.com<br />
-                  <strong>Data Protection Officer:</strong> dpo@zentroe.com<br />
-                  <strong>Phone:</strong> +1 (555) 123-4567<br />
-                  <strong>Address:</strong> [Your Company Address]
+                  <strong>Email:</strong> legal@zentroe.com<br />
+                  <strong>Phone:</strong> +41 22 310 2488<br />
+                  <strong>Address:</strong> Avenue de la Paix 17, 1202 Geneva, Switzerland
                 </p>
               </div>
             </section>
