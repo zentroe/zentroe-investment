@@ -261,13 +261,6 @@ export const updateActivity = async (req: Request, res: Response): Promise<void>
 
         case 'referral': {
           // Update the corresponding Referral record's metadata
-          // Find referral by matching the date and referrer
-          const referralDate = new Date(updateData.date || existingActivity.date);
-          const startOfDay = new Date(referralDate);
-          startOfDay.setHours(0, 0, 0, 0);
-          const endOfDay = new Date(referralDate);
-          endOfDay.setHours(23, 59, 59, 999);
-
           // Extract names from referredUserName if provided
           let firstName = '';
           let lastName = '';
@@ -282,35 +275,101 @@ export const updateActivity = async (req: Request, res: Response): Promise<void>
             lastName = nameParts.slice(1).join(' ') || '';
           }
 
-          const referredEmail = updateData.referredUserEmail || existingActivity.referredUserEmail || '';
+          const newEmail = updateData.referredUserEmail;
+          const oldEmail = existingActivity.referredUserEmail;
 
           // Build update object only with fields that have values
-          const referralMetadataUpdate: any = {};
+          const referralMetadataUpdate: Record<string, string> = {};
           if (firstName) referralMetadataUpdate['metadata.fakeUserInfo.firstName'] = firstName;
           if (lastName) referralMetadataUpdate['metadata.fakeUserInfo.lastName'] = lastName;
-          if (referredEmail) referralMetadataUpdate['metadata.fakeUserInfo.email'] = referredEmail;
+          if (newEmail) referralMetadataUpdate['metadata.fakeUserInfo.email'] = newEmail;
 
-          // Update the Referral document's metadata
           if (Object.keys(referralMetadataUpdate).length > 0) {
-            const referralUpdate = await Referral.findOneAndUpdate(
-              {
-                referrer: existingActivity.userId,
-                signupDate: {
-                  $gte: startOfDay,
-                  $lte: endOfDay
-                },
-                'metadata.campaign': 'demo-generated' // Only update generated referrals
-              },
-              {
-                $set: referralMetadataUpdate
-              },
-              { new: true }
-            );
+            let updatedReferral: any = null;
 
-            if (referralUpdate) {
-              console.log(`✅ Updated Referral metadata for ${firstName} ${lastName} (${referredEmail})`);
-            } else {
-              console.log('⚠️  No matching Referral record found to update');
+            if (existingActivity.referralId) {
+              updatedReferral = await Referral.findOneAndUpdate(
+                {
+                  _id: existingActivity.referralId,
+                  referrer: existingActivity.userId
+                },
+                {
+                  $set: referralMetadataUpdate
+                },
+                { new: true }
+              );
+
+              if (updatedReferral) {
+                console.log('✅ Updated Referral via direct referralId match:', {
+                  referralId: existingActivity.referralId,
+                  firstName,
+                  lastName,
+                  email: newEmail || oldEmail
+                });
+              } else {
+                console.log(`⚠️  No Referral found by referralId ${existingActivity.referralId}, falling back to email/date matching`);
+              }
+            }
+
+            // Match by the OLD email address (before the edit) to find the correct referral
+            if (!updatedReferral && oldEmail) {
+              console.log(`🔍 Looking for referral with email: ${oldEmail} for user: ${existingActivity.userId}`);
+
+              updatedReferral = await Referral.findOneAndUpdate(
+                {
+                  referrer: existingActivity.userId,
+                  'metadata.fakeUserInfo.email': oldEmail,
+                  'metadata.campaign': 'demo-generated'
+                },
+                {
+                  $set: referralMetadataUpdate
+                },
+                { new: true }
+              );
+
+              if (updatedReferral) {
+                console.log(`✅ Updated Referral metadata from ${oldEmail} to:`, {
+                  firstName,
+                  lastName,
+                  email: newEmail || oldEmail
+                });
+              } else {
+                console.log(`⚠️  No matching Referral record found for email: ${oldEmail}`);
+              }
+            }
+
+            if (!updatedReferral) {
+              // Final fallback: match by the closest referral on the same day
+              const referralDate = new Date(updateData.date || existingActivity.date);
+              const startOfDay = new Date(referralDate);
+              startOfDay.setHours(0, 0, 0, 0);
+              const endOfDay = new Date(referralDate);
+              endOfDay.setHours(23, 59, 59, 999);
+
+              updatedReferral = await Referral.findOneAndUpdate(
+                {
+                  referrer: existingActivity.userId,
+                  signupDate: {
+                    $gte: startOfDay,
+                    $lte: endOfDay
+                  },
+                  'metadata.campaign': 'demo-generated'
+                },
+                {
+                  $set: referralMetadataUpdate
+                },
+                { new: true }
+              );
+
+              if (updatedReferral) {
+                console.log(`✅ Updated Referral via date fallback for ${firstName} ${lastName}`);
+              } else {
+                console.log('❌ Failed to update Referral - no match found via any strategy');
+              }
+            }
+
+            if (updatedReferral) {
+              updateData.referralId = updatedReferral._id;
             }
           }
           break;
@@ -342,6 +401,97 @@ export const updateActivity = async (req: Request, res: Response): Promise<void>
     if (!activity) {
       res.status(404).json({ message: 'Activity not found' });
       return;
+    }
+
+    // Final safeguard: ensure referral metadata stays in sync with activity edits
+    if (activity.activityType === 'referral') {
+      const finalName = activity.referredUserName || existingActivity.referredUserName || '';
+      const finalEmail = activity.referredUserEmail || existingActivity.referredUserEmail || '';
+      const referralBonus = activity.referralBonus || existingActivity.referralBonus;
+      const activityDate = activity.date || existingActivity.date;
+
+      const nameParts = finalName.trim().split(/\s+/);
+      const finalFirstName = nameParts[0] || '';
+      const finalLastName = nameParts.slice(1).join(' ') || '';
+
+      const referralUpdateDoc: Record<string, string> = {};
+      if (finalFirstName) referralUpdateDoc['metadata.fakeUserInfo.firstName'] = finalFirstName;
+      if (finalLastName) referralUpdateDoc['metadata.fakeUserInfo.lastName'] = finalLastName;
+      if (finalEmail) referralUpdateDoc['metadata.fakeUserInfo.email'] = finalEmail;
+
+      if (Object.keys(referralUpdateDoc).length > 0) {
+        const referralMatchCandidates: any[] = [];
+
+        if (activity.referralId) {
+          referralMatchCandidates.push({ _id: activity.referralId, referrer: activity.userId });
+        }
+
+        if (
+          existingActivity.referralId &&
+          (!activity.referralId || existingActivity.referralId.toString() !== activity.referralId.toString())
+        ) {
+          referralMatchCandidates.push({ _id: existingActivity.referralId, referrer: existingActivity.userId });
+        }
+
+        if (existingActivity.referredUserEmail) {
+          referralMatchCandidates.push({
+            referrer: existingActivity.userId,
+            'metadata.fakeUserInfo.email': existingActivity.referredUserEmail,
+            'metadata.campaign': 'demo-generated'
+          });
+        }
+
+        if (finalEmail) {
+          referralMatchCandidates.push({
+            referrer: activity.userId,
+            'metadata.fakeUserInfo.email': finalEmail,
+            'metadata.campaign': 'demo-generated'
+          });
+        }
+
+        if (activityDate) {
+          const startOfDay = new Date(activityDate);
+          startOfDay.setHours(0, 0, 0, 0);
+          const endOfDay = new Date(activityDate);
+          endOfDay.setHours(23, 59, 59, 999);
+
+          referralMatchCandidates.push({
+            referrer: activity.userId,
+            signupDate: { $gte: startOfDay, $lte: endOfDay },
+            referralBonus,
+            'metadata.campaign': 'demo-generated'
+          });
+        }
+
+        let syncedReferral: any = null;
+        for (const candidate of referralMatchCandidates) {
+          syncedReferral = await Referral.findOneAndUpdate(
+            candidate,
+            { $set: referralUpdateDoc },
+            { new: true }
+          );
+
+          if (syncedReferral) {
+            const referralDoc: any = syncedReferral;
+
+            // Only adjust activity referralId if the referral is demo-generated or has metadata
+            if (
+              referralDoc?.metadata?.campaign === 'demo-generated' &&
+              (!activity.referralId || activity.referralId.toString() !== referralDoc._id?.toString())
+            ) {
+              await ActivityHistory.findByIdAndUpdate(activity._id, {
+                referralId: referralDoc._id
+              });
+              activity.referralId = referralDoc._id as any;
+            }
+            break;
+          }
+        }
+
+        if (!syncedReferral) {
+          console.log('❌ Referral sync safeguard failed to locate referral for activity', activity._id);
+        }
+      }
     }
 
     res.json({

@@ -580,7 +580,7 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
       // Generate unique referral code for each referral
       const uniqueReferralCode = `${user.referralCode || 'REF' + userId.substring(0, 8).toUpperCase()}-${Date.now()}-${i}`;
 
-      await Referral.create({
+      const referralRecord = await Referral.create({
         referrer: new mongoose.Types.ObjectId(userId),
         referred: new mongoose.Types.ObjectId(),
         referralCode: uniqueReferralCode,
@@ -617,6 +617,7 @@ export const generateUserActivity = async (options: GenerateActivityOptions) => 
         referredUserName,
         referredUserEmail: email,
         referralBonus: bonus,
+        referralId: referralRecord._id,
         status: 'completed',
         isGenerated: true,
         generatedAt: now

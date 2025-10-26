@@ -4,7 +4,7 @@ import { useUser } from '@/context/UserContext';
 import { getReferralCode, getTierColor, getTierIcon, formatPoints, getStatusColor } from '@/services/referralService';
 
 export default function ReferralsPage() {
-  const { referralData, loading } = useUser();
+  const { referralData, loading, refreshReferrals } = useUser();
   const [referralLink, setReferralLink] = useState<string>('');
   const [shareMessage, setShareMessage] = useState<string>('');
   // const [conversionAmount, setConversionAmount] = useState<string>('');
@@ -15,7 +15,9 @@ export default function ReferralsPage() {
 
   useEffect(() => {
     fetchReferralCode();
-  }, []);
+    // Refresh referral data when component mounts to ensure we have latest data
+    refreshReferrals();
+  }, [refreshReferrals]);
 
   const fetchReferralCode = async () => {
     try {
@@ -382,8 +384,8 @@ export default function ReferralsPage() {
                           <button
                             onClick={() => setCurrentPage(page)}
                             className={`px-3 py-2 rounded-lg text-sm font-medium ${currentPage === page
-                                ? 'bg-primary text-white'
-                                : 'text-gray-700 hover:bg-gray-100'
+                              ? 'bg-primary text-white'
+                              : 'text-gray-700 hover:bg-gray-100'
                               }`}
                           >
                             {page}

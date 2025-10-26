@@ -98,6 +98,7 @@ export interface Activity {
   referredUserName?: string;
   referredUserEmail?: string;
   referralBonus?: number;
+  referralId?: string;
   returnPercentage?: number;
   principalAmount?: number;
   kycStatus?: string;

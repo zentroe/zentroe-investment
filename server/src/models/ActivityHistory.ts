@@ -31,6 +31,7 @@ export interface IActivityHistory extends Document {
   referredUserName?: string;
   referredUserEmail?: string;
   referralBonus?: number;
+  referralId?: mongoose.Types.ObjectId;
 
   // Return/Dividend specific
   returnPercentage?: number;
@@ -123,6 +124,10 @@ const ActivityHistorySchema = new Schema<IActivityHistory>(
     referredUserName: String,
     referredUserEmail: String,
     referralBonus: Number,
+    referralId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Referral'
+    },
 
     // Return/Dividend specific
     returnPercentage: Number,

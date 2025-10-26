@@ -40,6 +40,11 @@ export interface ReferralRecord {
   signupDate: string;
   qualificationDate?: string;
   rewardDate?: string;
+  activityMetadata?: {
+    activityId: string;
+    referredUserName?: string;
+    referredUserEmail?: string;
+  };
 }
 
 export interface PointsTransaction {
@@ -80,7 +85,8 @@ export interface EquityTransaction {
 
 // API Functions
 export const getReferralDashboard = async (): Promise<ReferralDashboard> => {
-  const response = await axios.get('/referrals/dashboard');
+  // Add cache-busting parameter to ensure fresh data
+  const response = await axios.get(`/referrals/dashboard?t=${Date.now()}`);
   return response.data.data;
 };
 

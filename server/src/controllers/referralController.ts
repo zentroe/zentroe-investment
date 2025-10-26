@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../types/CustomRequest';
 import { Referral, ReferralPoints, PointsTransaction, EquityTransaction, REFERRAL_TIERS, EQUITY_CONVERSION } from '../models/Referral';
+import { ActivityHistory } from '../models/ActivityHistory';
 import { User } from '../models/User';
 import { UserInvestment } from '../models/UserInvestment';
 import crypto from 'crypto';
@@ -29,33 +30,160 @@ export const getReferralDashboard = async (req: AuthenticatedRequest, res: Respo
     // Get referral history (includes demo/generated referrals with metadata)
     const allReferrals = await Referral.find({ referrer: userId })
       .populate('referred', 'firstName lastName email createdAt')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Get referral activity entries to ensure we reflect any admin edits made in activity history
+    const referralActivities = await ActivityHistory.find({
+      userId,
+      activityType: 'referral'
+    })
+      .select('referralId referredUserName referredUserEmail date referralBonus description')
+      .sort({ date: -1 })
+      .lean();
+
+    const activityByReferralId = new Map<string, any>();
+    const activityByEmail = new Map<string, any>();
+    const activityByDayAndBonus = new Map<string, any>();
+
+    referralActivities.forEach(activity => {
+      if (activity.referralId) {
+        activityByReferralId.set(activity.referralId.toString(), activity);
+      }
+
+      if (activity.referredUserEmail) {
+        activityByEmail.set(activity.referredUserEmail.toLowerCase(), activity);
+      }
+
+      const dayKey = `${activity.date.toISOString().split('T')[0]}-${activity.referralBonus ?? ''}`;
+      activityByDayAndBonus.set(dayKey, activity);
+    });
 
     // Transform referrals to handle both real users and demo data
     const referrals = allReferrals.map(ref => {
+      const refObj: any = ref;
+
+      const referredDoc = refObj.referred && typeof refObj.referred === 'object' && !Array.isArray(refObj.referred)
+        ? refObj.referred
+        : null;
+
+      // Attempt to find matching activity entry to keep data in sync with ActivityHistory edits
+      let matchedActivity = refObj._id ? activityByReferralId.get(refObj._id.toString()) : undefined;
+
+      const candidateEmails = [
+        refObj.metadata?.fakeUserInfo?.email,
+        referredDoc?.email,
+        matchedActivity?.referredUserEmail
+      ].filter(Boolean) as string[];
+
+      if (!matchedActivity) {
+        for (const email of candidateEmails) {
+          const matchByEmail = activityByEmail.get(email.toLowerCase());
+          if (matchByEmail) {
+            matchedActivity = matchByEmail;
+            break;
+          }
+        }
+      }
+
+      if (!matchedActivity) {
+        const fallbackDate = refObj.rewardDate || refObj.qualificationDate || refObj.signupDate;
+        if (fallbackDate) {
+          const dateKey = `${new Date(fallbackDate).toISOString().split('T')[0]}-${matchedActivity?.referralBonus ?? refObj.pointsEarned ?? ''}`;
+          matchedActivity = activityByDayAndBonus.get(dateKey);
+        }
+        if (!matchedActivity) {
+          matchedActivity = referralActivities.find(activity => {
+            const activityDay = activity.date.toISOString().split('T')[0];
+            const referralDay = new Date(fallbackDate).toISOString().split('T')[0];
+            return activityDay === referralDay;
+          });
+        }
+
+      }
+
+      const coalesceNameFromActivity = () => {
+        if (!matchedActivity?.referredUserName) return { firstName: undefined, lastName: undefined };
+        const nameParts = matchedActivity.referredUserName.trim().split(/\s+/);
+        const first = nameParts[0];
+        const last = nameParts.slice(1).join(' ') || undefined;
+        return { firstName: first, lastName: last };
+      };
+
+      const activityNames = coalesceNameFromActivity();
+      const activityEmail = matchedActivity?.referredUserEmail;
+
+      // Determine the referred user details priority: activity edit -> real user -> metadata fallback
+      const referredDetails = referredDoc && referredDoc._id ? {
+        ...referredDoc,
+        firstName: activityNames.firstName || referredDoc.firstName,
+        lastName: activityNames.lastName || referredDoc.lastName,
+        email: activityEmail || referredDoc.email
+      } : {
+        _id: referredDoc || refObj.referred || undefined,
+        firstName: activityNames.firstName || refObj.metadata?.fakeUserInfo?.firstName,
+        lastName: activityNames.lastName || refObj.metadata?.fakeUserInfo?.lastName,
+        email: activityEmail || refObj.metadata?.fakeUserInfo?.email,
+        createdAt: refObj.signupDate
+      };
+
+      // Ensure we always send an object for referred details
+      const normalizedReferred = referredDetails ? {
+        _id: referredDetails._id,
+        firstName: referredDetails.firstName,
+        lastName: referredDetails.lastName,
+        email: referredDetails.email,
+        createdAt: referredDetails.createdAt || refObj.signupDate
+      } : undefined;
+
+      const baseResponse: any = {
+        ...refObj,
+        referred: normalizedReferred,
+        metadata: refObj.metadata,
+        activityMetadata: matchedActivity ? {
+          referredUserName: matchedActivity.referredUserName,
+          referredUserEmail: matchedActivity.referredUserEmail,
+          activityId: matchedActivity._id
+        } : undefined
+      };
+
+      if (matchedActivity) {
+        baseResponse.metadata = {
+          ...(refObj.metadata || {}),
+          fakeUserInfo: {
+            ...(refObj.metadata?.fakeUserInfo || {}),
+            firstName: activityNames.firstName || refObj.metadata?.fakeUserInfo?.firstName,
+            lastName: activityNames.lastName || refObj.metadata?.fakeUserInfo?.lastName,
+            email: activityEmail || refObj.metadata?.fakeUserInfo?.email
+          }
+        };
+      }
+
       // If referred user exists (real referral)
-      if (ref.referred && ref.referred._id) {
-        return ref;
+      if (baseResponse.referred && baseResponse.referred._id && referredDoc && referredDoc._id) {
+        return baseResponse;
       }
 
       // If no referred user (demo/generated referral with metadata)
-      if (ref.metadata?.fakeUserInfo) {
-        // Create a virtual referred user object from metadata
-        return {
-          ...ref.toObject(),
-          referred: {
-            _id: ref.referred,
-            firstName: ref.metadata.fakeUserInfo.firstName,
-            lastName: ref.metadata.fakeUserInfo.lastName,
-            email: ref.metadata.fakeUserInfo.email,
-            createdAt: ref.signupDate
-          }
+      if (refObj.metadata?.fakeUserInfo) {
+        const metadataRef = {
+          ...baseResponse,
+          referred: normalizedReferred
         };
+
+        console.log('📊 Transformed referral:', {
+          firstName: metadataRef.referred?.firstName,
+          lastName: metadataRef.referred?.lastName,
+          email: metadataRef.referred?.email
+        });
+        return metadataRef;
       }
 
       // Invalid referral (no user and no metadata) - filter out
       return null;
     }).filter(ref => ref !== null);
+
+    console.log(`📊 Returning ${referrals.length} referrals for user ${userId}`);
 
     // Get points transaction history
     const pointsHistory = await PointsTransaction.find({ user: userId })
@@ -76,6 +204,11 @@ export const getReferralDashboard = async (req: AuthenticatedRequest, res: Respo
 
     // Get current tier benefits
     const tierInfo = REFERRAL_TIERS[referralPoints.tier as keyof typeof REFERRAL_TIERS];
+
+    // Set no-cache headers to ensure fresh data
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     res.json({
       success: true,
