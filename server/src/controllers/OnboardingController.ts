@@ -862,8 +862,8 @@ export const saveIdentityInfo = async (req: AuthenticatedRequest, res: Response)
       return;
     }
 
-    if (!socialSecurityNumber || !dateOfBirth) {
-      res.status(400).json({ message: "Social Security Number and Date of Birth are required" });
+    if (!dateOfBirth) {
+      res.status(400).json({ message: "Date of Birth is required" });
       return;
     }
 
@@ -884,13 +884,15 @@ export const saveIdentityInfo = async (req: AuthenticatedRequest, res: Response)
       return;
     }
 
+    const updateData: Record<string, any> = { dateOfBirth: dob };
+    if (socialSecurityNumber) {
+      updateData.socialSecurityNumber = socialSecurityNumber.trim();
+      updateData.ssn = socialSecurityNumber.trim();
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      {
-        socialSecurityNumber: socialSecurityNumber.trim(),
-        ssn: socialSecurityNumber.trim(), // Store in both fields for compatibility
-        dateOfBirth: dob
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 

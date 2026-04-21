@@ -11,7 +11,6 @@ import { toast } from "sonner";
 export default function MorePersonalInfo() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    socialSecurityNumber: "",
     dateOfBirth: ""
   });
   const [loading, setLoading] = useState(false);
@@ -20,12 +19,6 @@ export default function MorePersonalInfo() {
 
   // Pre-populate from context data
   useEffect(() => {
-    if (data.socialSecurityNumber) {
-      setFormData(prev => ({
-        ...prev,
-        socialSecurityNumber: data.socialSecurityNumber || ""
-      }));
-    }
     if (data.dateOfBirth) {
       // Convert date to YYYY-MM-DD format for input
       const date = new Date(data.dateOfBirth);
@@ -35,24 +28,14 @@ export default function MorePersonalInfo() {
         dateOfBirth: formattedDate
       }));
     }
-  }, [data.socialSecurityNumber, data.dateOfBirth]);
+  }, [data.dateOfBirth]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
-    // Format SSN with dashes
-    if (name === 'socialSecurityNumber') {
-      const formatted = value.replace(/\D/g, '').replace(/(\d{3})(\d{2})(\d{4})/, '$1-$2-$3');
-      setFormData(prev => ({
-        ...prev,
-        [name]: formatted
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const validateAge = (dateOfBirth: string): boolean => {
@@ -70,15 +53,8 @@ export default function MorePersonalInfo() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.socialSecurityNumber.trim() || !formData.dateOfBirth) {
+    if (!formData.dateOfBirth) {
       toast.error("Please fill in all required fields");
-      return;
-    }
-
-    // Validate SSN format (basic check)
-    const ssnPattern = /^\d{3}-\d{2}-\d{4}$/;
-    if (!ssnPattern.test(formData.socialSecurityNumber)) {
-      toast.error("Please enter a valid Social Security Number (XXX-XX-XXXX)");
       return;
     }
 
@@ -91,11 +67,10 @@ export default function MorePersonalInfo() {
     setLoading(true);
 
     try {
-      await saveIdentityInfo(formData.socialSecurityNumber, formData.dateOfBirth);
+      await saveIdentityInfo(formData.dateOfBirth);
 
       // Update local context data for immediate UI feedback
       updateLocalData({
-        socialSecurityNumber: formData.socialSecurityNumber,
         dateOfBirth: formData.dateOfBirth
       });
 
@@ -143,26 +118,6 @@ export default function MorePersonalInfo() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Social Security Number */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Social Security Number *
-            </label>
-            <Input
-              type="text"
-              name="socialSecurityNumber"
-              value={formData.socialSecurityNumber}
-              onChange={handleInputChange}
-              placeholder="XXX-XX-XXXX"
-              maxLength={11}
-              className="w-full"
-              required
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              Your SSN is encrypted and stored securely
-            </p>
-          </div>
-
           {/* Date of Birth */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

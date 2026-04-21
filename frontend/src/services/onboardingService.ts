@@ -203,11 +203,10 @@ export const saveAddressInfo = async (addressData: {
   }
 };
 
-// Identity Information Service (SSN and Date of Birth)
-export const saveIdentityInfo = async (socialSecurityNumber: string, dateOfBirth: string) => {
+// Identity Information Service (Date of Birth)
+export const saveIdentityInfo = async (dateOfBirth: string) => {
   try {
     const response = await axios.patch('/onboarding/identity-info', {
-      socialSecurityNumber,
       dateOfBirth
     });
     return response.data;
